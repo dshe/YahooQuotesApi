@@ -10,6 +10,9 @@
     <PackageTags>yahoo finance api quotes dividends splits</PackageTags>
     <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
     <Authors>Karl Wan, DavidS</Authors>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
