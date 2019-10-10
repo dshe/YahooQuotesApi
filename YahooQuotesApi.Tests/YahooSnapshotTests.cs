@@ -23,20 +23,17 @@ namespace YahooQuotesApi.Tests
         {
             // one symbol
             Security? security = await new YahooSnapshot().GetAsync("C");
-            Assert.NotNull(security);
-
-            // invalid symbol
-            security = await new YahooSnapshot().GetAsync("invalidSymbol");
-            Assert.Null(security);
+            if (security == null)
+                throw new NullReferenceException("Invalid Symbol: C");
+            Assert.True(security.RegularMarketPrice > 0);
 
             // multiple symbols
-            IList<string> symbols = new List<string>() { "invalidSymbol", "C" };
-            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(symbols);
+            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "C", "MSFT" });
             Assert.Equal(2, securities.Count);
-            Assert.Null(securities["invalidSymbol"]);
-            Assert.NotNull(securities["C"]);
-
-            Assert.True(securities?["C"]?.RegularMarketPrice > 0);
+            Security? msft = securities["MSFT"];
+            if (msft == null)
+                throw new NullReferenceException("Invalid Symbol: MSFT");
+            Assert.True(msft.RegularMarketVolume > 0);
         }
 
         [Fact]
@@ -86,9 +83,6 @@ namespace YahooQuotesApi.Tests
         public async Task TestQuery()
         {
             Security security = await new YahooSnapshot().GetAsync("AAPL") ?? throw new Exception("bad symbol");
-
-            // Properties returns static type.
-            double? bid1 = security.Bid;
 
             // String or enum indexers return dynamic type.
             security.Fields.TryGetValue("Bid", out dynamic? bid2);

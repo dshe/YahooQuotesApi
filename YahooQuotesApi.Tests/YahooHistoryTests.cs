@@ -22,7 +22,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task SimpleTest()
         {
-            List<HistoryTick>? ticks = await new YahooHistory()
+            IList<HistoryTick>? ticks = await new YahooHistory()
                 .Period(Duration.FromDays(10))
                 .GetHistoryAsync("C");
             if (ticks == null)
@@ -37,16 +37,15 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestSymbols()
         {
-            string[] symbols = new [] { "C", "badSymbol" };
-            Dictionary<string, List<HistoryTick>?> dictionary = await new YahooHistory().GetHistoryAsync(symbols);
-            Assert.Equal(symbols.Length, dictionary.Count);
+            Dictionary<string, List<HistoryTick>?> tickLists = await new YahooHistory().GetHistoryAsync(new[] { "C", "badSymbol" });
+            Assert.Equal(2 , tickLists.Count);
 
-            List<HistoryTick>? ticks = dictionary["C"];
-            if (ticks == null)
+            IList<HistoryTick>? tickList = tickLists["C"];
+            if (tickList == null)
                 throw new Exception("Invalid symbol");
-            Assert.True(ticks[0].Close > 0);
+            Assert.True(tickList[0].Close > 0);
 
-            Assert.Null(dictionary["badSymbol"]);
+            Assert.Null(tickLists["badSymbol"]);
         }
 
         [Fact]
@@ -141,7 +140,7 @@ namespace YahooQuotesApi.Tests
         public async Task TestDividend()
         {
             DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
-            var dividends = await new YahooHistory()
+            IList<DividendTick>? dividends = await new YahooHistory()
                 .Period(dateTimeZone, new LocalDate(2016, 2, 4), new LocalDate(2016, 2, 5))
                 .GetDividendsAsync("AAPL");
 
@@ -155,7 +154,7 @@ namespace YahooQuotesApi.Tests
         public async Task TestSplit()
         {
             DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
-            var splits = await new YahooHistory()
+            IList<SplitTick>? splits = await new YahooHistory()
                 .Period(dateTimeZone, new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
                 .GetSplitsAsync("AAPL");
             if (splits == null)
