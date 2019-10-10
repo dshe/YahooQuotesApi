@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <NullableContextOptions>enable</NullableContextOptions>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/dshe/YahooQuotesApi</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/dshe.png</PackageIconUrl>
+    <PackageTags>reactive-sockets socket sockets reactive reactive-extensions observable observable-socket network</PackageTags>
+    <Description>A minimal reactive socket implementation.</Description>
+    <Authors>Karl Wan, DavidS</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="12.1.2" />
+    <PackageReference Include="Flurl.Http" Version="2.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
+    <PackageReference Include="NodaTime" Version="2.4.7" />
+  </ItemGroup>
+
+</Project>
