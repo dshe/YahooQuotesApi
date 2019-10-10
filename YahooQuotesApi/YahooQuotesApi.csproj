@@ -7,8 +7,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/dshe/YahooQuotesApi</PackageProjectUrl>
     <PackageIconUrl>https://github.com/dshe.png</PackageIconUrl>
-    <PackageTags>reactive-sockets socket sockets reactive reactive-extensions observable observable-socket network</PackageTags>
-    <Description>A minimal reactive socket implementation.</Description>
+    <PackageTags>yahoo finance api quotes dividends splits</PackageTags>
+    <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
     <Authors>Karl Wan, DavidS</Authors>
   </PropertyGroup>
 
