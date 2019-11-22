@@ -159,8 +159,8 @@ namespace YahooQuotesApi.Tests
                 .GetSplitsAsync("AAPL");
             if (splits == null)
                 throw new Exception("Invalid symbol");
-            Assert.Equal(7, splits[0].BeforeSplit);
-            Assert.Equal(1, splits[0].AfterSplit);
+            Assert.Equal(1, splits[0].BeforeSplit);
+            Assert.Equal(7, splits[0].AfterSplit);
         }
 
         [Fact]
