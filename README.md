@@ -64,6 +64,6 @@ IList<SplitTick>? splits = await new YahooHistory()
     .Period("America/New_York".ToDateTimeZone(), new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
     .GetSplitsAsync("AAPL");
     
-Assert.Equal(7, splits[0].BeforeSplit);
-Assert.Equal(1, splits[0].AfterSplit);
+Assert.Equal(1, splits[0].BeforeSplit);
+Assert.Equal(7, splits[0].AfterSplit);
 ```
