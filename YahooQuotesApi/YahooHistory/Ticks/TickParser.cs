@@ -3,8 +3,6 @@ using System.Globalization;
 using NodaTime;
 using NodaTime.Text;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     internal static class TickParser

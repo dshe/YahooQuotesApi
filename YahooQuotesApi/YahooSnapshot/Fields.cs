@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-namespace YahooQuotesApi
+﻿namespace YahooQuotesApi
 {
     public enum Field
     {

@@ -1,7 +1,5 @@
 ﻿using NodaTime;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     public sealed class HistoryTick: ITick

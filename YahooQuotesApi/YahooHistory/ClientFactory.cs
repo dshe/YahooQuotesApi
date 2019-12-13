@@ -4,14 +4,12 @@ using System.Threading.Tasks;
 using Flurl.Http;
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     internal static class ClientFactory
     {
         private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
-        private static IFlurlClient? Client = null;
+        private static IFlurlClient? Client;
         private static string? Crumb;
 
         internal static async Task<(IFlurlClient,string)> GetClientAndCrumbAsync(bool reset, ILogger logger, CancellationToken ct)

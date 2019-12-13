@@ -1,7 +1,5 @@
 ﻿using System.Runtime.Serialization;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     public enum Frequency

@@ -5,8 +5,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using NodaTime;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     internal static class Utility
@@ -40,7 +38,7 @@ namespace YahooQuotesApi
             return name;
         }
 
-        internal static List<string> CaseInsensitiveDuplicates(this IEnumerable<string> strings)
+        internal static IList<string> CaseInsensitiveDuplicates(this IEnumerable<string> strings)
         {
             var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             return strings.Where(str => !hashSet.Add(str)).ToList();
@@ -49,6 +47,4 @@ namespace YahooQuotesApi
         internal static string ToCommaDelimitedList(this IEnumerable<string> strings) =>
             string.Join(", ", strings);
     }
-
-
 }

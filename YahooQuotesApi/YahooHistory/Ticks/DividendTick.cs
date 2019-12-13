@@ -1,6 +1,5 @@
 ﻿using NodaTime;
-
-#nullable enable
+using System.Diagnostics;
 
 namespace YahooQuotesApi
 {
@@ -11,6 +10,8 @@ namespace YahooQuotesApi
 
         private DividendTick(string[] row)
         {
+            Debug.Assert(row.Length == 2);
+
             Date = row[0].ToLocalDate();
             Dividend = row[1].ToDecimal();
         }

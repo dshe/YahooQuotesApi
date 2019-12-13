@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-#nullable enable
-
 namespace YahooQuotesApi.Tests
 {
     public class YahooQuotesTest

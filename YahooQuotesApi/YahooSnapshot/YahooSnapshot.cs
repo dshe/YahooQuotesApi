@@ -9,8 +9,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     // Invalid symbols are often, but not always, ignored by Yahoo.

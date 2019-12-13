@@ -12,8 +12,6 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-#nullable enable
-
 namespace YahooQuotesApi
 {
     public sealed class YahooHistory

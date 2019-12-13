@@ -10,8 +10,6 @@ using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-#nullable enable
-
 namespace YahooQuotesApi.Tests
 {
     public class YahooHistoryTests
