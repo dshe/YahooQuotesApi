@@ -37,6 +37,24 @@ namespace YahooQuotesApi.Tests
         }
 
         [Fact]
+        public async Task BadSymbol()
+        {
+            Security? security = await new YahooSnapshot().GetAsync("InvalidSymbol");
+            Assert.Null(security);
+        }
+
+        [Fact]
+        public async Task BadSymbols()
+        {
+            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "MSFT", "InvalidSymbol" });
+            Assert.Equal(2, securities.Count);
+            Security? msft = securities["MSFT"];
+            if (msft == null)
+                throw new NullReferenceException("Invalid Symbol: MSFT");
+            Assert.Null(securities["InvalidSymbol"]);
+        }
+
+        [Fact]
         public async Task TestSymbolArgument()
         {
             // empty string

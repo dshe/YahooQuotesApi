@@ -60,6 +60,11 @@ namespace YahooQuotesApi
             if (quoteExpando.error != null)
                 throw new InvalidDataException($"GetAsync error: {quoteExpando.error}");
 
+            dynamic result = quoteExpando.result;
+
+            if (result.Count == 0) // invalid symbol
+                return null;
+
             IDictionary<string, dynamic> dictionary = quoteExpando.result[0];
 
             var security = new Security(dictionary);
