@@ -7,12 +7,10 @@
 - simple and intuitive API
 - tested
 
-```csharp
-using YahooQuotesApi;
-using NodaTime;
-```
 #### Quote Snapshots
 ```csharp
+using YahooQuotesApi;
+
 YahooSnapshot Snapshot = new YahooSnapshot();
 ```
 ```csharp
@@ -33,10 +31,13 @@ Assert.True(msft.RegularMarketVolume > 0);
 ```
 #### Quote History
 ```csharp
+using YahooQuotesApi;
+using NodaTime;
+
 YahooHistory History = new YahooHistory();
 ```
 ```csharp
-IList<HistoryTick>? ticks = await History
+List<HistoryTick>? ticks = await History
     .Period(Duration.FromDays(10))
     .GetHistoryAsync("C");
 
@@ -49,17 +50,20 @@ Dictionary<string, List<HistoryTick>?> tickLists = await History
   .GetHistoryAsync(new[] { "C", "MSFT" });
 
 Assert.Equal(2 , tickLists.Count);
-IList<HistoryTick>? tickList = tickLists["C"];
+List<HistoryTick>? tickList = tickLists["C"];
 if (tickList == null)
     throw new Exception("Invalid symbol: C");
 Assert.True(tickList[0].Close > 0);
 ```
 #### Dividend History
 ```csharp
+using YahooQuotesApi;
+using NodaTime;
+
 YahooHistory History = new YahooHistory();
 ```
 ```csharp
-IList<DividendTick>? dividends = await History
+List<DividendTick>? dividends = await History
     .Period("America/New_York".ToDateTimeZone(), new LocalDate(2016, 2, 4), new LocalDate(2016, 2, 5))
     .GetDividendsAsync("AAPL");
 
@@ -67,10 +71,13 @@ Assert.Equal(0.52m, dividends[0].Dividend);
 ```
 #### Split History
 ```csharp
+using YahooQuotesApi;
+using NodaTime;
+
 YahooHistory History = new YahooHistory();
 ```
 ```csharp
-IList<SplitTick>? splits = await History
+List<SplitTick>? splits = await History
     .Period("America/New_York".ToDateTimeZone(), new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
     .GetSplitsAsync("AAPL");
     
