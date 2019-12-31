@@ -15,7 +15,6 @@ YahooSnapshot Snapshot = new YahooSnapshot();
 
 Dictionary<string, Security?> securities = await Snapshot.GetAsync(new[] { "C", "MSFT" });
 
-Assert.Equal(2, securities.Count);
 Security? msft = securities["MSFT"];
 if (msft == null)
     throw new NullReferenceException("Invalid Symbol: MSFT");
@@ -31,7 +30,6 @@ YahooHistory History = new YahooHistory();
 Dictionary<string, List<HistoryTick>?> tickLists = await History
   .GetHistoryAsync(new[] { "C", "MSFT" });
 
-Assert.Equal(2 , tickLists.Count);
 List<HistoryTick>? tickList = tickLists["C"];
 if (tickList == null)
     throw new Exception("Invalid symbol: C");
