@@ -6,11 +6,12 @@
 - dependencies: NodaTime, Flurl, CsvHelper
 - simple and intuitive API
 - tested
-
-#### Quote Snapshots
 ```csharp
 using YahooQuotesApi;
-
+using NodaTime;
+```
+#### Quote Snapshots
+```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
 Dictionary<string, Security?> securities = await Snapshot.GetAsync(new[] { "C", "MSFT" });
@@ -22,9 +23,6 @@ Assert.True(msft.RegularMarketVolume > 0);
 ```
 #### Quote History
 ```csharp
-using YahooQuotesApi;
-using NodaTime;
-
 YahooHistory History = new YahooHistory();
 
 Dictionary<string, List<HistoryTick>?> tickLists = await History
@@ -37,9 +35,6 @@ Assert.True(tickList[0].Close > 0);
 ```
 #### Dividend History
 ```csharp
-using YahooQuotesApi;
-using NodaTime;
-
 YahooHistory History = new YahooHistory();
 
 List<DividendTick>? dividends = await History
@@ -50,9 +45,6 @@ Assert.Equal(0.52m, dividends[0].Dividend);
 ```
 #### Split History
 ```csharp
-using YahooQuotesApi;
-using NodaTime;
-
 YahooHistory History = new YahooHistory();
 
 List<SplitTick>? splits = await History
