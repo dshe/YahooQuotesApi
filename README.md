@@ -7,8 +7,8 @@
 - simple and intuitive API
 - tested
 ```csharp
-using YahooQuotesApi;
 using NodaTime;
+using YahooQuotesApi;
 ```
 #### Quote Snapshots
 ```csharp
