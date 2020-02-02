@@ -81,10 +81,10 @@ namespace YahooQuotesApi.Tests
         public async Task TestPeriodWithUnixTimeSeconds()
         {
             LocalDateTime dt = new LocalDateTime(2019, 1, 7, 16, 0);
-            ZonedDateTime zdt = dt.InZoneLeniently("America/New_York".ToDateTimeZone());
-            long seconds = zdt.ToInstant().ToUnixTimeSeconds();
+            ZonedDateTime zdt = dt.InZoneLeniently("America/New_York".ToDateTimeZoneOrNull());
+            Instant instant = zdt.ToInstant();
 
-            var ticks = await new YahooHistory().Period(seconds).GetHistoryAsync("C");
+            var ticks = await new YahooHistory().Period(instant).GetHistoryAsync("C");
             if (ticks == null)
                 throw new Exception("Invalid symbol");
             foreach (var tick in ticks)
@@ -95,7 +95,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestPeriodWithDate()
         {
-            DateTimeZone dateTimeZone = "Asia/Taipei".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "Asia/Taipei".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
             LocalDate localDate = new LocalDate(2019, 1, 7);
 
             var ticks = await new YahooHistory().Period(dateTimeZone, localDate).GetHistoryAsync("2448.TW");
@@ -109,7 +109,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestHistoryTickTest()
         {
-            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
 
             LocalDate localDate1 = new LocalDate(2017, 1, 3);
             LocalDate localDate2 = new LocalDate(2017, 1, 4);
@@ -137,7 +137,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDividend()
         {
-            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
             IList<DividendTick>? dividends = await new YahooHistory()
                 .Period(dateTimeZone, new LocalDate(2016, 2, 4), new LocalDate(2016, 2, 5))
                 .GetDividendsAsync("AAPL");
@@ -151,9 +151,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestSplit()
         {
-            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
             IList<SplitTick>? splits = await new YahooHistory()
-                .Period(dateTimeZone, new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
+                .Period(dateTimeZone, LocalDate.MinIsoValue, LocalDate.MaxIsoValue)
                 .GetSplitsAsync("AAPL");
             if (splits == null)
                 throw new Exception("Invalid symbol");
@@ -164,7 +164,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDates_US()
         {
-            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
 
             var from = new LocalDate(2017, 10, 10);
             var to = new LocalDate(2017, 10, 12);
@@ -186,7 +186,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDates_UK()
         {
-            DateTimeZone dateTimeZone = "Europe/London".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "Europe/London".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
 
             var from = new LocalDate(2017, 10, 10);
             var to = new LocalDate(2017, 10, 12);
@@ -208,7 +208,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDates_TW()
         {
-            DateTimeZone dateTimeZone = "Asia/Taipei".ToDateTimeZone() ?? throw new Exception("Invalid timezone");
+            DateTimeZone dateTimeZone = "Asia/Taipei".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
 
             var from = new LocalDate(2019, 3, 19);
             var to = new LocalDate(2019, 3, 21);
@@ -243,7 +243,7 @@ namespace YahooQuotesApi.Tests
         {
             var security = await new YahooSnapshot().GetAsync(symbol) ?? throw new Exception($"Invalid symbol: {symbol}.");
             var timeZoneName = security.ExchangeTimezoneName ?? throw new Exception($"Timezone name not found.");
-            var timeZone = timeZoneName.ToDateTimeZone() ?? throw new Exception($"Invalid timezone: {timeZoneName}.");
+            var timeZone = timeZoneName.ToDateTimeZoneOrNull() ?? throw new Exception($"Invalid timezone: {timeZoneName}.");
 
             var from = new LocalDate(2019, 9, 4);
             var to = from.PlusDays(2);
@@ -263,7 +263,7 @@ namespace YahooQuotesApi.Tests
             var security = await new YahooSnapshot().GetAsync(symbol) ?? throw new Exception($"Invalid symbol: {symbol}.");
 
             var timezoneName = security.ExchangeTimezoneName ?? throw new Exception($"Timezone name not found.");
-            var timeZone = timezoneName.ToDateTimeZone() ?? throw new Exception($"Invalid timezone: {timezoneName}.");
+            var timeZone = timezoneName.ToDateTimeZoneOrNull() ?? throw new Exception($"Invalid timezone: {timezoneName}.");
 
             var from = new LocalDate(2017, 10, 10);
             var to = from.PlusDays(2);
@@ -290,7 +290,7 @@ namespace YahooQuotesApi.Tests
         public async Task TestFrequency()
         {
             var symbol = "AAPL";
-            var timeZone = "America/New_York".ToDateTimeZone();
+            var timeZone = "America/New_York".ToDateTimeZoneOrNull();
             var startDate = new LocalDate(2019, 1, 10);
 
             if (timeZone == null)
@@ -357,7 +357,7 @@ namespace YahooQuotesApi.Tests
             var cts = new CancellationTokenSource();
             //cts.CancelAfter(20);
 
-            var task = new YahooHistory(false, null, cts.Token).Period(Duration.FromDays(10)).GetHistoryAsync(GetSymbols(5));
+            var task = new YahooHistory(null, cts.Token).Period(Duration.FromDays(10)).GetHistoryAsync(GetSymbols(5));
 
             cts.Cancel();
 

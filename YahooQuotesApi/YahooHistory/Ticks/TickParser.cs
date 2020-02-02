@@ -23,17 +23,17 @@ namespace YahooQuotesApi
             throw new Exception("GetParamFromType: invalid type.");
         }
 
-        internal static ITick? Parse<ITick>(string[] row, bool ignoreEmptyRows) where ITick: class
+        internal static ITick? Parse<ITick>(string[] row) where ITick: class
         {
             var type = typeof(ITick);
             object? instance;
 
             if (type == typeof(HistoryTick))
-                instance = HistoryTick.Create(row, ignoreEmptyRows);
+                instance = HistoryTick.Create(row);
             else if (type == typeof(DividendTick))
-                instance = DividendTick.Create(row, ignoreEmptyRows);
+                instance = DividendTick.Create(row);
             else if (type == typeof(SplitTick))
-                instance = SplitTick.Create(row, ignoreEmptyRows);
+                instance = SplitTick.Create(row);
             else
                 throw new Exception("Parse<ITick>: invalid type.");
 

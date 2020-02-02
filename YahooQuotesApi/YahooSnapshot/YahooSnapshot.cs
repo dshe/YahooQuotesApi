@@ -27,16 +27,17 @@ namespace YahooQuotesApi
         }
 
         public YahooSnapshot Fields(params Field[] fields) => Fields(fields.ToList());
-        public YahooSnapshot Fields(IList<Field> fields) => Fields(fields.Select(f => f.ToString()).ToList());
+        public YahooSnapshot Fields(IEnumerable<Field> fields) => Fields(fields.Select(f => f.ToString()).ToList());
         public YahooSnapshot Fields(params string[] fields) => Fields(fields.ToList());
-        public YahooSnapshot Fields(IList<string> fields)
+        public YahooSnapshot Fields(IEnumerable<string> fields)
         {
-            if (!fields.Any() || fields.Any(x => string.IsNullOrWhiteSpace(x)))
-                throw new ArgumentException(nameof(fields));
-            FieldNames.AddRange(fields);
+            var fieldList = fields.ToList();
+            if (!fieldList.Any() || fieldList.Any(x => string.IsNullOrWhiteSpace(x)))
+                throw new ArgumentException(nameof(fieldList));
+            FieldNames.AddRange(fieldList);
             var duplicate = FieldNames.CaseInsensitiveDuplicates().FirstOrDefault();
             if (duplicate != null)
-                throw new ArgumentException($"Duplicate field: {duplicate}.", nameof(fields));
+                throw new ArgumentException($"Duplicate field: {duplicate}.", nameof(fieldList));
             return this;
         }
 
@@ -70,17 +71,18 @@ namespace YahooQuotesApi
             return security;
         }
 
-        public async Task<Dictionary<string, Security?>> GetAsync(IList<string> symbols)
+        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols)
         {
+            var symbolList = symbols.ToList();
             var securities = new Dictionary<string, Security?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var symbol in symbols)
+            foreach (var symbol in symbolList)
                 securities.Add(symbol, null);
 
             dynamic expando;
 
             try
             {
-                expando = await MakeRequest(symbols, FieldNames).ConfigureAwait(false);
+                expando = await MakeRequest(symbolList, FieldNames).ConfigureAwait(false);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -99,7 +101,7 @@ namespace YahooQuotesApi
             return securities;
         }
 
-        private async Task<dynamic> MakeRequest(IList<string> symbols, IList<string> fields)
+        private async Task<dynamic> MakeRequest(IList<string> symbols, List<string> fields)
         {
             if (symbols.Any(x => string.IsNullOrWhiteSpace(x)) || !symbols.Any())
                 throw new ArgumentException(nameof(symbols));
