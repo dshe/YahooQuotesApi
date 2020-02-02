@@ -6,25 +6,16 @@
 - dependencies: NodaTime, Flurl, CsvHelper
 - simple and intuitive API
 - tested
-
 ```csharp
-using YahooQuotesApi;
 using NodaTime;
+using YahooQuotesApi;
 ```
 #### Quote Snapshots
 ```csharp
-Security? security = await new YahooSnapshot()
-  .GetAsync("C");
+YahooSnapshot Snapshot = new YahooSnapshot();
 
-if (security == null)
-    throw new NullReferenceException("Invalid Symbol: C");
-Assert.True(security.RegularMarketPrice > 0);
-```
-```csharp
-Dictionary<string, Security?> securities = await new YahooSnapshot()
-  .GetAsync(new[] { "C", "MSFT" });
+Dictionary<string, Security?> securities = await Snapshot.GetAsync(new[] { "C", "MSFT" });
 
-Assert.Equal(2, securities.Count);
 Security? msft = securities["MSFT"];
 if (msft == null)
     throw new NullReferenceException("Invalid Symbol: MSFT");
@@ -32,27 +23,21 @@ Assert.True(msft.RegularMarketVolume > 0);
 ```
 #### Quote History
 ```csharp
-IList<HistoryTick>? ticks = await new YahooHistory()
-    .Period(Duration.FromDays(10))
-    .GetHistoryAsync("C");
+YahooHistory History = new YahooHistory();
 
-if (ticks == null)
-    throw new Exception("Invalid symbol: C");
-Assert.True(ticks[0].Close > 0);
-```
-```csharp
-Dictionary<string, List<HistoryTick>?> tickLists = await new YahooHistory()
+Dictionary<string, List<HistoryTick>?> tickLists = await History
   .GetHistoryAsync(new[] { "C", "MSFT" });
 
-Assert.Equal(2 , tickLists.Count);
-IList<HistoryTick>? tickList = tickLists["C"];
+List<HistoryTick>? tickList = tickLists["C"];
 if (tickList == null)
     throw new Exception("Invalid symbol: C");
 Assert.True(tickList[0].Close > 0);
 ```
 #### Dividend History
 ```csharp
-IList<DividendTick>? dividends = await new YahooHistory()
+YahooHistory History = new YahooHistory();
+
+List<DividendTick>? dividends = await History
     .Period("America/New_York".ToDateTimeZone(), new LocalDate(2016, 2, 4), new LocalDate(2016, 2, 5))
     .GetDividendsAsync("AAPL");
 
@@ -60,7 +45,9 @@ Assert.Equal(0.52m, dividends[0].Dividend);
 ```
 #### Split History
 ```csharp
-IList<SplitTick>? splits = await new YahooHistory()
+YahooHistory History = new YahooHistory();
+
+List<SplitTick>? splits = await History
     .Period("America/New_York".ToDateTimeZone(), new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
     .GetSplitsAsync("AAPL");
     
