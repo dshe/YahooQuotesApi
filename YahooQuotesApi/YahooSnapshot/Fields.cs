@@ -2,7 +2,7 @@
 {
     public enum Field
     {
-        // Fields.cs: 71. This list was generated automatically from names been defined by Yahoo.
+        // Fields.cs: 67. This list was generated automatically from names been defined by Yahoo.
         Ask,
         AskSize,
         AverageDailyVolume10Day,
@@ -43,10 +43,6 @@
         MarketCap,
         MarketState,
         MessageBoardId,
-        PreMarketChange,
-        PreMarketChangePercent,
-        PreMarketPrice,
-        PreMarketTime,
         PriceHint,
         PriceToBook,
         QuoteSourceName,

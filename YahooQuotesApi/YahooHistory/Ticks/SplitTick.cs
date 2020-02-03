@@ -1,4 +1,5 @@
 ﻿using NodaTime;
+using System;
 
 namespace YahooQuotesApi
 {
@@ -11,13 +12,11 @@ namespace YahooQuotesApi
         private SplitTick(string[]row)
         {
             Date = row[0].ToLocalDate();
-
-            var split = row[1].Split('/');
-            if (split.Length == 2)
-            {
-                BeforeSplit = split[0].ToDecimal();
-                AfterSplit = split[1].ToDecimal();
-            }
+            var split = row[1].Split(new[] { ':', '/' });
+            if (split.Length != 2)
+                throw new Exception("Split separator not found");
+            AfterSplit = split[0].ToDecimal();
+            BeforeSplit = split[1].ToDecimal();
         }
 
         internal static SplitTick? Create(string[] row)

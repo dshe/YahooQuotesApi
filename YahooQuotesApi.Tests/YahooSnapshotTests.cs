@@ -101,10 +101,10 @@ namespace YahooQuotesApi.Tests
             Security security = await new YahooSnapshot().GetAsync("AAPL") ?? throw new Exception("bad symbol");
 
             // String or enum indexers return dynamic type.
-            security.Fields.TryGetValue("Bid", out dynamic? bid2);
-            bid2 = security.Fields["Bid"];
-            bid2 = security["Bid"];
-            bid2 = security[Field.Bid];
+            //security.Fields.TryGetValue("Bid", out dynamic? bid2);
+            //bid2 = security.Fields["Bid"];
+            //bid2 = security["Bid"];
+            //bid2 = security[Field.Bid];
 
             Assert.Equal("Apple Inc.", security["LongName"]);
         }

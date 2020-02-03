@@ -29,7 +29,7 @@ namespace YahooQuotesApi
             return Fields.TryGetValue(name, out dynamic val) ? val : null;
         }
 
-        // Security.cs: 71. This list was generated automatically from names defined by Yahoo.
+        // Security.cs: 67. This list was generated automatically from names defined by Yahoo.
         public Double? Ask => Get();
         public Int64? AskSize => Get();
         public Int64? AverageDailyVolume10Day => Get();
@@ -70,10 +70,6 @@ namespace YahooQuotesApi
         public Int64? MarketCap => Get();
         public String? MarketState => Get();
         public String? MessageBoardId => Get();
-        public Double? PreMarketChange => Get();
-        public Double? PreMarketChangePercent => Get();
-        public Double? PreMarketPrice => Get();
-        public Int64? PreMarketTime => Get();
         public Int64? PriceHint => Get();
         public Double? PriceToBook => Get();
         public String? QuoteSourceName => Get();
