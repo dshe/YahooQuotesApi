@@ -11,6 +11,7 @@ using System.Net;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Globalization;
 
 namespace YahooQuotesApi
 {
@@ -21,8 +22,8 @@ namespace YahooQuotesApi
         private Instant Start, End = Instant.MaxValue;
         private Frequency Frequency = Frequency.Daily;
 
-        public YahooHistory(ILogger<YahooSnapshot> logger, CancellationToken ct = default) => (Logger, Ct) = (logger, ct);
-        public YahooHistory(CancellationToken ct = default) : this(NullLogger<YahooSnapshot>.Instance, ct) { }
+        public YahooHistory(ILogger<YahooHistory> logger, CancellationToken ct = default) => (Logger, Ct) = (logger, ct);
+        public YahooHistory(CancellationToken ct = default) : this(NullLogger<YahooHistory>.Instance, ct) { }
 
         public YahooHistory Period(Instant start, Instant end)
         {
@@ -117,11 +118,13 @@ namespace YahooQuotesApi
         {
             using var stream = await GetResponseStreamAsync(symbol, tickParam).ConfigureAwait(false);
             using var sr = new StreamReader(stream);
-            using var csvReader = new CsvReader(sr);
+            //var str = await sr.ReadToEndAsync().ConfigureAwait(false);
+            using var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture);
 
             var ticks = new List<ITick>();
 
-            csvReader.Read(); // skip header
+            if (!csvReader.Read()) // skip header
+                throw new Exception("Did not read headers.");
 
             while (csvReader.Read())
             {

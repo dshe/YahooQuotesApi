@@ -9,13 +9,21 @@ using NodaTime;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MXLogger;
 
 namespace YahooQuotesApi.Tests
 {
     public class YahooHistoryTests
     {
         private readonly Action<string> Write;
-        public YahooHistoryTests(ITestOutputHelper output) => Write = output.WriteLine;
+        ILogger Logger;
+        ILoggerFactory LoggerFactory;
+        public YahooHistoryTests(ITestOutputHelper output)
+        {
+            Write = output.WriteLine;
+            LoggerFactory = new LoggerFactory().AddMXLogger(Write);
+            Logger = LoggerFactory.CreateLogger<YahooHistoryTests>();
+        }
 
         [Fact]
         public async Task SimpleTest()
@@ -152,11 +160,13 @@ namespace YahooQuotesApi.Tests
         public async Task TestSplit()
         {
             DateTimeZone dateTimeZone = "America/New_York".ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timezone");
-            IList<SplitTick>? splits = await new YahooHistory()
-                .Period(dateTimeZone, new LocalDate(2014, 6, 8), new LocalDate(2014, 6, 10))
+            IList<SplitTick>? splits = await new YahooHistory(LoggerFactory.CreateLogger<YahooHistory>())
+                .Period(dateTimeZone, new LocalDate(2014, 1, 1), new LocalDate(2020, 1, 1))
                 .GetSplitsAsync("AAPL");
             if (splits == null)
                 throw new Exception("Invalid symbol");
+            if (!splits.Any())
+                throw new Exception("No splits found");
             Assert.Equal(1, splits[0].BeforeSplit);
             Assert.Equal(7, splits[0].AfterSplit);
         }
@@ -357,7 +367,7 @@ namespace YahooQuotesApi.Tests
             var cts = new CancellationTokenSource();
             //cts.CancelAfter(20);
 
-            var task = new YahooHistory(null, cts.Token).Period(Duration.FromDays(10)).GetHistoryAsync(GetSymbols(5));
+            var task = new YahooHistory(cts.Token).Period(Duration.FromDays(10)).GetHistoryAsync(GetSymbols(5));
 
             cts.Cancel();
 

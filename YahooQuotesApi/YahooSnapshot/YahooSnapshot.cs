@@ -20,11 +20,8 @@ namespace YahooQuotesApi
         private readonly CancellationToken Ct;
         private readonly List<string> FieldNames = new List<string>();
 
-        public YahooSnapshot(ILogger<YahooSnapshot>? logger = null, CancellationToken ct = default)
-        {
-            Logger = logger ?? NullLogger<YahooSnapshot>.Instance;
-            Ct = ct;
-        }
+        public YahooSnapshot(CancellationToken ct = default) : this(NullLogger<YahooSnapshot>.Instance, ct) { }
+        public YahooSnapshot(ILogger<YahooSnapshot> logger, CancellationToken ct = default) => (Logger, Ct) = (logger, ct);
 
         public YahooSnapshot Fields(params Field[] fields) => Fields(fields.ToList());
         public YahooSnapshot Fields(IEnumerable<Field> fields) => Fields(fields.Select(f => f.ToString()).ToList());
