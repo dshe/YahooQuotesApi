@@ -29,7 +29,7 @@ namespace YahooQuotesApi
             return Fields.TryGetValue(name, out dynamic val) ? val : null;
         }
 
-        // Security.cs: 69. This list was generated automatically from names defined by Yahoo.
+        // Security.cs: 71. This list was generated automatically from names defined by Yahoo.
         public Double? Ask => Get();
         public Int64? AskSize => Get();
         public Int64? AverageDailyVolume10Day => Get();
@@ -60,6 +60,7 @@ namespace YahooQuotesApi
         public Double? FiftyTwoWeekLowChangePercent => Get();
         public String? FiftyTwoWeekRange => Get();
         public String? FinancialCurrency => Get();
+        public Int64? FirstTradeDateMilliseconds => Get();
         public Double? ForwardPE => Get();
         public String? FullExchangeName => Get();
         public Int64? GmtOffSetMilliseconds => Get();
@@ -69,10 +70,10 @@ namespace YahooQuotesApi
         public Int64? MarketCap => Get();
         public String? MarketState => Get();
         public String? MessageBoardId => Get();
-        public Double? PostMarketChange => Get();
-        public Double? PostMarketChangePercent => Get();
-        public Double? PostMarketPrice => Get();
-        public Int64? PostMarketTime => Get();
+        public Double? PreMarketChange => Get();
+        public Double? PreMarketChangePercent => Get();
+        public Double? PreMarketPrice => Get();
+        public Int64? PreMarketTime => Get();
         public Int64? PriceHint => Get();
         public Double? PriceToBook => Get();
         public String? QuoteSourceName => Get();
@@ -96,6 +97,7 @@ namespace YahooQuotesApi
         public Double? TrailingAnnualDividendRate => Get();
         public Double? TrailingAnnualDividendYield => Get();
         public Double? TrailingPE => Get();
+        public Boolean? Triggerable => Get();
         public Double? TwoHundredDayAverage => Get();
         public Double? TwoHundredDayAverageChange => Get();
         public Double? TwoHundredDayAverageChangePercent => Get();

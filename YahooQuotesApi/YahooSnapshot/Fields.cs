@@ -2,7 +2,7 @@
 {
     public enum Field
     {
-        // Fields.cs: 69. This list was generated automatically. These names have been defined by Yahoo.
+        // Fields.cs: 71. This list was generated automatically from names been defined by Yahoo.
         Ask,
         AskSize,
         AverageDailyVolume10Day,
@@ -33,6 +33,7 @@
         FiftyTwoWeekLowChangePercent,
         FiftyTwoWeekRange,
         FinancialCurrency,
+        FirstTradeDateMilliseconds,
         ForwardPE,
         FullExchangeName,
         GmtOffSetMilliseconds,
@@ -42,10 +43,10 @@
         MarketCap,
         MarketState,
         MessageBoardId,
-        PostMarketChange,
-        PostMarketChangePercent,
-        PostMarketPrice,
-        PostMarketTime,
+        PreMarketChange,
+        PreMarketChangePercent,
+        PreMarketPrice,
+        PreMarketTime,
         PriceHint,
         PriceToBook,
         QuoteSourceName,
@@ -69,6 +70,7 @@
         TrailingAnnualDividendRate,
         TrailingAnnualDividendYield,
         TrailingPE,
+        Triggerable,
         TwoHundredDayAverage,
         TwoHundredDayAverageChange,
         TwoHundredDayAverageChangePercent

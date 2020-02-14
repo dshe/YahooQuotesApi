@@ -16,11 +16,11 @@ namespace YahooQuotesApi
             Dividend = row[1].ToDecimal();
         }
 
-        internal static DividendTick? Create(string[] row, bool ignoreEmptyRows)
+        internal static DividendTick? Create(string[] row)
         {
             var tick = new DividendTick(row);
 
-            if (ignoreEmptyRows && tick.Dividend == 0)
+            if (tick.Dividend == 0)
                 return null;
 
             return tick;

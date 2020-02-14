@@ -23,14 +23,13 @@ namespace YahooQuotesApi
             Volume = row[6].ToInt64();
         }
 
-        internal static HistoryTick? Create(string[] row, bool ignoreEmptyRows)
+        internal static HistoryTick? Create(string[] row)
         {
             var tick = new HistoryTick(row);
 
-            if (ignoreEmptyRows &&
-                tick.Open == 0 && tick.High == 0 && tick.Low == 0 && tick.Close == 0 &&
-                tick.AdjustedClose == 0 && tick.Volume == 0)
-                return null;
+            if (tick.Open == 0 && tick.High == 0 && tick.Low == 0 && tick.Close == 0
+                && tick.AdjustedClose == 0 && tick.Volume == 0)
+                    return null;
 
             return tick;
         }

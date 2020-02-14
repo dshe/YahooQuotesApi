@@ -20,11 +20,11 @@ namespace YahooQuotesApi
             }
         }
 
-        internal static SplitTick? Create(string[] row, bool ignoreEmptyRows)
+        internal static SplitTick? Create(string[] row)
         {
             var tick = new SplitTick(row);
 
-            if (ignoreEmptyRows && tick.AfterSplit == 0 && tick.BeforeSplit == 0)
+            if (tick.AfterSplit == 0 && tick.BeforeSplit == 0)
                 return null;
 
             return tick;
