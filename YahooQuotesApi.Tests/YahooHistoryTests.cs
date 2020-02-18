@@ -16,13 +16,11 @@ namespace YahooQuotesApi.Tests
     public class YahooHistoryTests
     {
         private readonly Action<string> Write;
-        ILogger Logger;
-        ILoggerFactory LoggerFactory;
+        private readonly ILoggerFactory LoggerFactory;
         public YahooHistoryTests(ITestOutputHelper output)
         {
             Write = output.WriteLine;
             LoggerFactory = new LoggerFactory().AddMXLogger(Write);
-            Logger = LoggerFactory.CreateLogger<YahooHistoryTests>();
         }
 
         [Fact]
@@ -232,9 +230,9 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(to, ticks.Last().Date);
 
             Assert.Equal(3, ticks.Count());
-            Assert.Equal(14.8567m, ticks[0].Close);
-            Assert.Equal(14.8082m, ticks[1].Close);
-            Assert.Equal(14.8567m, ticks[2].Close);
+            Assert.Equal(15.30m, ticks[0].Close);
+            Assert.Equal(15.25m, ticks[1].Close);
+            Assert.Equal(15.30m, ticks[2].Close);
         }
 
         [Theory]
