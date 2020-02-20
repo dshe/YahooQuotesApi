@@ -19,6 +19,7 @@ Dictionary<string, Security?> securities = await Snapshot.GetAsync(new[] { "C", 
 Security? msft = securities["MSFT"];
 if (msft == null)
     throw new NullReferenceException("Invalid Symbol: MSFT");
+
 Assert.True(msft.RegularMarketVolume > 0);
 ```
 #### Price History
@@ -31,6 +32,7 @@ Dictionary<string, List<PriceTick>?> tickLists = await History
 List<PriceTick>? tickList = tickLists["C"];
 if (tickList == null)
     throw new Exception("Invalid symbol: C");
+
 Assert.True(tickList[0].Close > 0);
 ```
 #### Dividend History
@@ -57,11 +59,13 @@ List<SplitTick>? splits = await History
 Assert.Equal(1, splits[0].BeforeSplit);
 Assert.Equal(7, splits[0].AfterSplit);
 ```
-#### Currency History (https://www.bankofengland.co.uk)
+#### Currency Rate History (https://www.bankofengland.co.uk)
 ```csharp
-CurrencyHistory CurrencyHistory = new CurrencyHistory();
+CurrencyHistory CurrencyRateHistory = new CurrencyRateHistory();
 
-List<CurrencyTick> tickList = await CurrencyHistory
+List<CurrencyTick> tickList = await CurrencyRateHistory
     .Period(Duration.FromDays(100))
     .GetPricesAsync("EURJPY=X");
+    
+Assert.NotEmpty(tickList);    
 ```
