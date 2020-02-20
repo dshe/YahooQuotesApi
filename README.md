@@ -37,9 +37,11 @@ Assert.True(tickList[0].Close > 0);
 ```csharp
 YahooHistory History = new YahooHistory();
 
+DateTimeZone timeZone = "America/New_York".ToTimeZone();
+
 List<DividendTick>? dividends = await History
-    .Period(new LocalDate(2016, 2, 4).AtStartOfDayInZone(dateTimeZone).ToInstant(), 
-            new LocalDate(2016, 2, 5).AtStartOfDayInZone(dateTimeZone).ToInstant())
+    .Period(new LocalDate(2016, 2, 4).AtStartOfDayInZone(timeZone).ToInstant(), 
+            new LocalDate(2016, 2, 5).AtStartOfDayInZone(timeZone).ToInstant())
     .GetDividendsAsync("AAPL");
 
 Assert.Equal(0.52m, dividends[0].Dividend);
