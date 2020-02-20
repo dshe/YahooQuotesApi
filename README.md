@@ -21,14 +21,14 @@ if (msft == null)
     throw new NullReferenceException("Invalid Symbol: MSFT");
 Assert.True(msft.RegularMarketVolume > 0);
 ```
-#### Quote History
+#### Price History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-Dictionary<string, List<HistoryTick>?> tickLists = await History
-  .GetHistoryAsync(new[] { "C", "MSFT" });
+Dictionary<string, List<PriceTick>?> tickLists = await History
+  .GetPricesAsync(new[] { "C", "MSFT" });
 
-List<HistoryTick>? tickList = tickLists["C"];
+List<PriceTick>? tickList = tickLists["C"];
 if (tickList == null)
     throw new Exception("Invalid symbol: C");
 Assert.True(tickList[0].Close > 0);
