@@ -57,3 +57,11 @@ List<SplitTick>? splits = await History
 Assert.Equal(1, splits[0].BeforeSplit);
 Assert.Equal(7, splits[0].AfterSplit);
 ```
+#### Currency History
+```csharp
+CurrencyHistory CurrencyHistory = new CurrencyHistory();
+
+List<CurrencyTick> tickList = await CurrencyHistory
+    .Period(Duration.FromDays(100))
+    .GetPricesAsync("JPYEUR=X");
+```
