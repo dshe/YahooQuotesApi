@@ -57,11 +57,11 @@ List<SplitTick>? splits = await History
 Assert.Equal(1, splits[0].BeforeSplit);
 Assert.Equal(7, splits[0].AfterSplit);
 ```
-#### Currency History
+#### Currency History (https://www.bankofengland.co.uk)
 ```csharp
 CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
 List<CurrencyTick> tickList = await CurrencyHistory
     .Period(Duration.FromDays(100))
-    .GetPricesAsync("JPYEUR=X");
+    .GetPricesAsync("EURJPY=X");
 ```
