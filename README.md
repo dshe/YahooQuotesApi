@@ -38,7 +38,8 @@ Assert.True(tickList[0].Close > 0);
 YahooHistory History = new YahooHistory();
 
 List<DividendTick>? dividends = await History
-    .Period("America/New_York".ToDateTimeZone(), new LocalDate(2016, 2, 4), new LocalDate(2016, 2, 5))
+    .Period(new LocalDate(2016, 2, 4).AtStartOfDayInZone(dateTimeZone).ToInstant(), 
+            new LocalDate(2016, 2, 5).AtStartOfDayInZone(dateTimeZone).ToInstant())
     .GetDividendsAsync("AAPL");
 
 Assert.Equal(0.52m, dividends[0].Dividend);
@@ -48,7 +49,7 @@ Assert.Equal(0.52m, dividends[0].Dividend);
 YahooHistory History = new YahooHistory();
 
 List<SplitTick>? splits = await History
-    .Period(new LocalDate(2016, 2, 4).AtStartOfDayInZone("America/New_York".ToTimeZone()).ToInstant())
+    .Period(new LocalDate(2014, 1, 1).AtStartOfDayInZone("America/New_York".ToTimeZone()).ToInstant())
     .GetSplitsAsync("AAPL");
     
 Assert.Equal(1, splits[0].BeforeSplit);
