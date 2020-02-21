@@ -14,58 +14,56 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-Dictionary<string, Security?> securities = await Snapshot.GetAsync(new[] { "C", "MSFT" });
+Security? security = await Snapshot.GetAsync("C");
 
-Security? msft = securities["MSFT"];
-if (msft == null)
-    throw new NullReferenceException("Invalid Symbol: MSFT");
+if (security == null)
+    throw new Exception("Invalid Symbol: C");
 
-Assert.True(msft.RegularMarketVolume > 0);
+Assert.True(security.RegularMarketVolume > 0);
 ```
 #### Price History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-Dictionary<string, List<PriceTick>?> tickLists = await History
-  .GetPricesAsync(new[] { "C", "MSFT" });
+List<PriceTick>? ticks = await History.Period(90).GetPricesAsync("C");
 
-List<PriceTick>? tickList = tickLists["C"];
-if (tickList == null)
+if (ticks == null)
     throw new Exception("Invalid symbol: C");
 
-Assert.True(tickList[0].Close > 0);
+Assert.NotEmpty(ticks);
 ```
 #### Dividend History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-DateTimeZone timeZone = "America/New_York".ToTimeZone();
+List<DividendTick>? dividends = await History.GetDividendsAsync("AAPL");
 
-List<DividendTick>? dividends = await History
-    .Period(new LocalDate(2016, 2, 4).AtStartOfDayInZone(timeZone).ToInstant(), 
-            new LocalDate(2016, 2, 5).AtStartOfDayInZone(timeZone).ToInstant())
-    .GetDividendsAsync("AAPL");
+if (dividends == null)
+    throw new Exception("Invalid symbol: AAPL");
 
-Assert.Equal(0.52m, dividends[0].Dividend);
+Assert.NotEmpty(dividends);
 ```
 #### Split History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<SplitTick>? splits = await History
-    .Period(new LocalDate(2014, 1, 1).AtStartOfDayInZone("America/New_York".ToTimeZone()).ToInstant())
-    .GetSplitsAsync("AAPL");
-    
-Assert.Equal(1, splits[0].BeforeSplit);
-Assert.Equal(7, splits[0].AfterSplit);
+List<SplitTick>? splits = await History.GetSplitsAsync("AAPL");
+
+if (splits == null)
+    throw new Exception("Invalid symbol: AAPL");
+
+Assert.NotEmpty(splits);
 ```
 #### Currency Rate History (https://www.bankofengland.co.uk)
 ```csharp
-CurrencyHistory CurrencyRateHistory = new CurrencyRateHistory();
+CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
-List<CurrencyTick> tickList = await CurrencyRateHistory
-    .Period(Duration.FromDays(100))
+List<CurrencyTick>? rates = await CurrencyHistory
+    .Period(100)
     .GetPricesAsync("EURJPY=X");
-    
-Assert.NotEmpty(tickList);    
+
+if (rates == null)
+    throw new Exception("Invalid symbol: EURJPY=X");
+
+Assert.NotEmpty(rates);    
 ```
