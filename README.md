@@ -60,7 +60,7 @@ CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
 List<RateTick>? rates = await CurrencyHistory
     .Period(100)
-    .GetPricesAsync("EURJPY=X");
+    .GetRatesAsync("EURJPY=X");
 
 if (rates == null)
     throw new Exception("Invalid symbol: EURJPY=X");
