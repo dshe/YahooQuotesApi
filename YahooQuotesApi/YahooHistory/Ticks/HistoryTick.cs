@@ -2,7 +2,7 @@
 
 namespace YahooQuotesApi
 {
-    public sealed class HistoryTick: ITick
+    public sealed class PriceTick: ITick
     {
         public LocalDate Date { get; }
         public decimal Open { get; }
@@ -12,7 +12,7 @@ namespace YahooQuotesApi
         public decimal AdjustedClose { get; }
         public long Volume { get; }
 
-        private HistoryTick(string[] row)
+        private PriceTick(string[] row)
         {
             Date = row[0].ToLocalDate();
             Open = row[1].ToDecimal();
@@ -23,9 +23,9 @@ namespace YahooQuotesApi
             Volume = row[6].ToInt64();
         }
 
-        internal static HistoryTick? Create(string[] row)
+        internal static PriceTick? Create(string[] row)
         {
-            var tick = new HistoryTick(row);
+            var tick = new PriceTick(row);
 
             if (tick.Open == 0 && tick.High == 0 && tick.Low == 0 && tick.Close == 0
                 && tick.AdjustedClose == 0 && tick.Volume == 0)

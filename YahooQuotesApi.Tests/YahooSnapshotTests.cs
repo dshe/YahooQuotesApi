@@ -151,7 +151,7 @@ namespace YahooQuotesApi.Tests
             Write("ZonedDateTime: " + zdt);
 
             // Using the provided extension methods:
-            timeZone = security.ExchangeTimezoneName?.ToDateTimeZoneOrNull() ?? throw new Exception("Invalid timeZone");
+            timeZone = security.ExchangeTimezoneName?.ToTimeZone() ?? throw new TimeZoneNotFoundException(security.ExchangeTimezoneName);
 
             ZonedDateTime? zdt2 = security.RegularMarketTime?.ToZonedDateTime(timeZone);
             Assert.Equal(zdt, zdt2);
@@ -178,7 +178,7 @@ namespace YahooQuotesApi.Tests
         public async Task TestInternationalStocks(string symbol)
         {
             Security security = await new YahooSnapshot().GetAsync(symbol) ?? throw new Exception("invalid symbol: " + symbol);
-            DateTimeZone timeZone = security.ExchangeTimezoneName?.ToDateTimeZoneOrNull() ?? throw new Exception("Invalid time zone");
+            DateTimeZone timeZone = security.ExchangeTimezoneName?.ToTimeZoneOrNull() ?? throw new TimeZoneNotFoundException(security.ExchangeTimezoneName);
             ZonedDateTime? zdt = security.RegularMarketTime?.ToZonedDateTime(timeZone);
 
             Write($"Symbol:        {symbol}");

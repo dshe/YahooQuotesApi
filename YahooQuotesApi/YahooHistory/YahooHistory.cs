@@ -19,7 +19,7 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly CancellationToken Ct;
-        private Instant Start, End = Instant.MaxValue;
+        private Instant Start = Instant.MinValue, End = Instant.MaxValue;
         private Frequency Frequency = Frequency.Daily;
 
         public YahooHistory(ILogger<YahooHistory> logger, CancellationToken ct = default) => (Logger, Ct) = (logger, ct);
@@ -27,8 +27,6 @@ namespace YahooQuotesApi
 
         public YahooHistory Period(Instant start, Instant end)
         {
-            if (start > Utility.Clock.GetCurrentInstant())
-                throw new ArgumentException("start > now");
             if (start > end)
                 throw new ArgumentException("start > end");
             Start = start;
@@ -36,21 +34,13 @@ namespace YahooQuotesApi
             return this;
         }
         public YahooHistory Period(Instant start) => Period(start, Instant.MaxValue);
-        public YahooHistory Period(Duration duration) => Period(Utility.Clock.GetCurrentInstant().Minus(duration));
-        public YahooHistory Period(DateTimeZone timeZone, LocalDate start, LocalDate end)
-        {
-            var startSeconds = start.At(new LocalTime(16, 0)).InZoneLeniently(timeZone).ToInstant();
-            var endSeconds = (end == LocalDate.MaxIsoValue) ? Instant.MaxValue : end.At(new LocalTime(16, 0)).InZoneLeniently(timeZone).ToInstant();
-            return Period(startSeconds, endSeconds);
-        }
-        public YahooHistory Period(DateTimeZone timeZone, LocalDate start) => Period(timeZone, start, LocalDate.MaxIsoValue);
+        public YahooHistory Period(int days) => Period(Utility.Clock.GetCurrentInstant().Minus(Duration.FromDays(days))); // approximate
 
+        public Task<List<PriceTick>?> GetPricesAsync(string symbol, Frequency frequency = Frequency.Daily) =>
+            GetTicksAsync<PriceTick>(symbol, frequency);
 
-        public Task<List<HistoryTick>?> GetHistoryAsync(string symbol, Frequency frequency = Frequency.Daily) =>
-            GetTicksAsync<HistoryTick>(symbol, frequency);
-
-        public Task<Dictionary<string, List<HistoryTick>?>> GetHistoryAsync(IEnumerable<string> symbols, Frequency frequency = Frequency.Daily) =>
-            GetTicksAsync<HistoryTick>(symbols, frequency);
+        public Task<Dictionary<string, List<PriceTick>?>> GetPricesAsync(IEnumerable<string> symbols, Frequency frequency = Frequency.Daily) =>
+            GetTicksAsync<PriceTick>(symbols, frequency);
 
         public Task<List<DividendTick>?> GetDividendsAsync(string symbol) =>
             GetTicksAsync<DividendTick>(symbol);
@@ -160,7 +150,7 @@ namespace YahooQuotesApi
             {
                 var url = "https://query1.finance.yahoo.com/v7/finance/download"
                     .AppendPathSegment(symbol)
-                    .SetQueryParam("period1", Start.ToUnixTimeSeconds())
+                    .SetQueryParam("period1", Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())
                     .SetQueryParam("period2", End.ToUnixTimeSeconds())
                     .SetQueryParam("interval", $"1{Frequency.Name()}")
                     .SetQueryParam("events", tickParam)

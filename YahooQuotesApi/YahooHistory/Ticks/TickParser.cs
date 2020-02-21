@@ -7,13 +7,13 @@ namespace YahooQuotesApi
 {
     internal static class TickParser
     {
-        private static readonly LocalDatePattern Pattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
+        private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
         internal static string GetParamFromType<ITick>()
         {
             var type = typeof(ITick);
 
-            if (type == typeof(HistoryTick))
+            if (type == typeof(PriceTick))
                 return "history";
             else if (type == typeof(DividendTick))
                 return "div";
@@ -28,8 +28,8 @@ namespace YahooQuotesApi
             var type = typeof(ITick);
             object? instance;
 
-            if (type == typeof(HistoryTick))
-                instance = HistoryTick.Create(row);
+            if (type == typeof(PriceTick))
+                instance = PriceTick.Create(row);
             else if (type == typeof(DividendTick))
                 instance = DividendTick.Create(row);
             else if (type == typeof(SplitTick))
@@ -42,7 +42,7 @@ namespace YahooQuotesApi
 
         internal static LocalDate ToLocalDate(this string str)
         {
-            var result = Pattern.Parse(str);
+            var result = DatePattern.Parse(str);
             return result.Success ? result.Value : throw new Exception($"Could not convert '{str}' to LocalDate.", result.Exception);
         }
 

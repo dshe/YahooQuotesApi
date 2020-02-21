@@ -17,8 +17,10 @@ namespace YahooQuotesApi
 
     public static class ExtensionMethods
     {
-        public static DateTimeZone? ToDateTimeZoneOrNull(this string name) =>
+        public static DateTimeZone? ToTimeZoneOrNull(this string name) =>
             DateTimeZoneProviders.Tzdb.GetZoneOrNull(name);
+        public static DateTimeZone ToTimeZone(this string name) =>
+            DateTimeZoneProviders.Tzdb.GetZoneOrNull(name) ?? throw new TimeZoneNotFoundException(name);
 
         public static ZonedDateTime ToZonedDateTime(this long unixTimeSeconds, DateTimeZone zone) =>
             Instant.FromUnixTimeSeconds(unixTimeSeconds).InZone(zone);
