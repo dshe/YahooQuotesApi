@@ -58,7 +58,7 @@ Assert.NotEmpty(splits);
 ```csharp
 CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
-List<CurrencyTick>? rates = await CurrencyHistory
+List<RateTick>? rates = await CurrencyHistory
     .Period(100)
     .GetPricesAsync("EURJPY=X");
 
