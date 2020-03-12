@@ -11,7 +11,6 @@ namespace YahooQuotesApi
     {
         public IReadOnlyDictionary<string, dynamic> Fields { get; }
 
-        // ctor
         internal Security(IDictionary<string, dynamic> dictionary)
         {
             var fields = new Dictionary<string, dynamic>(StringComparer.OrdinalIgnoreCase);

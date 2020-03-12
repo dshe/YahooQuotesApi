@@ -14,40 +14,38 @@ namespace YahooQuotesApi.Tests
     public class CurrencyHistoryTests
     {
         private readonly Action<string> Write;
-        private readonly CurrencyHistory CurrencyHistory;
+        private readonly ILogger<CurrencyHistory> Logger;
         public CurrencyHistoryTests(ITestOutputHelper output)
         {
             Write = output.WriteLine;
             var loggerFactory = new LoggerFactory().AddMXLogger(Write);
-            CurrencyHistory = new CurrencyHistory(loggerFactory.CreateLogger<CurrencyHistory>());
+            Logger = loggerFactory.CreateLogger<CurrencyHistory>();
         }
 
         [Fact]
         public async Task Example()
         {
-            List<RateTick>? ticks = await new CurrencyHistory()
-                .Period(30)
-                .GetRatesAsync("EURJPY=X");
-
+            List<RateTick>? ticks = await new CurrencyHistory(30, Logger).GetRatesAsync("USDCAD=X");
             Assert.NotEmpty(ticks);
         }
 
         [Fact]
         public async Task BadSymbol()
         {
-            await Assert.ThrowsAsync<ArgumentException>(async () => await CurrencyHistory.GetRatesAsync("X"));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await new CurrencyHistory(Logger).GetRatesAsync("X"));
         }
 
         [Fact]
         public async Task SymbolNotFound()
         {
-            Assert.Null(await CurrencyHistory.GetRatesAsync("ABCDEF=X"));
+            Assert.Null(await new CurrencyHistory(Logger).GetRatesAsync("ABCDEF=X"));
         }
 
         [Fact]
         public async Task GoodSymbols()
         {
             var date = new LocalDate(2020, 1, 7);
+            var currencyHistory = new CurrencyHistory(date, date, Logger);
 
             var rate1 = await GetRate("USDJPY=X", date);
             Assert.Equal(108.61m, rate1);
@@ -64,11 +62,27 @@ namespace YahooQuotesApi.Tests
             // local method
             async Task<decimal> GetRate(string symbol, LocalDate date)
             {
-                var list = await CurrencyHistory.Period(date, date).GetRatesAsync(symbol);
+                var list = await currencyHistory.GetRatesAsync(symbol);
                 var result = list.Single();
                 Assert.Equal(date, result.Date);
                 return result.Rate;
             }
+        }
+        [Fact]
+        public async Task ManyRates()
+        {
+            List<RateTick>? ticks = await new CurrencyHistory(Logger).GetRatesAsync("USDMYR=X");
+            Assert.NotEmpty(ticks);
+            Write($"Days downloaded: {ticks!.Count}.");
+        }
+
+        [Fact]
+        public async Task ManySymbols()
+        {
+            Dictionary<string,List<RateTick>?> results = 
+                await new CurrencyHistory(30, Logger)
+                .GetRatesAsync(new[] { "USDMYR=X", "CADUSD=X", "EURCNY=X"});
+            Assert.Equal(3, results.Count);
         }
     }
 }

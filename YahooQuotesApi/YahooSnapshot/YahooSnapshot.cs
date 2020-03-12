@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,11 +18,10 @@ namespace YahooQuotesApi
     public sealed class YahooSnapshot
     {
         private readonly ILogger Logger;
-        private readonly CancellationToken Ct;
         private readonly List<string> FieldNames = new List<string>();
 
-        public YahooSnapshot(CancellationToken ct = default) : this(NullLogger<YahooSnapshot>.Instance, ct) { }
-        public YahooSnapshot(ILogger<YahooSnapshot> logger, CancellationToken ct = default) => (Logger, Ct) = (logger, ct);
+        public YahooSnapshot() : this(NullLogger<YahooSnapshot>.Instance) { }
+        public YahooSnapshot(ILogger<YahooSnapshot> logger) => Logger = logger;
 
         public YahooSnapshot Fields(params Field[] fields) => Fields(fields.ToList());
         public YahooSnapshot Fields(IEnumerable<Field> fields) => Fields(fields.Select(f => f.ToString()).ToList());
@@ -38,87 +38,95 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public async Task<Security?> GetAsync(string symbol)
+        public async Task<Security?> GetAsync(string symbol, CancellationToken ct = default)
         {
-            dynamic expando;
-
-            try
-            {
-                expando = await MakeRequest(new[] { symbol }, FieldNames).ConfigureAwait(false);
-            }
-            catch (FlurlHttpException ex) when(ex.Call.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return null; // invalid symbol
-            }
-
-            dynamic quoteExpando = expando.quoteResponse;
-
-            if (quoteExpando.error != null)
-                throw new InvalidDataException($"GetAsync error: {quoteExpando.error}");
-
-            dynamic result = quoteExpando.result;
-
-            if (result.Count == 0) // invalid symbol
-                return null;
-
-            IDictionary<string, dynamic> dictionary = quoteExpando.result[0];
-
-            var security = new Security(dictionary);
-
-            return security;
+            var securities = await GetAsync(new string[] { symbol }, ct).ConfigureAwait(false);
+            return securities.Single().Value;
         }
 
-        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols)
+        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, CancellationToken ct = default)
         {
-            var symbolList = symbols.ToList();
+            if (symbols == null)
+                throw new ArgumentNullException(nameof(symbols));
+            if (!symbols.Any())
+                return new Dictionary<string, Security?>();
+            if (symbols.Any(s => string.IsNullOrEmpty(s) || s.Contains(" ")))
+                throw new ArgumentException(nameof(symbols));
+            symbols = new HashSet<string>(symbols, StringComparer.OrdinalIgnoreCase); // ignore duplicates
             var securities = new Dictionary<string, Security?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var symbol in symbolList)
+            foreach (var symbol in symbols)
                 securities.Add(symbol, null);
 
-            dynamic expando;
+            var urls = GetUrls(symbols, FieldNames);
+            var tasks = urls.Select(u => MakeRequest(u, ct));
 
-            try
+            foreach (var task in tasks)
             {
-                expando = await MakeRequest(symbolList, FieldNames).ConfigureAwait(false);
+                dynamic expando;
+                try
+                {
+                    expando = await task.ConfigureAwait(false);
+                }
+                catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // If there are no valid symbols, this exception is thrown by Flurl
+                    continue;
+                }
+
+                dynamic quoteExpando = expando.quoteResponse;
+
+                if (quoteExpando.error != null)
+                    throw new InvalidDataException($"GetAsync error: {quoteExpando.error}");
+
+                foreach (IDictionary<string, dynamic> dictionary in quoteExpando.result)
+                    securities[dictionary["symbol"]] = new Security(dictionary);
             }
-            catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                // If there are no valid symbols, this exception is thrown by Flurl
-                return securities;
-            }
-
-            dynamic quoteExpando = expando.quoteResponse;
-
-            if (quoteExpando.error != null)
-                throw new InvalidDataException($"GetAsync error: {quoteExpando.error}");
-
-            foreach (IDictionary<string, dynamic> dictionary in quoteExpando.result)
-                securities[dictionary["symbol"]] = new Security(dictionary);
-
             return securities;
         }
 
-        private async Task<dynamic> MakeRequest(IList<string> symbols, List<string> fields)
+        private async Task<dynamic> MakeRequest(string url, CancellationToken ct)
         {
-            if (symbols.Any(x => string.IsNullOrWhiteSpace(x)) || !symbols.Any())
-                throw new ArgumentException(nameof(symbols));
-            var duplicateSymbol = symbols.CaseInsensitiveDuplicates().FirstOrDefault();
-            if (duplicateSymbol != null)
-                throw new ArgumentException($"Duplicate symbol: {duplicateSymbol}.");
-
-            // IsEncoded = true: do not encode commas
-            var url = "https://query2.finance.yahoo.com/v7/finance/quote"
-                .SetQueryParam("symbols", string.Join(",", symbols), true);
-
-            if (fields.Any())
-                url = url.SetQueryParam("fields", string.Join(",", fields), true);
-
             Logger.LogInformation(url);
 
             return await url
-                .GetAsync(Ct)
+                .GetAsync(ct)
                 .ReceiveJson() // ExpandoObject
                 .ConfigureAwait(false);
         }
+
+        private static List<string> GetUrls(IEnumerable<string> symbols, List<string> fields)
+        {
+            const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote";
+            string fieldsUrl = fields.Any() ? $"&fields={string.Join(",", fields)}" : "";
+
+            return GetLists(symbols)
+                .Select(s => "?symbols=" + string.Join(",", s))
+                .Select(s => baseUrl + s + fieldsUrl)
+                .ToList();
+        }
+
+        private static List<List<string>> GetLists(IEnumerable<string> strings, int maxLength = 1000)
+        {
+            int len = 0;
+            var list = new List<string>();
+            var lists = new List<List<string>>();
+            lists.Add(list);
+
+            var enumerator = strings.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var str = enumerator.Current;
+                if (len + str.Length > maxLength)
+                {
+                    list = new List<string>();
+                    lists.Add(list);
+                    len = 0;
+                }
+                list.Add(str);
+                len += str.Length;
+            }
+            return lists;
+        }
+
     }
 }

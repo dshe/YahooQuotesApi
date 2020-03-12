@@ -16,7 +16,7 @@ namespace YahooQuotesApi
         }
     }
 
-    public sealed class RateTick : IComparable<RateTick>
+    public readonly struct RateTick : IComparable<RateTick>
     {
         public LocalDate Date { get; }
         public decimal Rate { get; }

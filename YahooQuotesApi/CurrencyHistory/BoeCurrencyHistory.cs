@@ -5,90 +5,100 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+
+/*
+https://www.bankofengland.co.uk/statistics/exchange-rates
+The data represent indicative middle market(mean of spot buying and selling)
+rates as observed by the Bank's Foreign Exchange Desk in the London interbank market around
+BOE uses non-standard currency symbols so we need to find them.
+These BoE currency rates are in units per USD(USDJPY = 100)
+*/
 
 namespace YahooQuotesApi
 {
 	internal class BoeCurrencyHistory
 	{
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
-        private static readonly HttpClient client = new HttpClient();
-        static BoeCurrencyHistory()
+        internal static readonly IReadOnlyDictionary<string, (string code, string name)> Symbols = new Dictionary<string, (string code, string name)>(StringComparer.OrdinalIgnoreCase)
         {
-            ServicePointManager.DefaultConnectionLimit = 16;
-            ServicePointManager.UseNagleAlgorithm = false;
-            client.Timeout = TimeSpan.FromSeconds(30); // default IS 100 seconds
-        }
-        private readonly ILogger Logger;
-        internal BoeCurrencyHistory(ILogger logger) => Logger = logger;
+            { "USD", ("USD", "US Dollar") },
+            { "AUD", ("ADD", "Australian Dollar") },
+            { "CAD", ("CDD", "Canadian Dollar") },
+            { "DKK", ("DKD", "Danish Krone") },
+            { "EUR", ("ERD", "Euro") },
+            { "HKD", ("HDD", "Hong Kong Dollar") },
+            { "JPY", ("JYD", "Japanese Yen") },
+            { "NZD", ("NDD", "New Zealand Dollar") },
+            { "NOK", ("NKD", "Norwegian Krone") },
+            { "CHF", ("SFD", "Swiss Franc") },
+            { "SGD", ("SGD", "Singapore Dollar") },
+            { "SEK", ("SKD", "Swedish Krona") },
+            { "GBP", ("GBD", "British Pound") },
+            { "SAR", ("SRD", "Saudi Riyal") },
+            { "TWD", ("TWD", "Taiwan Dollar") },
+            { "ZAR", ("ZRD", "South African Rand") },
 
-        // this is the complete list of currencies from Bank of England; BOE uses non-standard currency symbols so we need to find them
-        private string GetBoeSymbol(string symbol) => symbol switch
-        {
-            "USD" => "USD",
-            "AUD" => "ADD",
-			"CAD" => "CDD",
-			"DKK" => "DKD",
-			"EUR" => "ERD",
-			"HKD" => "HDD",
-            "JPY" => "JYD",
-			"NZD" => "NDD",
-			"NOK" => "NKD",
-			"CHF" => "SFD",
-			"SGD" => "SGD",
-			"SEK" => "SKD",
-			"GBP" => "GBD",
-			"SAR" => "SRD",
-			"TWD" => "TWD",
-			"ZAR" => "ZRD",
+            { "CYP", ("BK24", "Cyprus Pound") },
+            { "CZK", ("BK27", "Czech Koruna") },
+            { "EEK", ("BK32", "Estonian Kroon") },
+            { "HUF", ("BK35", "Hungarian Forint") },
+            { "LTL", ("BK38", "Lithuanian Litas") },
+            { "LVL", ("BK43", "Latvian Lats") },
+            { "MTL", ("BK46", "Maltese Lira") },
+            { "PLN", ("BK49", "Polish Zloty") },
+            { "SIT", ("BK54", "Slovenian Tolar") },
+            { "SKK", ("BK57", "Slovak Koruna") },
 
-			"CYP" => "BK24",
-			"CZK" => "BK27",
-			"EEK" => "BK32",
-			"HUF" => "BK35",
-			"LTL" => "BK38",
-			"LVL" => "BK43",
-			"MTL" => "BK46",
-			"PLN" => "BK49",
-			"SIT" => "BK54",
-			"SKK" => "BK57",
-			
-            "INR" => "BK64",
-			"ILS" => "BK65",
-			"MYR" => "BK66",
-			"RUB" => "BK69",
-			"THB" => "BK72",
-			"CNY" => "BK73",
-			"KRW" => "BK74",
-			"TRY" => "BK75",
-			
-            "BRL" => "B8KL", // monthly
-            
-            _ => throw new ArgumentException($"Unknown BOE currency: {symbol}.")
+            { "INR", ("BK64", "Indian Ruppee") },
+            { "ILS", ("BK65", "Israeli Shekel") },
+            { "MYR", ("BK66", "Malaysian Ringgit") },
+            { "RUB", ("BK69", "Russian Ruble") },
+            { "THB", ("BK72", "Thai Baht") },
+            { "CNY", ("BK73", "Chinese Yuan") },
+            { "KRW", ("BK74", "Korean Wan") },
+            { "TRY", ("BK75", "Turkish Lira") },
+
+            { "BRL", ("B8KL", "Brazilian Real") }
         };
 
-        // These BoE currency values are in units per USD(USDJPY = 100)
-        internal async Task<List<RateTick>> Retrieve(string symbol, LocalDate start, LocalDate end)
+        private readonly string DateFrom, DateTo;
+        private readonly ILogger Logger;
+        private readonly HttpClient HttpClient;
+        internal BoeCurrencyHistory(LocalDate start, LocalDate end, ILogger logger, HttpClient httpClient)
         {
-            if (symbol == "USD")
-                throw new ArgumentException("Invalid symbol: USD.");
-            var boeSymbol = GetBoeSymbol(symbol);
-            var xdoc = await GetXDoc(boeSymbol, start, end);
+            DateFrom = start == LocalDate.MinIsoValue ? "01/Jan/1963" : start.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
+            DateTo = end == LocalDate.MaxIsoValue ? "now" : end.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
+            Logger = logger;
+            HttpClient = httpClient;
+        }
+
+        internal async Task<List<RateTick>> Retrieve(string symbol, CancellationToken ct)
+        {
+            if (string.Compare(symbol, "USD", StringComparison.InvariantCultureIgnoreCase) == 0)
+                throw new ArgumentException("Invalid symbol: USD is base.");
+
+            if (!Symbols.TryGetValue(symbol, out var info))
+                throw new ArgumentException($"Unsupported BOE currency: {symbol}.");
+
+            var xdoc = await GetXDoc(info.code, ct).ConfigureAwait(false);
             return CreateList(xdoc);
         }
 
-        private async Task<XDocument> GetXDoc(string boeSymbol, LocalDate start, LocalDate end)
+        private async Task<XDocument> GetXDoc(string boeSymbol, CancellationToken ct)
         {
-            var dateFrom = start.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
-            var dateTo = end == LocalDate.MaxIsoValue ? "now" : end.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
-            var url = $"http://www.BankOfEngland.co.uk/boeapps/iadb/fromshowcolumns.asp?CodeVer=new&xml.x=yes&Datefrom={dateFrom}&Dateto={dateTo}&SeriesCodes=XUDL{boeSymbol}";
-            // Datefrom={dateFrom}&Dateto=now is mandatory
+            var url = $"http://www.BankOfEngland.co.uk/boeapps/iadb/fromshowcolumns.asp?CodeVer=new&xml.x=yes&Datefrom={DateFrom}&Dateto={DateTo}&SeriesCodes=XUDL{boeSymbol}";
+            // Datefrom={dateFrom}&Dateto=now is mandatory; the earlies date is 1963
             // SeriesCodes=XUDL{boeSymbol}
             Logger.LogInformation($"{url}.");
-            var stream = await client.GetStreamAsync(url).ConfigureAwait(false);
+            var response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            if (response.Content.Headers.ContentType.MediaType != "text/xml")
+                throw new NotSupportedException($"XML not returned from:\r\n{url}");
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             return XDocument.Load(stream);
         }
 

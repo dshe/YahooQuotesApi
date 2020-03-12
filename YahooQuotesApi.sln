@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{FCAC3461-0568-4EDC-B343-B0410437738D}"
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
+		worm64.png = worm64.png
 		~notes.txt = ~notes.txt
 	EndProjectSection
 EndProject

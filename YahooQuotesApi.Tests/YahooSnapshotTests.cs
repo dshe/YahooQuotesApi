@@ -11,10 +11,10 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
-    public class YahooQuotesTest
+    public class YahooSnapshotTest
     {
         private readonly Action<string> Write;
-        public YahooQuotesTest(ITestOutputHelper output) => Write = output.WriteLine;
+        public YahooSnapshotTest(ITestOutputHelper output) => Write = output.WriteLine;
 
         [Fact]
         public async Task SimpleQuery()
@@ -52,20 +52,20 @@ namespace YahooQuotesApi.Tests
             Assert.Null(securities["InvalidSymbol"]);
         }
 
-        [Fact]
-        public async Task TestSymbolArgument()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("", "")]
+        [InlineData("C", "A", "C ")]
+        public async Task TestSymbolArgument(params string[] symbols)
         {
-            // empty string
-            await Assert.ThrowsAsync<ArgumentException>(async () => await new YahooSnapshot().GetAsync(""));
+            await Assert.ThrowsAnyAsync<ArgumentException>(async () => await new YahooSnapshot().GetAsync(symbols));
+        }
 
-            // empty list
-            await Assert.ThrowsAsync<ArgumentException>(async () => await new YahooSnapshot().GetAsync(new string[] { }));
-
-            // empty string in list
-            await Assert.ThrowsAsync<ArgumentException>(async () => await new YahooSnapshot().GetAsync(new[] { "" }));
-
-            // duplicate symbol
-            await Assert.ThrowsAsync<ArgumentException>(async () => await new YahooSnapshot().GetAsync(new[] { "C", "A", "C" }));
+        [Fact]
+        public async Task TestEmptyList()
+        {
+            Assert.Empty(await new YahooSnapshot().GetAsync(new List<string>()));
         }
 
         [Fact]

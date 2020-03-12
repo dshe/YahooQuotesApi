@@ -67,9 +67,8 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDuplicateSymbols()
         {
-            var exception = await Assert.ThrowsAsync<ArgumentException>
-                (async () => await YahooHistory.GetPricesAsync(new[] { "C", "X", "C" }));
-            Assert.StartsWith("Duplicate symbol(s): \"C\".", exception.Message);
+            var result = await YahooHistory.GetPricesAsync(new[] { "C", "X", "C" });
+            Assert.Equal(2, result.Count());
         }
 
         [Fact]
@@ -81,7 +80,7 @@ namespace YahooQuotesApi.Tests
             var instant = date.AtStartOfDayInZone(dateTimeZone).ToInstant();
 
             var ticks = await YahooHistory
-                .Period(instant, instant)
+                .Period(instant, instant.Plus(Duration.FromDays(1)))
                 .GetPricesAsync("AAPL", Frequency.Daily);
 
             if (ticks == null)
@@ -108,7 +107,7 @@ namespace YahooQuotesApi.Tests
             var instant = date.AtStartOfDayInZone(dateTimeZone).ToInstant();
 
             IList<DividendTick>? list = await YahooHistory
-                .Period(instant, instant)
+                .Period(instant, instant.Plus(Duration.FromDays(1)))
                 .GetDividendsAsync("AAPL");
 
             if (list == null)
@@ -122,16 +121,17 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestSplit()
         {
-            DateTimeZone dateTimeZone = "America/New_York".ToTimeZone();
-            var date = new LocalDate(2014, 6, 9);
-            var instant = date.AtStartOfDayInZone(dateTimeZone).ToInstant();
+            var date = new LocalDate(2014, 6, 9); // Jun 09, 2014: 7:1
+            DateTimeZone dateTimeZone = DateTimeZone.Utc;
+            //DateTimeZone dateTimeZone = "America/New_York".ToTimeZone();
+            //DateTimeZone dateTimeZone = "America/Los_Angeles".ToTimeZone();
+
+            var instant1 = date.AtStartOfDayInZone(dateTimeZone).ToInstant();
+            var instant2 = date.AtStartOfDayInZone(dateTimeZone).ToInstant().Plus(Duration.FromDays(1));
 
             IList<SplitTick>? splits = await YahooHistory
-                .Period(instant, instant)
+                .Period(instant1, instant2)
                 .GetSplitsAsync("AAPL");
-
-            if (splits == null)
-                throw new Exception("Invalid symbol");
 
             Assert.Equal(1, splits[0].BeforeSplit);
             Assert.Equal(7, splits[0].AfterSplit);
@@ -146,7 +146,7 @@ namespace YahooQuotesApi.Tests
             var to = new LocalDate(2017, 10, 12);
 
             var ticks = await YahooHistory
-                .Period(from.AtStartOfDayInZone(timeZone).ToInstant(), to.AtStartOfDayInZone(timeZone).ToInstant())
+                .Period(from.AtStartOfDayInZone(timeZone).ToInstant(), to.AtStartOfDayInZone(timeZone).ToInstant().Plus(Duration.FromDays(1)))
                 .GetPricesAsync("BA.L", Frequency.Daily);
             if (ticks == null)
                 throw new Exception("Invalid symbol");
@@ -164,12 +164,14 @@ namespace YahooQuotesApi.Tests
         public async Task TestDates_TW()
         {
             DateTimeZone timeZone = "Asia/Taipei".ToTimeZone();
+            //DateTimeZone timeZone = "America/New_York".ToTimeZone();
+            //DateTimeZone timeZone = DateTimeZone.Utc;
 
             var from = new LocalDate(2019, 3, 19);
             var to = new LocalDate(2019, 3, 21);
 
             var ticks = await YahooHistory
-                .Period(from.AtStartOfDayInZone(timeZone).ToInstant(), to.AtStartOfDayInZone(timeZone).ToInstant())
+                .Period(from.AtStartOfDayInZone(timeZone).ToInstant(), to.AtStartOfDayInZone(timeZone).ToInstant().Plus(Duration.FromDays(1)))
                 .GetPricesAsync("2618.TW", Frequency.Daily);
             if (ticks == null)
                 throw new Exception("Invalid symbol");
@@ -178,9 +180,9 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(to, ticks.Last().Date);
 
             Assert.Equal(3, ticks.Count());
-            Assert.Equal(15.30m, ticks[0].Close);
-            Assert.Equal(15.25m, ticks[1].Close);
-            Assert.Equal(15.30m, ticks[2].Close);
+            Assert.Equal(14.8567m, ticks[0].Close);
+            Assert.Equal(14.8082m, ticks[1].Close);
+            Assert.Equal(14.8567m, ticks[2].Close);
         }
 
         [Theory]
@@ -315,7 +317,7 @@ namespace YahooQuotesApi.Tests
             var cts = new CancellationTokenSource();
             //cts.CancelAfter(20);
 
-            var task = new YahooHistory(cts.Token).Period(10).GetPricesAsync(GetSymbols(5));
+            var task = new YahooHistory().Period(10).GetPricesAsync(GetSymbols(5), Frequency.Daily, cts.Token);
 
             cts.Cancel();
 

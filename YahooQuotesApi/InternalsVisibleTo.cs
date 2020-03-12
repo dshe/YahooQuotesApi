@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("YahooQuotesApi.Tests")]
+//[assembly: InternalsVisibleTo("YahooQuotesApi.Tests")]
