@@ -86,7 +86,7 @@ namespace YahooQuotesApi.Tests
             if (ticks == null)
                 throw new Exception("Invalid symbol");
 
-            var tick = ticks.Single();
+            var tick = ticks.First();
 
             Assert.Equal(115.800003m, tick.Open);
             Assert.Equal(116.330002m, tick.High);
@@ -141,7 +141,8 @@ namespace YahooQuotesApi.Tests
         public async Task TestDates_UK()
         {
             //DateTimeZone timeZone = "Europe/London".ToTimeZone();
-            DateTimeZone timeZone = DateTimeZone.Utc;
+            DateTimeZone timeZone = "America/New_York".ToTimeZone();
+            //DateTimeZone timeZone = DateTimeZone.Utc;
 
             var from = new LocalDate(2017, 10, 10);
             var to = new LocalDate(2017, 10, 12);
@@ -165,8 +166,8 @@ namespace YahooQuotesApi.Tests
         public async Task TestDates_TW()
         {
             //DateTimeZone timeZone = "Asia/Taipei".ToTimeZone();
-            //DateTimeZone timeZone = "America/New_York".ToTimeZone();
-            DateTimeZone timeZone = DateTimeZone.Utc;
+            DateTimeZone timeZone = "America/New_York".ToTimeZone();
+            //DateTimeZone timeZone = DateTimeZone.Utc;
 
             var from = new LocalDate(2019, 3, 19);
             var to = new LocalDate(2019, 3, 21);
