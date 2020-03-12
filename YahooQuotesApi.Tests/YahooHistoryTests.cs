@@ -163,9 +163,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDates_TW()
         {
-            DateTimeZone timeZone = "Asia/Taipei".ToTimeZone();
+            //DateTimeZone timeZone = "Asia/Taipei".ToTimeZone();
             //DateTimeZone timeZone = "America/New_York".ToTimeZone();
-            //DateTimeZone timeZone = DateTimeZone.Utc;
+            DateTimeZone timeZone = DateTimeZone.Utc;
 
             var from = new LocalDate(2019, 3, 19);
             var to = new LocalDate(2019, 3, 21);
