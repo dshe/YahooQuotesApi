@@ -140,7 +140,8 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestDates_UK()
         {
-            DateTimeZone timeZone = "Europe/London".ToTimeZone();
+            //DateTimeZone timeZone = "Europe/London".ToTimeZone();
+            DateTimeZone timeZone = DateTimeZone.Utc;
 
             var from = new LocalDate(2017, 10, 10);
             var to = new LocalDate(2017, 10, 12);
