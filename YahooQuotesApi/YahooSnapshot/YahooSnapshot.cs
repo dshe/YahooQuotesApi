@@ -108,8 +108,8 @@ namespace YahooQuotesApi
         private static List<List<string>> GetLists(IEnumerable<string> strings, int maxLength = 1000)
         {
             int len = 0;
-            var list = new List<string>();
             var lists = new List<List<string>>();
+            var list = new List<string>();
             lists.Add(list);
 
             var enumerator = strings.GetEnumerator();
