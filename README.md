@@ -14,56 +14,69 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-Security? security = await Snapshot.GetAsync("C");
+var symbol = "IBM";
+
+Security? security = await Snapshot.GetAsync(symbol);
 
 if (security == null)
-    throw new Exception("Invalid Symbol: C");
+    throw new Exception($"Unknown symbol: {symbol}");
 
-Assert.True(security.RegularMarketVolume > 0);
+Assert.True(security.RegularMarketPrice > 0);
+Assert.NotNull(security.LongName);
 ```
 #### Price History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<PriceTick>? ticks = await History.Period(90).GetPricesAsync("C");
+var symbol = "IBM";
 
-if (ticks == null)
-    throw new Exception("Invalid symbol: C");
+List<PriceTick>? prices = await History.FromDays(90).GetPricesAsync(symbol);
 
-Assert.NotEmpty(ticks);
+if (prices == null)
+    throw new Exception($"Unknown symbol: {symbol}");
+
+Assert.True(prices[0].Close > 10);
 ```
 #### Dividend History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<DividendTick>? dividends = await History.GetDividendsAsync("AAPL");
+var symbol = "IBM";
+
+List<DividendTick>? dividends = await History.GetDividendsAsync(symbol);
 
 if (dividends == null)
-    throw new Exception("Invalid symbol: AAPL");
+    throw new Exception($"Unknown symbol: {symbol}");
 
-Assert.NotEmpty(dividends);
+Assert.True(dividends[0].Dividend > 0);
 ```
 #### Split History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<SplitTick>? splits = await History.GetSplitsAsync("AAPL");
+var symbol = "IBM";
+
+List<SplitTick>? splits = await History.GetSplitsAsync(symbol);
 
 if (splits == null)
-    throw new Exception("Invalid symbol: AAPL");
+    throw new Exception($"Unknown symbol: {symbol}");
 
-Assert.NotEmpty(splits);
+Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
 ```
 #### Currency Rate History (https://www.bankofengland.co.uk)
 ```csharp
 CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
+string currency     = "EUR";
+string baseCurrency = "USD";
+
 List<RateTick>? rates = await CurrencyHistory
     .Period(100)
-    .GetRatesAsync("EURJPY=X");
+    .FromDate(new LocalDate(2010,1,1))
+    .GetRatesAsync(currency, baseCurrency);
 
 if (rates == null)
-    throw new Exception("Invalid symbol: EURJPY=X");
+    throw new Exception($"Unsupported currency: {symbol}/{baseCurrency}");
 
-Assert.NotEmpty(rates);    
+Assert.True(rates[0].Rate > 0);
 ```
