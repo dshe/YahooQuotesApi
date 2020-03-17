@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NodaTime;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -13,33 +12,30 @@ namespace YahooQuotesApi
 {
     public class CurrencyHistory
     {
-        private readonly HttpClient HttpClient;
-        private readonly BoeCurrencyHistory BoeCurrency;
-        private readonly AsyncLazyCache<string, List<RateTick>> Cache;
-        private readonly LocalDate Start, End;
         private readonly ILogger Logger;
-        public IReadOnlyDictionary<string, string> Symbols { get; }
+        private readonly HttpClient HttpClient;
+        private LocalDate StartDate = LocalDate.MinIsoValue;
+        private BoeCurrencyHistory BoeCurrency;
+        private AsyncLazyCache<string, List<RateTick>> Cache;
+        public static IReadOnlyDictionary<string, string> Symbols { get; } = 
+            BoeCurrencyHistory.Symbols.ToDictionary(k => k.Key, k => k.Value.name);
 
-        public CurrencyHistory(LocalDate start, LocalDate end, ILogger<CurrencyHistory>? logger = null, HttpClient? httpClient = null)
+        public CurrencyHistory(ILogger<CurrencyHistory>? logger = null, HttpClient? httpClient = null)
         {
             Logger = logger ?? NullLogger<CurrencyHistory>.Instance;
-            if (start.AtStartOfDayInZone(DateTimeZone.Utc).ToInstant() > Utility.Clock.GetCurrentInstant())
-                throw new ArgumentException("start > now");
-            if (start > end)
-                throw new ArgumentException("start > end");
-            Start = start;
-            End = end;
             HttpClient = httpClient ?? new HttpClient();
-            BoeCurrency = new BoeCurrencyHistory(Start, End, Logger, HttpClient);
+            BoeCurrency = new BoeCurrencyHistory(StartDate, Logger, HttpClient);
             Cache = new AsyncLazyCache<string, List<RateTick>>(BoeCurrency.Retrieve);
-            Symbols = BoeCurrencyHistory.Symbols.ToDictionary(k => k.Key, k => k.Value.name);
         }
-        public CurrencyHistory(LocalDate start, ILogger<CurrencyHistory>? logger = null) :
-            this(start, LocalDate.MaxIsoValue, logger) { }
-        public CurrencyHistory(int days, ILogger<CurrencyHistory>? logger = null) :
-            this(Utility.Clock.GetCurrentInstant().Minus(Duration.FromDays(days)).InUtc().Date, LocalDate.MaxIsoValue, logger) {}
-        public CurrencyHistory(ILogger<CurrencyHistory>? logger = null) : this(LocalDate.MinIsoValue, LocalDate.MaxIsoValue, logger) { }
+        public CurrencyHistory FromDate(LocalDate start)
+        {
+            StartDate = start;
+            BoeCurrency = new BoeCurrencyHistory(StartDate, Logger, HttpClient);
+            Cache = new AsyncLazyCache<string, List<RateTick>>(BoeCurrency.Retrieve);
+            return this;
+        }
 
+        /*
         public async Task<Dictionary<string, List<RateTick>?>> GetRatesAsync(IEnumerable<string> symbols, CancellationToken ct = default)
         {
             if (symbols == null)
@@ -51,62 +47,58 @@ namespace YahooQuotesApi
             return symbols.Zip(tasks, (symbol, task) => (symbol, task.Result))
                 .ToDictionary(x => x.symbol, x => x.Result);
         }
+        */
 
-        public async Task<List<RateTick>?> GetRatesAsync(string symbol, CancellationToken ct = default) // USDJPY=X 80
+        public async Task<List<RateTick>> GetRatesAsync(string symbolA, string symbolB, CancellationToken ct = default)
         {
-            if (!CurrencyUtility.IsCurrencySymbolFormat(symbol))
-                throw new ArgumentException(nameof(symbol));
-            if (!CurrencyUtility.IsCurrencySymbol(symbol))
-                return null;
-            string symbol1 = symbol.Substring(0, 3), symbol2 = symbol.Substring(3, 3);
-            if (symbol1 == symbol2)
-                throw new ArgumentException($"Invalid currency symbol: {symbol}.");
-            return await GetComponents(symbol1, symbol2, ct).ConfigureAwait(false);
-        }
+            if (symbolA == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbolA))
+                throw new ArgumentException(nameof(symbolA));
+            if (symbolB == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbolB))
+                throw new ArgumentException(nameof(symbolB));
+            if (symbolA == symbolB)
+                throw new ArgumentException($"Invalid currency symbol combination: {symbolA}={symbolB}.");
 
-        private async Task<List<RateTick>> GetComponents(string symbol1, string symbol2, CancellationToken ct)
-        {
-            var task1 = (symbol1 != "USD") ? Cache.Get(symbol1, ct) : null;
-            var task2 = (symbol2 != "USD") ? Cache.Get(symbol2, ct) : null;
-            var rates1 = (task1 != null) ? await task1.ConfigureAwait(false) : null;
-            var rates2 = (task2 != null) ? await task2.ConfigureAwait(false) : null;
-            if (rates1 == null)
+            var taskA = (symbolA != "USD") ? Cache.Get(symbolA, ct) : null;
+            var taskB = (symbolB != "USD") ? Cache.Get(symbolB, ct) : null;
+            var ratesA = (taskA != null) ? await taskA.ConfigureAwait(false) : null;
+            var ratesB = (taskB != null) ? await taskB.ConfigureAwait(false) : null;
+            if (ratesA == null)
             {
-                if (rates2 == null)
+                if (ratesB == null)
                     throw new InvalidOperationException();
-                return rates2;
+                return ratesB;
             }
-            if (rates2 == null)
-                return rates1.Select(r => new RateTick(r.Date, 1m / r.Rate)).ToList(); // invert
+            if (ratesB == null)
+                return ratesA.Select(r => new RateTick(r.Date, 1d / r.Rate)).ToList(); // invert
             var comboRates = new List<RateTick>();
-            foreach (var tick in rates2)
+            foreach (var tick in ratesB)
             {
-                var rate = InterpolateRate(rates1, tick.Date);
-                if (rate != decimal.MinusOne)
-                    comboRates.Add(new RateTick(tick.Date, tick.Rate / rate));
+                var rate = InterpolateRate(ratesA, tick.Date);
+                if (rate != null)
+                    comboRates.Add(new RateTick(tick.Date, tick.Rate / rate.Value));
             }
             return comboRates;
         }
 
-        private decimal InterpolateRate(List<RateTick> list, LocalDate date, int tryIndex = -1)
+        private double? InterpolateRate(List<RateTick> list, Instant date, int tryIndex = -1)
         {
-            var len = list.Count;
             if (tryIndex != -1 && date == list[tryIndex].Date)
                 return list[tryIndex].Rate;
             if (date < list[0].Date) // not enough data
-                return decimal.MinusOne;
-            var days = (date - list[len - 1].Date).Days; // future date so use the latest data
-            if (days >= 0)
+                return null;
+            var last = list[list.Count - 1];
+            var days = (date - last.Date).Days;
+            if (days >= 0) // future date, so use the latest data
             {
-                if (days < 4)
-                    return list[len - 1].Rate;
-                return decimal.MinusOne;
+                if (days > 7)
+                    return null;
+                return last.Rate;
             }
-            var p = list.BinarySearch(new RateTick(date, decimal.MinusOne));
+            var p = list.BinarySearch(new RateTick(date, -1));
             if (p >= 0) // found
                 return list[p].Rate;
             p = ~p; // not found, ~p is next highest position in list; linear interpolation
-            var rate = list[p].Rate + ((list[p - 1].Rate - list[p].Rate) / (list[p - 1].Date - list[p].Date).Ticks * (date - list[p].Date).Ticks);
+            var rate = list[p].Rate + ((list[p - 1].Rate - list[p].Rate) / (list[p - 1].Date - list[p].Date).TotalTicks * (date - list[p].Date).TotalTicks);
             Logger.LogInformation($"InterpolateRate: {date} => {p} => {rate}.");
             return rate;
         }

@@ -15,14 +15,14 @@ namespace YahooQuotesApi
             Guid.NewGuid().ToString().Substring(0, length);
     }
 
-    public static class ExtensionMethods
+    internal static class ExtensionMethods
     {
-        public static DateTimeZone? ToTimeZoneOrNull(this string name) =>
+        internal static DateTimeZone? ToTimeZoneOrNull(this string name) =>
             DateTimeZoneProviders.Tzdb.GetZoneOrNull(name);
-        public static DateTimeZone ToTimeZone(this string name) =>
+        internal static DateTimeZone ToTimeZone(this string name) =>
             DateTimeZoneProviders.Tzdb.GetZoneOrNull(name) ?? throw new TimeZoneNotFoundException(name);
 
-        public static ZonedDateTime ToZonedDateTime(this long unixTimeSeconds, DateTimeZone zone) =>
+        internal static ZonedDateTime ToZonedDateTime(this long unixTimeSeconds, DateTimeZone zone) =>
             Instant.FromUnixTimeSeconds(unixTimeSeconds).InZone(zone);
 
         internal static string ToPascal(this string str)

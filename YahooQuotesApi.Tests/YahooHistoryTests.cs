@@ -43,7 +43,7 @@ namespace YahooQuotesApi.Tests
         public async Task SimpleTest()
         {
             IList<PriceTick>? ticks = await YahooHistory
-                .Period(30)
+                .FromDate(30)
                 .GetPricesAsync("C");
 
             if (ticks == null)
@@ -80,17 +80,17 @@ namespace YahooQuotesApi.Tests
             var timeZone = timeZoneName.ToTimeZone();
 
             var date = new LocalDate(2017, 1, 3);
-            var instant1 = date.At(new LocalTime(16, 0)).InZoneStrictly(timeZone).ToInstant();
-            var instant2 = date.At(new LocalTime(16, 0)).InZoneStrictly(timeZone).ToInstant();
+            var instant = date.At(new LocalTime(16, 0)).InZoneStrictly(timeZone).ToInstant();
 
             var ticks = await YahooHistory
-                .Period(instant1, instant2)
-                .GetPricesAsync(symbol, Frequency.Daily);
+                .FromDate(instant)
+                .Frequency(Frequency.Daily)
+                .GetPricesAsync(symbol);
 
             if (ticks == null)
                 throw new Exception("Invalid symbol");
 
-            var tick = ticks.Single();
+            var tick = ticks.First();
 
             Assert.Equal(115.800003m, tick.Open);
             Assert.Equal(116.330002m, tick.High);
@@ -104,17 +104,16 @@ namespace YahooQuotesApi.Tests
         {
             var symbol = "AAPL";
             var tz = "America/New_York".ToTimeZone();
-            var date = new LocalDate(2016, 2, 4);
-            var instant1 = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
-            var instant2 = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
+            var date = new LocalDate(2020, 2, 7);
+            var instant = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
 
             IList<DividendTick>? list = await YahooHistory
-                .Period(instant1, instant2)
+                .FromDate(instant)
                 .GetDividendsAsync(symbol);
 
-            var dividend = list.Single().Dividend;
+            var dividend = list?[0].Dividend;
 
-            Assert.Equal(0.52m, dividend);
+            Assert.Equal(0.77m, dividend);
         }
 
         [Fact]
@@ -123,12 +122,14 @@ namespace YahooQuotesApi.Tests
             var symbol = "AAPL";
             var tz = "America/New_York".ToTimeZone();
             var date = new LocalDate(2014, 6, 9);
-            var instant1 = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
-            var instant2 = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
+            var instant = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
 
             IList<SplitTick>? splits = await YahooHistory
-                .Period(instant1, instant2)
+                .FromDate(instant)
                 .GetSplitsAsync(symbol);
+
+            if (splits == null)
+                throw new NullReferenceException("Invalid symbol");
 
             Assert.Equal(1, splits[0].BeforeSplit);
             Assert.Equal(7, splits[0].AfterSplit);
@@ -142,16 +143,14 @@ namespace YahooQuotesApi.Tests
             var timeZoneName = security.ExchangeTimezoneName ?? throw new Exception($"TimeZone name not found.");
             var timeZone = timeZoneName.ToTimeZone();
 
-            var instant1 = new LocalDateTime(2017, 10, 10, 15, 0).InZoneStrictly(timeZone).ToInstant();
-            var instant2 = new LocalDateTime(2017, 10, 12, 15, 0).InZoneStrictly(timeZone).ToInstant();
+            var instant = new LocalDateTime(2017, 10, 10, 15, 0).InZoneStrictly(timeZone).ToInstant();
 
             var ticks = await YahooHistory
-                .Period(instant1, instant2)
-                .GetPricesAsync(symbol, Frequency.Daily);
+                .FromDate(instant)
+                .GetPricesAsync(symbol);
             if (ticks == null)
                 throw new Exception("Invalid symbol");
 
-            Assert.Equal(3, ticks.Count());
             Assert.Equal(616.50m, ticks[0].Close);
             Assert.Equal(615.00m, ticks[1].Close);
             Assert.Equal(616.00m, ticks[2].Close);
@@ -165,16 +164,14 @@ namespace YahooQuotesApi.Tests
             var timeZoneName = security.ExchangeTimezoneName ?? throw new Exception($"TimeZone name not found.");
             var timeZone = timeZoneName.ToTimeZone();
 
-            var instant1 = new LocalDateTime(2019, 3, 19, 15, 0).InZoneStrictly(timeZone).ToInstant();
-            var instant2 = new LocalDateTime(2019, 3, 21, 15, 0).InZoneStrictly(timeZone).ToInstant();
+            var instant = new LocalDateTime(2019, 3, 19, 15, 0).InZoneStrictly(timeZone).ToInstant();
 
             var ticks = await YahooHistory
-                .Period(instant1, instant2)
-                .GetPricesAsync(symbol, Frequency.Daily);
+                .FromDate(instant)
+                .GetPricesAsync(symbol);
             if (ticks == null)
                 throw new Exception("Invalid symbol");
 
-            Assert.Equal(3, ticks.Count());
             Assert.Equal(14.8567m, ticks[0].Close);
             Assert.Equal(14.8082m, ticks[1].Close);
             Assert.Equal(14.8567m, ticks[2].Close);
@@ -199,15 +196,16 @@ namespace YahooQuotesApi.Tests
             var timeZoneName = security.ExchangeTimezoneName ?? throw new Exception($"TimeZone name not found.");
             var timeZone = timeZoneName.ToTimeZone();
 
-            var date = new LocalDate(2019, 9, 4);
-            var instant1 = date.At(new LocalTime(16,0)).InZoneStrictly(timeZone).ToInstant();
-            var instant2 = date.At(new LocalTime(16,0)).InZoneStrictly(timeZone).ToInstant();
+            var instant = new LocalDate(2019, 9, 4)
+                .At(Exchanges.GetCloseTimeFromSymbol(symbol))
+                .InZoneStrictly(timeZone)
+                .ToInstant();
 
             var ticks = await YahooHistory
-                .Period(instant1, instant2)
+                .FromDate(instant)
                 .GetPricesAsync(symbol);
 
-            Assert.Equal(instant1.InUtc().Date, ticks.Single().Date);
+            Assert.Equal(instant, ticks.First().Date);
         }
 
         [Fact]
@@ -220,66 +218,84 @@ namespace YahooQuotesApi.Tests
             var timeZone = timezoneName.ToTimeZone();
 
             var instant1 = new LocalDateTime(2017, 10, 10, 16, 0).InZoneStrictly(timeZone).ToInstant();
-            var instant2 = new LocalDateTime(2017, 10, 12, 16, 0).InZoneStrictly(timeZone).ToInstant();
-
 
             var ticks = await YahooHistory
-                .Period(instant1, instant2)
+                .FromDate(instant1)
                 .GetPricesAsync(symbol);
 
             if (ticks == null)
                 throw new Exception($"Invalid symbol: {symbol}");
 
-            foreach (var tick in ticks)
-                Write($"{tick.Date} {tick.Close}");
-
-            Assert.Equal(3, ticks.Count());
             Assert.Equal(1.174164m, ticks[0].Close);
             Assert.Equal(1.181488m, ticks[1].Close);
             Assert.Equal(1.186549m, ticks[2].Close);
         }
 
         [Fact]
-        public async Task TestFrequency()
+        public async Task TestFrequencyDaily()
         {
             var symbol = "AAPL";
             var timeZone = "America/New_York".ToTimeZone();
             var startDate = new LocalDateTime(2019, 1, 10, 16, 0);
+            var instant = startDate.InZoneStrictly(timeZone).ToInstant();
 
             var ticks1 = await YahooHistory
-                .Period(startDate.InZoneStrictly(timeZone).ToInstant())
-                .GetPricesAsync(symbol, Frequency.Daily);
+                .FromDate(instant)
+                .Frequency(Frequency.Daily)
+                .GetPricesAsync(symbol);
             if (ticks1 == null)
                 throw new Exception($"Invalid symbol: {symbol}");
 
-            Assert.Equal(new LocalDate(2019, 1, 10), ticks1[0].Date);
-            Assert.Equal(new LocalDate(2019, 1, 11), ticks1[1].Date);
+            Assert.Equal(instant, ticks1[0].Date);
+            Assert.Equal(instant.Plus(Duration.FromDays(1)), ticks1[1].Date);
             Assert.Equal(152.880005m, ticks1[1].Open);
+        }
 
+        [Fact]
+        public async Task TestFrequencyWeekly()
+        {
+            var symbol = "AAPL";
+            var timeZone = "America/New_York".ToTimeZone();
+            var startDate = new LocalDateTime(2019, 1, 10, 16, 0);
+            var instant = startDate.InZoneStrictly(timeZone).ToInstant();
 
-            var ticks2 = await new YahooHistory()
-                .Period(startDate.InZoneStrictly(timeZone).ToInstant())
-                .GetPricesAsync(symbol, Frequency.Weekly);
-            if (ticks2 == null)
+            var ticks = await new YahooHistory()
+                .FromDate(instant)
+                .Frequency(Frequency.Weekly)
+                .GetPricesAsync(symbol);
+            if (ticks == null)
                 throw new Exception($"Invalid symbol: {symbol}");
 
-            Assert.Equal(new LocalDate(2019, 1, 7), ticks2[0].Date); // previous Monday
-            Assert.Equal(new LocalDate(2019, 1, 14), ticks2[1].Date);
-            Assert.Equal(150.850006m, ticks2[1].Open);
+            var instant1 = new LocalDateTime(2019, 1, 7, 16, 0).InZoneStrictly(timeZone).ToInstant();
+            Assert.Equal(instant1, ticks[0].Date); // previous Monday
+            var instant2 = new LocalDateTime(2019, 1, 14, 16, 0).InZoneStrictly(timeZone).ToInstant();
+            Assert.Equal(instant2, ticks[1].Date);
+            Assert.Equal(150.850006m, ticks[1].Open);
+        }
 
+        [Fact]
+        public async Task TestFrequencyMonthly()
+        {
+            var symbol = "AAPL";
+            var timeZone = "America/New_York".ToTimeZone();
+            var startDate = new LocalDateTime(2019, 1, 10, 16, 0);
+            var instant = startDate.InZoneStrictly(timeZone).ToInstant();
 
-            var ticks3 = await YahooHistory
-                .Period(startDate.InZoneStrictly(timeZone).ToInstant())
-                .GetPricesAsync(symbol, Frequency.Monthly);
-            if (ticks3 == null)
+            var ticks = await YahooHistory
+                .FromDate(instant)
+                .Frequency(Frequency.Monthly)
+                .GetPricesAsync(symbol);
+            if (ticks == null)
                 throw new Exception($"Invalid symbol: {symbol}");
 
-            foreach (var tick in ticks3)
+            foreach (var tick in ticks)
                 Write($"{tick.Date} {tick.Close}");
 
-            Assert.Equal(new LocalDate(2019, 2, 1), ticks3[0].Date); // next start of month !!!?
-            Assert.Equal(new LocalDate(2019, 3, 1), ticks3[1].Date);
-            Assert.Equal(174.279999m, ticks3[1].Open);
+            var instant1 = new LocalDateTime(2019, 2, 1, 16, 0).InZoneStrictly(timeZone).ToInstant();
+            Assert.Equal(instant1, ticks[0].Date); // next start of month!
+            var instant2 = new LocalDateTime(2019, 3, 1, 16, 0).InZoneStrictly(timeZone).ToInstant();
+            Assert.Equal(instant2, ticks[1].Date);
+            Assert.Equal(174.279999m, ticks[1].Open);
         }
 
         private List<string> GetSymbols(int number)
@@ -313,7 +329,7 @@ namespace YahooQuotesApi.Tests
             var cts = new CancellationTokenSource();
             //cts.CancelAfter(20);
 
-            var task = new YahooHistory().Period(10).GetPricesAsync(GetSymbols(5), Frequency.Daily, cts.Token);
+            var task = new YahooHistory().FromDate(10).GetPricesAsync(GetSymbols(5), cts.Token);
 
             cts.Cancel();
 

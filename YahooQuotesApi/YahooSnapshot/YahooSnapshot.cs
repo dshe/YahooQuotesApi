@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -105,7 +106,7 @@ namespace YahooQuotesApi
                 .ToList();
         }
 
-        private static List<List<string>> GetLists(IEnumerable<string> strings, int maxLength = 1000)
+        private static List<List<string>> GetLists(IEnumerable<string> strings, int maxLength = 1000, int maxItems = 10000)
         {
             int len = 0;
             var lists = new List<List<string>>();
@@ -116,7 +117,8 @@ namespace YahooQuotesApi
             while (enumerator.MoveNext())
             {
                 var str = enumerator.Current;
-                if (len + str.Length > maxLength)
+                str = WebUtility.UrlEncode(str); // just encode the symbols (some con
+                if (len + str.Length > maxLength || list.Count == maxItems)
                 {
                     list = new List<string>();
                     lists.Add(list);

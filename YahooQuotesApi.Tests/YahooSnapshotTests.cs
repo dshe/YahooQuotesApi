@@ -114,11 +114,8 @@ namespace YahooQuotesApi.Tests
         {
             List<string> symbols = File.ReadAllLines(@"..\..\..\symbols.txt")
                 .Where(line => !line.StartsWith("#"))
-                .Take(10)
+                .Take(100)
                 .ToList();
-
-            // The length limit for a URI depends on the browser.
-            // Exception.Message.StartsWith("Invalid URI: The Uri string is too long.");
 
             Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(symbols);
 
@@ -196,6 +193,5 @@ namespace YahooQuotesApi.Tests
 
             await yahooQuotes.GetAsync("C"); // log message should appear in the debug output (when debugging)
         }
-
     }
 }

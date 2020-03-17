@@ -25,57 +25,54 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task Example()
         {
-            List<RateTick>? ticks = await new CurrencyHistory(30, Logger).GetRatesAsync("USDCAD=X");
+            List<RateTick>? ticks = await new CurrencyHistory(Logger).FromDate(new LocalDate(2000,1,1)).GetRatesAsync("USD", "CAD");
             Assert.NotEmpty(ticks);
         }
 
         [Fact]
         public async Task BadSymbol()
         {
-            await Assert.ThrowsAsync<ArgumentException>(async () => await new CurrencyHistory(Logger).GetRatesAsync("X"));
-        }
-
-        [Fact]
-        public async Task SymbolNotFound()
-        {
-            Assert.Null(await new CurrencyHistory(Logger).GetRatesAsync("ABCDEF=X"));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await new CurrencyHistory(Logger).GetRatesAsync("XXX", "USD"));
         }
 
         [Fact]
         public async Task GoodSymbols()
         {
-            var date = new LocalDate(2020, 1, 7);
-            var currencyHistory = new CurrencyHistory(date, date, Logger);
+            var tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London");
+            var date = new LocalDate(2020, 1, 7); //.At(new LocalTime(16,0,0)).InZoneStrictly(tz);
 
-            var rate1 = await GetRate("USDJPY=X", date);
-            Assert.Equal(108.61m, rate1);
+            var currencyHistory = new CurrencyHistory(Logger).FromDate(date);
 
-            var rate2 = await GetRate("EURUSD=X", date); // inverted
-            Assert.Equal(1.114m, decimal.Round(rate2, 3));
+            var rate1 = await GetRate("USD", "JPY", date);
+            Assert.Equal(108.61, rate1);
 
-            var rate3 = await GetRate("EURJPY=X", date);
-            Assert.Equal(121.000m, decimal.Round(rate3, 3));
+            var rate2 = await GetRate("EUR", "USD", date); // inverted
+            Assert.Equal(1.114, Math.Round(rate2, 3));
+
+            var rate3 = await GetRate("EUR", "JPY", date);
+            Assert.Equal(121.000, Math.Round(rate3, 3));
 
             var EurJpy = rate1 * rate2;
-            Assert.Equal(decimal.Round(EurJpy, 3), decimal.Round(rate3, 3));
+            Assert.Equal(Math.Round(EurJpy, 3), Math.Round(rate3, 3));
 
             // local method
-            async Task<decimal> GetRate(string symbol, LocalDate date)
+            async Task<double> GetRate(string symbol, string symbolBase, LocalDate date)
             {
-                var list = await currencyHistory.GetRatesAsync(symbol);
-                var result = list.Single();
-                Assert.Equal(date, result.Date);
+                var list = await currencyHistory.GetRatesAsync(symbol, symbolBase);
+                var result = list[0];
+                Assert.Equal(date, result.Date.InZone(tz).Date);
                 return result.Rate;
             }
         }
         [Fact]
         public async Task ManyRates()
         {
-            List<RateTick>? ticks = await new CurrencyHistory(Logger).GetRatesAsync("USDMYR=X");
+            List<RateTick>? ticks = await new CurrencyHistory(Logger).GetRatesAsync("USD", "MYR");
             Assert.NotEmpty(ticks);
             Write($"Days downloaded: {ticks!.Count}.");
         }
 
+        /*
         [Fact]
         public async Task ManySymbols()
         {
@@ -84,5 +81,6 @@ namespace YahooQuotesApi.Tests
                 .GetRatesAsync(new[] { "USDMYR=X", "CADUSD=X", "EURCNY=X"});
             Assert.Equal(3, results.Count);
         }
+        */
     }
 }

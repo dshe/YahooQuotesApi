@@ -22,7 +22,6 @@ namespace YahooQuotesApi.Tests
         public async Task MakeEnumList()
         {
             var fields = await GetFields();
-
             Write($"// Fields.cs: {fields.Count}. This list was generated automatically from names been defined by Yahoo.");
             Write(string.Join("," + Environment.NewLine, fields.Select(x => x.Key)));
             Write(Environment.NewLine);

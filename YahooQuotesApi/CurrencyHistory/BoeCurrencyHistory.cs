@@ -13,7 +13,7 @@ using System.Xml.Linq;
 /*
 https://www.bankofengland.co.uk/statistics/exchange-rates
 The data represent indicative middle market(mean of spot buying and selling)
-rates as observed by the Bank's Foreign Exchange Desk in the London interbank market around
+rates as observed by the Bank's Foreign Exchange Desk in the London interbank market around 4pm.
 BOE uses non-standard currency symbols so we need to find them.
 These BoE currency rates are in units per USD(USDJPY = 100)
 */
@@ -22,6 +22,8 @@ namespace YahooQuotesApi
 {
 	internal class BoeCurrencyHistory
 	{
+        internal static LocalTime SpotTime { get; } = new LocalTime(16, 0, 0);
+        internal static DateTimeZone TimeZone { get; } = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London");
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
         internal static readonly IReadOnlyDictionary<string, (string code, string name)> Symbols = new Dictionary<string, (string code, string name)>(StringComparer.OrdinalIgnoreCase)
         {
@@ -65,24 +67,29 @@ namespace YahooQuotesApi
             { "BRL", ("B8KL", "Brazilian Real") }
         };
 
-        private readonly string DateFrom, DateTo;
+        private readonly string DateFrom;
         private readonly ILogger Logger;
         private readonly HttpClient HttpClient;
-        internal BoeCurrencyHistory(LocalDate start, LocalDate end, ILogger logger, HttpClient httpClient)
+
+        internal BoeCurrencyHistory(LocalDate start, ILogger logger, HttpClient httpClient)
         {
+            if (start.At(SpotTime).InZoneStrictly(TimeZone).ToInstant() > Utility.Clock.GetCurrentInstant())
+                throw new ArgumentException("start > now");
             DateFrom = start == LocalDate.MinIsoValue ? "01/Jan/1963" : start.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
-            DateTo = end == LocalDate.MaxIsoValue ? "now" : end.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
             Logger = logger;
             HttpClient = httpClient;
         }
 
         internal async Task<List<RateTick>> Retrieve(string symbol, CancellationToken ct)
         {
+            if (string.IsNullOrEmpty(symbol))
+                throw new ArgumentException(nameof(symbol));
+
             if (string.Compare(symbol, "USD", StringComparison.InvariantCultureIgnoreCase) == 0)
                 throw new ArgumentException("Invalid symbol: USD is base.");
 
             if (!Symbols.TryGetValue(symbol, out var info))
-                throw new ArgumentException($"Unsupported BOE currency: {symbol}.");
+                throw new ArgumentException($"BOE unsupported currency: {symbol}.");
 
             var xdoc = await GetXDoc(info.code, ct).ConfigureAwait(false);
             return CreateList(xdoc);
@@ -90,7 +97,7 @@ namespace YahooQuotesApi
 
         private async Task<XDocument> GetXDoc(string boeSymbol, CancellationToken ct)
         {
-            var url = $"http://www.BankOfEngland.co.uk/boeapps/iadb/fromshowcolumns.asp?CodeVer=new&xml.x=yes&Datefrom={DateFrom}&Dateto={DateTo}&SeriesCodes=XUDL{boeSymbol}";
+            var url = $"http://www.BankOfEngland.co.uk/boeapps/iadb/fromshowcolumns.asp?CodeVer=new&xml.x=yes&Datefrom={DateFrom}&Dateto=now&SeriesCodes=XUDL{boeSymbol}";
             // Datefrom={dateFrom}&Dateto=now is mandatory; the earlies date is 1963
             // SeriesCodes=XUDL{boeSymbol}
             Logger.LogInformation($"{url}.");
@@ -109,24 +116,22 @@ namespace YahooQuotesApi
             foreach (var row in rows)
             {
                 var rate = ParseRate(row);
-                if (rate == 0m)
-                    continue;
                 var date = ParseDate(row);
                 list.Add(new RateTick(date, rate));
             }
             return list;
         }
 
-        private static LocalDate ParseDate(XElement row)
+        private static Instant ParseDate(XElement row)
         {
             var dateStr = row.Attribute("TIME").Value; // no daylight savings, UTC already
             var result = DatePattern.Parse(dateStr);
-            if (result.Success)
-                return result.Value;
-            throw new Exception($"Could not convert {dateStr} to LocalDate.", result.Exception);
+            if (!result.Success)
+                throw new Exception($"Could not convert {dateStr} to LocalDate.", result.Exception);
+            return result.Value.At(SpotTime).InZoneStrictly(TimeZone).ToInstant();
         }
         
-        private static decimal ParseRate(XElement row) => decimal.Parse(row.Attribute("OBS_VALUE").Value);
+        private static double ParseRate(XElement row) => double.Parse(row.Attribute("OBS_VALUE").Value);
     }
 }
 

@@ -2,17 +2,15 @@
 using System.Globalization;
 using NodaTime;
 using NodaTime.Text;
-
 namespace YahooQuotesApi
 {
     internal static class TickParser
     {
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
-        internal static string GetParamFromType<ITick>()
+        internal static string GetParamFromType<T>()
         {
-            var type = typeof(ITick);
-
+            var type = typeof(T);
             if (type == typeof(PriceTick))
                 return "history";
             else if (type == typeof(DividendTick))
@@ -23,27 +21,22 @@ namespace YahooQuotesApi
             throw new Exception("GetParamFromType: invalid type.");
         }
 
-        internal static ITick? Parse<ITick>(string[] row) where ITick: class
+        internal static object? Parse(string param, string[] row, LocalTime time, DateTimeZone tz)
         {
-            var type = typeof(ITick);
-            object? instance;
-
-            if (type == typeof(PriceTick))
-                instance = PriceTick.Create(row);
-            else if (type == typeof(DividendTick))
-                instance = DividendTick.Create(row);
-            else if (type == typeof(SplitTick))
-                instance = SplitTick.Create(row);
-            else
-                throw new Exception("Parse<ITick>: invalid type.");
-
-            return (ITick?)instance;
+            if (param == "history")
+                return PriceTick.Create(row, time, tz);
+            if (param == "div")
+                return DividendTick.Create(row, time, tz);
+            if (param == "split")
+                return SplitTick.Create(row, time, tz);
+            throw new Exception("Parse<T>: invalid type.");
         }
 
-        internal static LocalDate ToLocalDate(this string str)
+        internal static Instant ToInstant(this string dateStr, LocalTime time, DateTimeZone tz)
         {
-            var result = DatePattern.Parse(str);
-            return result.Success ? result.Value : throw new Exception($"Could not convert '{str}' to LocalDate.", result.Exception);
+            var result = DatePattern.Parse(dateStr);
+            var date = result.Success ? result.Value : throw new Exception($"Could not convert '{dateStr}' to LocalDate.", result.Exception);
+            return date.At(time).InZoneStrictly(tz).ToInstant();
         }
 
         internal static decimal ToDecimal(this string str)
