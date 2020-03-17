@@ -14,12 +14,10 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-var symbol = "IBM";
-
-Security? security = await Snapshot.GetAsync(symbol);
+Security? security = await Snapshot.GetAsync("IBM");
 
 if (security == null)
-    throw new Exception($"Unknown symbol: {symbol}");
+    throw new Exception("Unknown symbol: IBM");
 
 Assert.True(security.RegularMarketPrice > 0);
 Assert.NotNull(security.LongName);
@@ -28,12 +26,10 @@ Assert.NotNull(security.LongName);
 ```csharp
 YahooHistory History = new YahooHistory();
 
-var symbol = "IBM";
-
-List<PriceTick>? prices = await History.FromDays(90).GetPricesAsync(symbol);
+List<PriceTick>? prices = await History.FromDays(90).GetPricesAsync("IBM");
 
 if (prices == null)
-    throw new Exception($"Unknown symbol: {symbol}");
+    throw new Exception("Unknown symbol: IBM");
 
 Assert.True(prices[0].Close > 10);
 ```
@@ -41,12 +37,10 @@ Assert.True(prices[0].Close > 10);
 ```csharp
 YahooHistory History = new YahooHistory();
 
-var symbol = "IBM";
-
-List<DividendTick>? dividends = await History.GetDividendsAsync(symbol);
+List<DividendTick>? dividends = await History.GetDividendsAsync("IBM");
 
 if (dividends == null)
-    throw new Exception($"Unknown symbol: {symbol}");
+    throw new Exception("Unknown symbol: IBM");
 
 Assert.True(dividends[0].Dividend > 0);
 ```
@@ -54,12 +48,10 @@ Assert.True(dividends[0].Dividend > 0);
 ```csharp
 YahooHistory History = new YahooHistory();
 
-var symbol = "IBM";
-
-List<SplitTick>? splits = await History.GetSplitsAsync(symbol);
+List<SplitTick>? splits = await History.GetSplitsAsync("IBM");
 
 if (splits == null)
-    throw new Exception($"Unknown symbol: {symbol}");
+    throw new Exception("Unknown symbol: IBM");
 
 Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
 ```
@@ -71,7 +63,6 @@ string currency     = "EUR";
 string baseCurrency = "USD";
 
 List<RateTick>? rates = await CurrencyHistory
-    .Period(100)
     .FromDate(new LocalDate(2010,1,1))
     .GetRatesAsync(currency, baseCurrency);
 
