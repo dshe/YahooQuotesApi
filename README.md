@@ -28,9 +28,6 @@ YahooHistory History = new YahooHistory();
 
 List<PriceTick>? prices = await History.FromDays(90).GetPricesAsync("IBM");
 
-if (prices == null)
-    throw new Exception("Unknown symbol: IBM");
-
 Assert.True(prices[0].Close > 10);
 ```
 #### Dividend History
@@ -39,9 +36,6 @@ YahooHistory History = new YahooHistory();
 
 List<DividendTick>? dividends = await History.GetDividendsAsync("IBM");
 
-if (dividends == null)
-    throw new Exception("Unknown symbol: IBM");
-
 Assert.True(dividends[0].Dividend > 0);
 ```
 #### Split History
@@ -49,9 +43,6 @@ Assert.True(dividends[0].Dividend > 0);
 YahooHistory History = new YahooHistory();
 
 List<SplitTick>? splits = await History.GetSplitsAsync("IBM");
-
-if (splits == null)
-    throw new Exception("Unknown symbol: IBM");
 
 Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
 ```
