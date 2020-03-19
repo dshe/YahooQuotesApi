@@ -13,6 +13,21 @@ namespace YahooQuotesApi
 
         internal static string GetRandomString(int length) =>
             Guid.NewGuid().ToString().Substring(0, length);
+
+        internal static string CheckSymbol(string symbol)
+        {
+            if (symbol == null)
+                throw new ArgumentNullException(nameof(symbol));
+            if (symbol == "" || symbol.Contains(" "))
+                throw new ArgumentException(nameof(symbol));
+            return symbol.ToUpper();
+        }
+        internal static IEnumerable<string> CheckSymbols(IEnumerable<string> symbols)
+        {
+            if (symbols == null)
+                throw new ArgumentNullException(nameof(symbols));
+            return symbols.Select(s => CheckSymbol(s)).Distinct();
+        }
     }
 
     internal static class ExtensionMethods
@@ -40,7 +55,7 @@ namespace YahooQuotesApi
             return name;
         }
 
-        internal static IList<string> CaseInsensitiveDuplicates(this IEnumerable<string> strings)
+        internal static List<string> CaseInsensitiveDuplicates(this IEnumerable<string> strings)
         {
             var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             return strings.Where(str => !hashSet.Add(str)).ToList();

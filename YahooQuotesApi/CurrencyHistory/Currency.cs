@@ -19,8 +19,8 @@ namespace YahooQuotesApi
     public readonly struct RateTick : IComparable<RateTick>
     {
         public Instant Date { get; }
-        // Use double rather than decimal because currency prices are not official,
-        // and may require calculation to get cross rates.
+        // Use double rather than decimal because currency prices are not official/exact,
+        // and may require calculation to determine cross rates.
         public double Rate { get; } 
         internal RateTick(Instant date, double rate)
         {

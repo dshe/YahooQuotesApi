@@ -36,14 +36,14 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task BadSymbolTest()
         {
-            Assert.Null(await new YahooHistory().GetPricesAsync("badSymbol"));
+            await Assert.ThrowsAnyAsync<Exception>(async () => await new YahooHistory().GetPricesAsync("badSymbol"));
         }
 
         [Fact]
         public async Task SimpleTest()
         {
             IList<PriceTick>? ticks = await YahooHistory
-                .FromDate(30)
+                .FromDays(30)
                 .GetPricesAsync("C");
 
             if (ticks == null)
@@ -329,7 +329,7 @@ namespace YahooQuotesApi.Tests
             var cts = new CancellationTokenSource();
             //cts.CancelAfter(20);
 
-            var task = new YahooHistory().FromDate(10).GetPricesAsync(GetSymbols(5), cts.Token);
+            var task = new YahooHistory().FromDays(10).GetPricesAsync(GetSymbols(5), cts.Token);
 
             cts.Cancel();
 

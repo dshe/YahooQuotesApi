@@ -12,68 +12,53 @@ namespace YahooQuotesApi
 {
     public class CurrencyHistory
     {
-        private readonly ILogger Logger;
-        private readonly HttpClient HttpClient;
-        private LocalDate StartDate = LocalDate.MinIsoValue;
-        private BoeCurrencyHistory BoeCurrency;
-        private AsyncLazyCache<string, List<RateTick>> Cache;
+        public static LocalTime SpotTime { get; } = BoeCurrencyHistory.SpotTime;
+        public static DateTimeZone TimeZone { get; } = BoeCurrencyHistory.TimeZone;
         public static IReadOnlyDictionary<string, string> Symbols { get; } = 
             BoeCurrencyHistory.Symbols.ToDictionary(k => k.Key, k => k.Value.name);
+        private readonly ILogger Logger;
+        private readonly AsyncLazyCache<string, List<RateTick>> Cache;
+        private readonly BoeCurrencyHistory BoeCurrency;
 
         public CurrencyHistory(ILogger<CurrencyHistory>? logger = null, HttpClient? httpClient = null)
         {
             Logger = logger ?? NullLogger<CurrencyHistory>.Instance;
-            HttpClient = httpClient ?? new HttpClient();
-            BoeCurrency = new BoeCurrencyHistory(StartDate, Logger, HttpClient);
+            BoeCurrency = new BoeCurrencyHistory(Logger, httpClient ??= new HttpClient());
             Cache = new AsyncLazyCache<string, List<RateTick>>(BoeCurrency.Retrieve);
         }
+
         public CurrencyHistory FromDate(LocalDate start)
         {
-            StartDate = start;
-            BoeCurrency = new BoeCurrencyHistory(StartDate, Logger, HttpClient);
-            Cache = new AsyncLazyCache<string, List<RateTick>>(BoeCurrency.Retrieve);
+            BoeCurrency.SetStartDate(start);
+            Cache.Clear();
             return this;
         }
 
-        /*
-        public async Task<Dictionary<string, List<RateTick>?>> GetRatesAsync(IEnumerable<string> symbols, CancellationToken ct = default)
+        public async Task<List<RateTick>> GetRatesAsync(string symbol, string symbolBase, CancellationToken ct = default)
         {
-            if (symbols == null)
-                throw new ArgumentNullException(nameof(symbols));
-            if (!symbols.Any())
-                return new Dictionary<string, List<RateTick>?>();
-            var tasks = symbols.Select(symbol => GetRatesAsync(symbol, ct));
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-            return symbols.Zip(tasks, (symbol, task) => (symbol, task.Result))
-                .ToDictionary(x => x.symbol, x => x.Result);
-        }
-        */
+            if (symbol == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbol))
+                throw new ArgumentException(nameof(symbol));
+            if (symbolBase == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbolBase))
+                throw new ArgumentException(nameof(symbolBase));
 
-        public async Task<List<RateTick>> GetRatesAsync(string symbolA, string symbolB, CancellationToken ct = default)
-        {
-            if (symbolA == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbolA))
-                throw new ArgumentException(nameof(symbolA));
-            if (symbolB == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbolB))
-                throw new ArgumentException(nameof(symbolB));
-            if (symbolA == symbolB)
-                throw new ArgumentException($"Invalid currency symbol combination: {symbolA}={symbolB}.");
+            var task     = (symbol     != "USD") ? Cache.Get(symbol,     ct) : null;
+            var taskBase = (symbolBase != "USD") ? Cache.Get(symbolBase, ct) : null;
 
-            var taskA = (symbolA != "USD") ? Cache.Get(symbolA, ct) : null;
-            var taskB = (symbolB != "USD") ? Cache.Get(symbolB, ct) : null;
-            var ratesA = (taskA != null) ? await taskA.ConfigureAwait(false) : null;
-            var ratesB = (taskB != null) ? await taskB.ConfigureAwait(false) : null;
-            if (ratesA == null)
+            var rates     = (task     != null) ? await     task.ConfigureAwait(false) : null;
+            var ratesBase = (taskBase != null) ? await taskBase.ConfigureAwait(false) : null;
+
+            if (rates == null)
             {
-                if (ratesB == null)
-                    throw new InvalidOperationException();
-                return ratesB;
+                if (ratesBase == null)
+                    throw new ArgumentException($"Invalid currency pair: {symbol}={symbolBase}.");
+                return ratesBase;
             }
-            if (ratesB == null)
-                return ratesA.Select(r => new RateTick(r.Date, 1d / r.Rate)).ToList(); // invert
+            if (ratesBase == null)
+                return rates.Select(r => new RateTick(r.Date, 1d / r.Rate)).ToList(); // invert
             var comboRates = new List<RateTick>();
-            foreach (var tick in ratesB)
+            foreach (var tick in ratesBase)
             {
-                var rate = InterpolateRate(ratesA, tick.Date);
+                var rate = InterpolateRate(rates, tick.Date);
                 if (rate != null)
                     comboRates.Add(new RateTick(tick.Date, tick.Rate / rate.Value));
             }

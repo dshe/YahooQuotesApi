@@ -37,8 +37,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task BadSymbol()
         {
-            Security? security = await new YahooSnapshot().GetAsync("InvalidSymbol");
-            Assert.Null(security);
+            await Assert.ThrowsAnyAsync<Exception>(async () => await new YahooSnapshot().GetAsync("InvalidSymbol"));
         }
 
         [Fact]

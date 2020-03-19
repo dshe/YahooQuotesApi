@@ -3,6 +3,7 @@ using Flurl.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,9 +21,14 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly List<string> FieldNames = new List<string>();
+        private readonly ConcurrentDictionary<string, Security?> SecuritiesCache = new ConcurrentDictionary<string, Security?>();
+        private readonly bool UseCache;
 
-        public YahooSnapshot() : this(NullLogger<YahooSnapshot>.Instance) { }
-        public YahooSnapshot(ILogger<YahooSnapshot> logger) => Logger = logger;
+        public YahooSnapshot(bool useCache = false, ILogger<YahooSnapshot>? logger = null)
+        {
+            Logger = logger ?? NullLogger<YahooSnapshot>.Instance;
+            UseCache = useCache;
+        }
 
         public YahooSnapshot Fields(params Field[] fields) => Fields(fields.ToList());
         public YahooSnapshot Fields(IEnumerable<Field> fields) => Fields(fields.Select(f => f.ToString()).ToList());
@@ -39,26 +45,39 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public async Task<Security?> GetAsync(string symbol, CancellationToken ct = default)
+        public async Task<Security> GetAsync(string symbol, CancellationToken ct = default)
         {
             var securities = await GetAsync(new string[] { symbol }, ct).ConfigureAwait(false);
-            return securities.Single().Value;
+            var security = securities.Single().Value;
+            if (security == null)
+                throw new Exception($"Unknown symbol: {symbol}.");
+            return security;
         }
 
         public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, CancellationToken ct = default)
         {
-            if (symbols == null)
-                throw new ArgumentNullException(nameof(symbols));
-            if (!symbols.Any())
+            var syms = Utility.CheckSymbols(symbols);
+            if (!syms.Any())
                 return new Dictionary<string, Security?>();
-            if (symbols.Any(s => string.IsNullOrEmpty(s) || s.Contains(" ")))
-                throw new ArgumentException(nameof(symbols));
-            symbols = new HashSet<string>(symbols, StringComparer.OrdinalIgnoreCase); // ignore duplicates
+            
             var securities = new Dictionary<string, Security?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var symbol in symbols)
+            if (UseCache)
+            {
+                foreach (var symbol in syms)
+                {
+                    if (!SecuritiesCache.TryGetValue(symbol, out Security? security))
+                        break;
+                    securities.Add(symbol, security);
+                }
+                if (securities.Count == syms.Count())
+                    return securities;
+                securities.Clear();
+            }
+
+            foreach (var symbol in syms)
                 securities.Add(symbol, null);
 
-            var urls = GetUrls(symbols, FieldNames);
+            var urls = GetUrls(syms, FieldNames);
             var tasks = urls.Select(u => MakeRequest(u, ct));
 
             foreach (var task in tasks)
@@ -68,7 +87,7 @@ namespace YahooQuotesApi
                 {
                     expando = await task.ConfigureAwait(false);
                 }
-                catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                catch (FlurlHttpException ex) when (ex.Call.Response.StatusCode == HttpStatusCode.NotFound)
                 {
                     // If there are no valid symbols, this exception is thrown by Flurl
                     continue;
@@ -81,6 +100,11 @@ namespace YahooQuotesApi
 
                 foreach (IDictionary<string, dynamic> dictionary in quoteExpando.result)
                     securities[dictionary["symbol"]] = new Security(dictionary);
+            }
+            if (UseCache)
+            {
+                foreach (var security in securities)
+                    SecuritiesCache[security.Key] = security.Value; // add or update
             }
             return securities;
         }

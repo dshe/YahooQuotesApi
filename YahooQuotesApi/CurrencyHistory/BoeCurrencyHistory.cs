@@ -67,17 +67,21 @@ namespace YahooQuotesApi
             { "BRL", ("B8KL", "Brazilian Real") }
         };
 
-        private readonly string DateFrom;
+        private string DateFrom = "01/Jan/1963";
         private readonly ILogger Logger;
         private readonly HttpClient HttpClient;
 
-        internal BoeCurrencyHistory(LocalDate start, ILogger logger, HttpClient httpClient)
+        internal BoeCurrencyHistory(ILogger logger, HttpClient httpClient)
+        {
+            Logger = logger;
+            HttpClient = httpClient;
+        }
+
+        internal void SetStartDate(LocalDate start)
         {
             if (start.At(SpotTime).InZoneStrictly(TimeZone).ToInstant() > Utility.Clock.GetCurrentInstant())
                 throw new ArgumentException("start > now");
             DateFrom = start == LocalDate.MinIsoValue ? "01/Jan/1963" : start.ToString("dd/MMM/yyyy", CultureInfo.InvariantCulture);
-            Logger = logger;
-            HttpClient = httpClient;
         }
 
         internal async Task<List<RateTick>> Retrieve(string symbol, CancellationToken ct)
