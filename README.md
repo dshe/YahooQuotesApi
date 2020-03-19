@@ -16,9 +16,6 @@ YahooSnapshot Snapshot = new YahooSnapshot();
 
 Security? security = await Snapshot.GetAsync("IBM");
 
-if (security == null)
-    throw new Exception("Unknown symbol: IBM");
-
 Assert.True(security.RegularMarketPrice > 0);
 Assert.NotNull(security.LongName);
 ```
