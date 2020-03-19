@@ -66,8 +66,5 @@ List<RateTick>? rates = await CurrencyHistory
     .FromDate(new LocalDate(2010,1,1))
     .GetRatesAsync(currency, baseCurrency);
 
-if (rates == null)
-    throw new Exception($"Unsupported currency: {symbol}/{baseCurrency}");
-
 Assert.True(rates[0].Rate > 0);
 ```
