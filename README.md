@@ -14,56 +14,48 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-Security? security = await Snapshot.GetAsync("C");
+Security? security = await Snapshot.GetAsync("IBM");
 
 if (security == null)
-    throw new Exception("Invalid Symbol: C");
+    throw new Exception("Unknown symbol: IBM");
 
-Assert.True(security.RegularMarketVolume > 0);
+Assert.True(security.RegularMarketPrice > 0);
+Assert.NotNull(security.LongName);
 ```
 #### Price History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<PriceTick>? ticks = await History.Period(90).GetPricesAsync("C");
+List<PriceTick>? prices = await History.FromDays(90).GetPricesAsync("IBM");
 
-if (ticks == null)
-    throw new Exception("Invalid symbol: C");
-
-Assert.NotEmpty(ticks);
+Assert.True(prices[0].Close > 10);
 ```
 #### Dividend History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<DividendTick>? dividends = await History.GetDividendsAsync("AAPL");
+List<DividendTick>? dividends = await History.GetDividendsAsync("IBM");
 
-if (dividends == null)
-    throw new Exception("Invalid symbol: AAPL");
-
-Assert.NotEmpty(dividends);
+Assert.True(dividends[0].Dividend > 0);
 ```
 #### Split History
 ```csharp
 YahooHistory History = new YahooHistory();
 
-List<SplitTick>? splits = await History.GetSplitsAsync("AAPL");
+List<SplitTick>? splits = await History.GetSplitsAsync("IBM");
 
-if (splits == null)
-    throw new Exception("Invalid symbol: AAPL");
-
-Assert.NotEmpty(splits);
+Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
 ```
 #### Currency Rate History (https://www.bankofengland.co.uk)
 ```csharp
 CurrencyHistory CurrencyHistory = new CurrencyHistory();
 
+string currency     = "EUR";
+string baseCurrency = "USD";
+
 List<RateTick>? rates = await CurrencyHistory
-    .Period(100)
-    .GetRatesAsync("EURJPY=X");
+    .FromDate(new LocalDate(2010,1,1))
+    .GetRatesAsync(currency, baseCurrency);
 
-if (rates == null)
-    throw new Exception("Invalid symbol: EURJPY=X");
-
-Assert.NotEmpty(rates);    
+Assert.True(rates[0].Rate > 0);
 ```
