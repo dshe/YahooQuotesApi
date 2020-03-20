@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -63,5 +64,8 @@ namespace YahooQuotesApi
 
         internal static string ToCommaDelimitedList(this IEnumerable<string> strings) =>
             string.Join(", ", strings);
+
+        internal static IReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this Dictionary<TKey, TValue> dictionary) =>
+            new ReadOnlyDictionary<TKey, TValue>(dictionary);
     }
 }

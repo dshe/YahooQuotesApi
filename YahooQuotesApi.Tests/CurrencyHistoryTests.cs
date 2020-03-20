@@ -25,7 +25,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task Example()
         {
-            List<RateTick>? ticks = await new CurrencyHistory(Logger).FromDate(new LocalDate(2000,1,1)).GetRatesAsync("USD", "CAD");
+            IReadOnlyList<RateTick>? ticks = await new CurrencyHistory(Logger).FromDate(new LocalDate(2000,1,1)).GetRatesAsync("USD", "CAD");
             Assert.NotEmpty(ticks);
         }
 
@@ -67,7 +67,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task ManyRates()
         {
-            List<RateTick>? ticks = await new CurrencyHistory(Logger).GetRatesAsync("USD", "MYR");
+            IReadOnlyList<RateTick>? ticks = await new CurrencyHistory(Logger).GetRatesAsync("USD", "MYR");
             Assert.NotEmpty(ticks);
             Write($"Days downloaded: {ticks!.Count}.");
         }

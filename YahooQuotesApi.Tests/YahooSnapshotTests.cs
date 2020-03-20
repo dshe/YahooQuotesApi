@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NodaTime;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,7 +30,7 @@ namespace YahooQuotesApi.Tests
         public async Task MultiQuery()
         {
             //Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "C", "MSFT" });
-            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new List<string>() { "C", "MSFT" });
+            IReadOnlyDictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new List<string>() { "C", "MSFT" });
             Assert.Equal(2, securities.Count);
             Security? msft = securities["MSFT"];
             if (msft == null)
@@ -46,7 +47,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task BadSymbols()
         {
-            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "MSFT", "InvalidSymbol" });
+            IReadOnlyDictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "MSFT", "InvalidSymbol" });
             Assert.Equal(2, securities.Count);
             Security? msft = securities["MSFT"];
             if (msft == null)
@@ -119,7 +120,7 @@ namespace YahooQuotesApi.Tests
                 .Take(100)
                 .ToList();
 
-            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(symbols);
+            IReadOnlyDictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(symbols);
 
             var counted = symbols.Where(s => securities.ContainsKey(s)).Count();
             Write($"requested symbols: {symbols.Count}");

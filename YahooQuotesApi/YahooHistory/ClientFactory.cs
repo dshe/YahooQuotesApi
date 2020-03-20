@@ -1,4 +1,5 @@
 ﻿﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Flurl.Http;
@@ -29,8 +30,6 @@ namespace YahooQuotesApi
             {
                 Semaphore.Release();
             }
-            if (Client == null)
-                throw new Exception("Null client.");
             if (Crumb == null)
                 throw new Exception("Null crumb.");
             return (Client, Crumb);
@@ -51,7 +50,7 @@ namespace YahooQuotesApi
                 
                 await client.Request().GetAsync(ct).ConfigureAwait(false);
 
-                if (client.Cookies?.Count > 0)
+                if (client.Cookies.Any())
                     return client;
 
                 logger.LogDebug("Failure to create client. Retrying...");

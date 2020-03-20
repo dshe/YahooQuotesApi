@@ -113,18 +113,11 @@ namespace YahooQuotesApi
             return XDocument.Load(stream);
         }
 
-        private static List<RateTick> CreateList(XDocument xdoc)
-        {
-            var list = new List<RateTick>();
-            var rows = xdoc.Root.Descendants().Where(x => x.Attribute("TIME") != null);
-            foreach (var row in rows)
-            {
-                var rate = ParseRate(row);
-                var date = ParseDate(row);
-                list.Add(new RateTick(date, rate));
-            }
-            return list;
-        }
+        private static List<RateTick> CreateList(XDocument xdoc) =>
+            xdoc.Root.Descendants()
+                .Where(x => x.Attribute("TIME") != null)
+                .Select(row => new RateTick(ParseDate(row), ParseRate(row)))
+                .ToList();
 
         private static Instant ParseDate(XElement row)
         {

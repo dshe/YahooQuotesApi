@@ -42,7 +42,7 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task SimpleTest()
         {
-            IList<PriceTick>? ticks = await YahooHistory
+            IReadOnlyList<PriceTick>? ticks = await YahooHistory
                 .FromDays(30)
                 .GetPricesAsync("C");
 
@@ -56,9 +56,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task TestSymbols()
         {
-            Dictionary<string, List<PriceTick>?> ticks = await YahooHistory.GetPricesAsync(new[] { "C", "badSymbol" });
+            IReadOnlyDictionary<string, IReadOnlyList<PriceTick>?> ticks = await YahooHistory.GetPricesAsync(new[] { "C", "badSymbol" });
             Assert.Equal(2 , ticks.Count);
-            IList<PriceTick>? tickList = ticks["C"];
+            IReadOnlyList<PriceTick>? tickList = ticks["C"];
             if (tickList == null)
                 throw new Exception("Invalid symbol");
             Assert.True(tickList[0].Close > 0);
@@ -107,7 +107,7 @@ namespace YahooQuotesApi.Tests
             var date = new LocalDate(2020, 2, 7);
             var instant = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
 
-            IList<DividendTick>? list = await YahooHistory
+            IReadOnlyList<DividendTick>? list = await YahooHistory
                 .FromDate(instant)
                 .GetDividendsAsync(symbol);
 
@@ -124,7 +124,7 @@ namespace YahooQuotesApi.Tests
             var date = new LocalDate(2014, 6, 9);
             var instant = date.At(new LocalTime(16, 0)).InZoneStrictly(tz).ToInstant();
 
-            IList<SplitTick>? splits = await YahooHistory
+            IReadOnlyList<SplitTick>? splits = await YahooHistory
                 .FromDate(instant)
                 .GetSplitsAsync(symbol);
 

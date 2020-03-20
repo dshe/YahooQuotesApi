@@ -44,36 +44,36 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public Task<List<PriceTick>> GetPricesAsync(string symbol, CancellationToken ct = default) =>
+        public Task<IReadOnlyList<PriceTick>> GetPricesAsync(string symbol, CancellationToken ct = default) =>
             GetTicksAsync<PriceTick>(symbol, ct);
-        public Task<List<DividendTick>> GetDividendsAsync(string symbol, CancellationToken ct = default) =>
+        public Task<IReadOnlyList<DividendTick>> GetDividendsAsync(string symbol, CancellationToken ct = default) =>
             GetTicksAsync<DividendTick>(symbol, ct);
-        public Task<List<SplitTick>> GetSplitsAsync(string symbol, CancellationToken ct = default) =>
+        public Task<IReadOnlyList<SplitTick>> GetSplitsAsync(string symbol, CancellationToken ct = default) =>
             GetTicksAsync<SplitTick>(symbol, ct);
 
 
-        public Task<Dictionary<string, List<PriceTick>?>> GetPricesAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<PriceTick>?>> GetPricesAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
             GetTicksAsync<PriceTick>(symbols, ct);
-        public Task<Dictionary<string, List<DividendTick>?>> GetDividendsAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<DividendTick>?>> GetDividendsAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
             GetTicksAsync<DividendTick>(symbols, ct);
-        public Task<Dictionary<string, List<SplitTick>?>> GetSplitsAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<SplitTick>?>> GetSplitsAsync(IEnumerable<string> symbols, CancellationToken ct = default) =>
             GetTicksAsync<SplitTick>(symbols, ct);
 
-        private async Task<Dictionary<string, List<T>?>> GetTicksAsync<T>(IEnumerable<string> symbols, CancellationToken ct)
+        private async Task<IReadOnlyDictionary<string, IReadOnlyList<T>?>> GetTicksAsync<T>(IEnumerable<string> symbols, CancellationToken ct)
         {
             var syms = Utility.CheckSymbols(symbols);
+            var dictionary = new Dictionary<string, IReadOnlyList<T>?>(StringComparer.OrdinalIgnoreCase);
             if (!syms.Any())
-                return new Dictionary<string, List<T>?>();
+                return dictionary;
 
             // start tasks
             var snapshotTask = YahooSnapshot.GetAsync(symbols); // cache
-            var items = syms.Select(s => (s, GetTicksAsync<T>(s, ct)));
+            var taskItems = syms.Select(symbol => (symbol, task: GetTicksAsync<T>(symbol, ct)));
             await snapshotTask.ConfigureAwait(false);
 
-            var dictionary = new Dictionary<string, List<T>?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (symbol, task) in items)
+            foreach (var (symbol, task) in taskItems)
             {
-                List<T>? result;
+                IReadOnlyList<T>? result;
                 try
                 {
                     result = await task.ConfigureAwait(false);
@@ -88,19 +88,19 @@ namespace YahooQuotesApi
         }
 
 
-        private async Task<List<T>> GetTicksAsync<T>(string symbol, CancellationToken ct)
+        private async Task<IReadOnlyList<T>> GetTicksAsync<T>(string symbol, CancellationToken ct)
         {
             var sym = Utility.CheckSymbol(symbol);
             var key = $"{sym},{TickParser.GetParamFromType<T>()},{Freq.Name()}";
             var result = await HistoryCache.Get(key, ct).ConfigureAwait(false);
-            return result.Cast<T>().ToList(); // tricky
+            return result.Cast<T>().ToList(); // cast elements
         }
 
         private async Task<List<object>> Producer(string key, CancellationToken ct)
         {
-            var parts = key.Split(',');
-            var symbol = parts[0];
-            var param = parts[1];
+            var parts     = key.Split(',');
+            var symbol    = parts[0];
+            var param     = parts[1];
             var frequency = parts[2];
             return await GetTickResponseAsync(symbol, param, frequency, ct).ConfigureAwait(false); ;
         }
@@ -114,7 +114,7 @@ namespace YahooQuotesApi
             using var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture);
 
             if (!csvReader.Read()) // skip header
-                throw new Exception("Could not read headers.");
+                throw new Exception("Could not read csv headers.");
             var ticks = new List<object>();
             while (csvReader.Read())
             {

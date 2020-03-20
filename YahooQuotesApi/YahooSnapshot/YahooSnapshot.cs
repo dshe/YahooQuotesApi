@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -55,12 +56,12 @@ namespace YahooQuotesApi
             return security;
         }
 
-        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, CancellationToken ct = default)
+        public async Task<IReadOnlyDictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, CancellationToken ct = default)
         {
             var syms = Utility.CheckSymbols(symbols);
             if (!syms.Any())
                 return new Dictionary<string, Security?>();
-            
+
             var securities = new Dictionary<string, Security?>(StringComparer.OrdinalIgnoreCase);
             if (UseCache)
             {
@@ -135,7 +136,7 @@ namespace YahooQuotesApi
             while (enumerator.MoveNext())
             {
                 var str = enumerator.Current;
-                str = WebUtility.UrlEncode(str); // just encode the symbols (some con
+                str = WebUtility.UrlEncode(str); // just encode the symbols
                 if (len + str.Length > maxLength || list.Count == maxItems)
                 {
                     list = new List<string>();

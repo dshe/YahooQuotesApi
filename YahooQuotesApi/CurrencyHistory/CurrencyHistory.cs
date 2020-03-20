@@ -34,7 +34,7 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public async Task<List<RateTick>> GetRatesAsync(string symbol, string symbolBase, CancellationToken ct = default)
+        public async Task<IReadOnlyList<RateTick>> GetRatesAsync(string symbol, string symbolBase, CancellationToken ct = default)
         {
             if (symbol == null || !BoeCurrencyHistory.Symbols.ContainsKey(symbol))
                 throw new ArgumentException(nameof(symbol));
@@ -55,14 +55,12 @@ namespace YahooQuotesApi
             }
             if (ratesBase == null)
                 return rates.Select(r => new RateTick(r.Date, 1d / r.Rate)).ToList(); // invert
-            var comboRates = new List<RateTick>();
-            foreach (var tick in ratesBase)
-            {
-                var rate = InterpolateRate(rates, tick.Date);
-                if (rate != null)
-                    comboRates.Add(new RateTick(tick.Date, tick.Rate / rate.Value));
-            }
-            return comboRates;
+
+            return ratesBase
+                .Select(tick => (tick, rate: InterpolateRate(rates, tick.Date)))
+                .Where(item => item.rate != null)
+                .Select(item => new RateTick(item.tick.Date, item.tick.Rate / item.rate!.Value))
+                .ToList();
         }
 
         private double? InterpolateRate(List<RateTick> list, Instant date, int tryIndex = -1)
