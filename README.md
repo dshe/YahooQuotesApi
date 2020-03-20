@@ -14,7 +14,7 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<string>() { "C", "MSFT" });
+Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<string>() { "C", "IBM" });
 
 Security? security = securities["IBM"];
 
