@@ -17,16 +17,19 @@ namespace YahooQuotesApi.Tests
         public YahooSnapshotTest(ITestOutputHelper output) => Write = output.WriteLine;
 
         [Fact]
-        public async Task SimpleQuery()
+        public async Task SingleQuery()
         {
-            // one symbol
             Security? security = await new YahooSnapshot().GetAsync("C");
             if (security == null)
                 throw new NullReferenceException("Invalid Symbol: C");
             Assert.True(security.RegularMarketPrice > 0);
+        }
 
-            // multiple symbols
-            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "C", "MSFT" });
+        [Fact]
+        public async Task MultiQuery()
+        {
+            //Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new[] { "C", "MSFT" });
+            Dictionary<string, Security?> securities = await new YahooSnapshot().GetAsync(new List<string>() { "C", "MSFT" });
             Assert.Equal(2, securities.Count);
             Security? msft = securities["MSFT"];
             if (msft == null)

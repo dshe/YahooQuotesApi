@@ -66,12 +66,11 @@ namespace YahooQuotesApi
                 return new Dictionary<string, List<T>?>();
 
             // start tasks
-            var snapshotTask = YahooSnapshot.GetAsync(symbols); // load cache
+            var snapshotTask = YahooSnapshot.GetAsync(symbols); // cache
             var items = syms.Select(s => (s, GetTicksAsync<T>(s, ct)));
-
             await snapshotTask.ConfigureAwait(false);
 
-            var dictionary = new Dictionary<string, List<T>?>();
+            var dictionary = new Dictionary<string, List<T>?>(StringComparer.OrdinalIgnoreCase);
             foreach (var (symbol, task) in items)
             {
                 List<T>? result;
@@ -109,7 +108,7 @@ namespace YahooQuotesApi
         private async Task<List<object>> GetTickResponseAsync(string symbol, string param, string frequency, CancellationToken ct) 
         {
             var closeTime = GetCloseTimeFromSymbol(symbol);
-            var tz = await GetTimeZone(symbol, ct).ConfigureAwait(false); // start task
+            var tz = await GetTimeZone(symbol, ct).ConfigureAwait(false);
             using var stream = await GetResponseStreamAsync(symbol, param, frequency, ct).ConfigureAwait(false);
             using var sr = new StreamReader(stream);
             using var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture);

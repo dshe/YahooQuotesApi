@@ -12,10 +12,10 @@ using System.Xml.Linq;
 
 /*
 https://www.bankofengland.co.uk/statistics/exchange-rates
-The data represent indicative middle market(mean of spot buying and selling)
+The data represents indicative middle market(mean of spot buying and selling)
 rates as observed by the Bank's Foreign Exchange Desk in the London interbank market around 4pm.
 BOE uses non-standard currency symbols so we need to find them.
-These BoE currency rates are in units per USD(USDJPY = 100)
+These BoE currency rates are in units per USD(USDJPY = 100).
 */
 
 namespace YahooQuotesApi

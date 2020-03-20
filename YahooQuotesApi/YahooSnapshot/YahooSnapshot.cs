@@ -12,11 +12,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Invalid symbols are often, but not always, ignored by Yahoo.
+// So the number of symbols returned may be less than requested.
+// When multiple symbols are requested, null is returned for invalid symbols.
+
 namespace YahooQuotesApi
 {
-    // Invalid symbols are often, but not always, ignored by Yahoo.
-    // So the number of symbols returned may be less than requested.
-
     public sealed class YahooSnapshot
     {
         private readonly ILogger Logger;
@@ -71,16 +72,12 @@ namespace YahooQuotesApi
                 }
                 if (securities.Count == syms.Count())
                     return securities;
-                securities.Clear();
             }
 
             foreach (var symbol in syms)
-                securities.Add(symbol, null);
+                securities[symbol] = null;
 
-            var urls = GetUrls(syms, FieldNames);
-            var tasks = urls.Select(u => MakeRequest(u, ct));
-
-            foreach (var task in tasks)
+            foreach (var task in GetUrls(syms, FieldNames).Select(u => MakeRequest(u, ct)))
             {
                 dynamic expando;
                 try
@@ -112,11 +109,8 @@ namespace YahooQuotesApi
         private async Task<dynamic> MakeRequest(string url, CancellationToken ct)
         {
             Logger.LogInformation(url);
-
-            return await url
-                .GetAsync(ct)
-                .ReceiveJson() // ExpandoObject
-                .ConfigureAwait(false);
+            // ExpandoObject
+            return await url.GetJsonAsync(ct).ConfigureAwait(false);
         }
 
         private static List<string> GetUrls(IEnumerable<string> symbols, List<string> fields)
