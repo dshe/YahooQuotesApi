@@ -18,6 +18,9 @@ Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<stri
 
 Security? security = securities["IBM"];
 
+if (security == null)
+    throw new Exception("Unknown symbol: IBM");
+
 Assert.True(security.RegularMarketPrice > 100);
 Assert.NotNull(security.LongName);
 ```
