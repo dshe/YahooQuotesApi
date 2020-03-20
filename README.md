@@ -14,12 +14,11 @@ using YahooQuotesApi;
 ```csharp
 YahooSnapshot Snapshot = new YahooSnapshot();
 
-Security? security = await Snapshot.GetAsync("IBM");
+Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<string>() { "C", "IBM" });
 
-if (security == null)
-    throw new Exception("Unknown symbol: IBM");
+Security? security = securities["IBM"];
 
-Assert.True(security.RegularMarketPrice > 0);
+Assert.True(security.RegularMarketPrice > 100);
 Assert.NotNull(security.LongName);
 ```
 #### Price History
