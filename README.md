@@ -10,54 +10,68 @@
 using NodaTime;
 using YahooQuotesApi;
 ```
-#### Quote Snapshots
+#### Snapshots
 ```csharp
-YahooSnapshot Snapshot = new YahooSnapshot();
-
-Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<string>() { "C", "IBM" });
+YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+            
+IReadOnlyDictionary<string, Security?> securities = await yahooQuotes.GetAsync(new[] { "IBM", "MSFT" });
 
 Security? security = securities["IBM"];
 
 if (security == null)
-    throw new Exception("Unknown symbol: IBM");
+    throw new ArgumentException("Unknown symbol: IBM.");
 
-Assert.True(security.RegularMarketPrice > 100);
-Assert.NotNull(security.LongName);
+Assert.Equal("International Business Machines Corporation", security.LongName);
+Assert.True(security.RegularMarketPrice > 10);
 ```
-#### Price History
+#### History
 ```csharp
-YahooHistory History = new YahooHistory();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+    .WithPriceHistory()
+    .WithDividendHistory()
+    .WithSplitHistory()
+    .Build();
 
-List<PriceTick> prices = await History.FromDays(90).GetPricesAsync("IBM");
+Security security = await yahooQuotes.GetAsync("MSFT") ?? throw new ArgumentException();
 
-Assert.True(prices[0].Close > 10);
+Assert.Equal("NasdaqGS", security.FullExchangeName);
+
+IReadOnlyList<PriceTick>? priceHistory = security.PriceHistory!;
+Assert.Equal(58.28125, priceHistory[0].Close);
+
+IReadOnlyList<DividendTick>? dividendHistory = security.DividendHistory!;
+Assert.Equal(new LocalDate(2003, 2, 19), dividendHistory[0].Date);
+Assert.Equal(0.08, dividendHistory[0].Dividend);
+
+IReadOnlyList<SplitTick> splitHistory = security.SplitHistory!;
+Assert.Equal(new LocalDate(2003, 2, 18), splitHistory[0].Date);
+Assert.Equal(1, splitHistory[0].BeforeSplit);
+Assert.Equal(2, splitHistory[0].AfterSplit);
 ```
-#### Dividend History
+#### CurrencyRates
 ```csharp
-YahooHistory History = new YahooHistory();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+    .WithPriceHistory()
+    .HistoryStart(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .Build();
 
-List<DividendTick> dividends = await History.GetDividendsAsync("IBM");
+Security? security = await yahooQuotes.GetAsync("EURJPY=X");
 
-Assert.True(dividends[0].Dividend > 0);
+Assert.Equal("EUR/JPY", security!.ShortName);
+
+Assert.Equal(121.970001, security.PriceHistory![0].Close);
 ```
-#### Split History
+#### History with Base Currency
 ```csharp
-YahooHistory History = new YahooHistory();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+    .WithPriceHistory(baseCurrency: "JPY")
+    .HistoryStart(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .Build();
 
-List<SplitTick> splits = await History.GetSplitsAsync("IBM");
+Security? security = await yahooQuotes.GetAsync("TSLA");
 
-Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
-```
-#### Currency Rate History (https://www.bankofengland.co.uk)
-```csharp
-CurrencyHistory CurrencyHistory = new CurrencyHistory();
+Assert.Equal("USD", security!.Currency);
+Assert.Equal("Tesla, Inc.", security.ShortName);
 
-string currency     = "EUR";
-string baseCurrency = "USD";
-
-List<RateTick> rates = await CurrencyHistory
-    .FromDate(new LocalDate(2010,1,1))
-    .GetRatesAsync(currency, baseCurrency);
-
-Assert.True(rates[0].Rate > 0);
+Assert.Equal(46759.61698027081, security.PriceHistory![0].Close);
 ```
