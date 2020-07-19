@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Flurl.Http;
 using Microsoft.Extensions.Logging;
+using Flurl.Http;
 
 namespace YahooQuotesApi
 {

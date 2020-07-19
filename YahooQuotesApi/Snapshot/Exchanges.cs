@@ -1,8 +1,9 @@
-﻿using NodaTime;
-using System;
+﻿using System;
 using System.Linq;
+using NodaTime;
 
 //https://help.yahoo.com/kb/exchanges-data-providers-yahoo-finance-sln2310.html
+//https://support.office.com/en-us/article/about-our-data-sources-98a03e23-37f6-4776-beea-c5a6c8e787e6
 
 namespace YahooQuotesApi
 {
@@ -97,10 +98,10 @@ namespace YahooQuotesApi
 
         }
 
-        internal static string GetSuffix(string symbol)
+        private static string GetSuffix(string symbol)
         {
             if (string.IsNullOrWhiteSpace(symbol))
-                throw new ArgumentException($"Invalid symbol suffix: {symbol}.");
+                throw new ArgumentException($"Invalid symbol: {symbol}.");
             var partsArray = symbol.Split('.');
             var parts = partsArray.Count();
             if (parts == 1)

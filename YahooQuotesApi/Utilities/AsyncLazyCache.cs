@@ -1,30 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using NodaTime;
 
 namespace YahooQuotesApi
 {
-    internal class AsyncLazyCache<T1, T2>
+    /*
+     * TResult - the type of result to be cached
+     * TKey - the type of the key used to identify the result
+     */
+    internal class AsyncLazyCache<TKey, TResult>
     {
-        private readonly Dictionary<T1, Task<T2>> TaskCache = new Dictionary<T1, Task<T2>>();
-        private readonly Func<T1, CancellationToken, Task<T2>> Producer;
+        private readonly IClock Clock;
+        private readonly Dictionary<TKey, (Instant, Task<TResult>)> TaskCache = new Dictionary<TKey, (Instant, Task<TResult>)>();
+        private readonly Duration Duration;
 
-        internal AsyncLazyCache(Func<T1, CancellationToken, Task<T2>> producer) => Producer = producer;
-
-        internal async Task<T2> Get(T1 key, CancellationToken ct = default)
+        internal AsyncLazyCache() : this(SystemClock.Instance, Duration.Zero) { }
+        internal AsyncLazyCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
+        internal AsyncLazyCache(IClock clock, Duration cacheDuration)
         {
-            Task<T2> task;
+            Clock = clock;
+            Duration = cacheDuration;
+        }
+
+        internal async Task<TResult> Get(TKey key, Func<Task<TResult>> factory)
+        {
+            (Instant time, Task<TResult> task) item;
             lock (TaskCache)
             {
-                if (!TaskCache.TryGetValue(key, out task))
+                var now = Clock.GetCurrentInstant();
+                if (!TaskCache.TryGetValue(key, out item) || now - item.time > Duration)
                 {
-                    task = Producer(key, ct);
-                    TaskCache.Add(key, task);
+                    var task = factory(); // start task
+                    item = (now, task);
+                    TaskCache[key] = item;
                 }
             }
-            return await task.ConfigureAwait(false);
+            return await item.task.ConfigureAwait(false);
         }
 
         internal void Clear()

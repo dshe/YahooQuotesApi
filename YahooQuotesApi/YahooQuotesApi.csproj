@@ -6,11 +6,10 @@
     <Nullable>enable</Nullable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/dshe/YahooQuotesApi</PackageProjectUrl>
-    <PackageIconUrl></PackageIconUrl>
     <PackageTags>yahoo finance api quotes dividends splits</PackageTags>
     <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
     <Authors>DavidS, Karl Wan</Authors>
-    <Version>3.1.2.7</Version>
+    <Version>3.1.2.15</Version>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <FileVersion>1.0.0</FileVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -18,17 +17,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="15.0.1" />
+    <PackageReference Include="CsvHelper" Version="15.0.5" />
     <PackageReference Include="Flurl.Http" Version="2.4.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
-    <PackageReference Include="NodaTime" Version="2.4.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
+    <PackageReference Include="NodaTime" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\worm64.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
+    <None Include="worm64.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
