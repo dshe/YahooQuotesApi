@@ -10,7 +10,7 @@
 using NodaTime;
 using YahooQuotesApi;
 ```
-#### snapshots
+### snapshots
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
             
@@ -24,7 +24,7 @@ if (security == null)
 Assert.Equal("International Business Machines Corporation", security.LongName);
 Assert.True(security.RegularMarketPrice > 10);
 ```
-#### history
+### history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory()
@@ -48,7 +48,7 @@ Assert.Equal(new LocalDate(2003, 2, 18), splitHistory[0].Date);
 Assert.Equal(1, splitHistory[0].BeforeSplit);
 Assert.Equal(2, splitHistory[0].AfterSplit);
 ```
-#### currency rates
+### currency rates
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory()
@@ -61,7 +61,7 @@ Assert.Equal("EUR/JPY", security!.ShortName);
 
 Assert.Equal(121.970001, security.PriceHistory![0].Close);
 ```
-#### history in base currency
+### history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory(baseCurrency: "JPY")
