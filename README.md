@@ -60,7 +60,7 @@ Assert.Equal(58.28125, tick.Close);
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory()
-    .HistoryStart(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
 Security? security = await yahooQuotes.GetAsync("EURUSD=X");
@@ -79,7 +79,7 @@ Assert.Equal(1.122083, tick.Close);
 ```csharp
 var security = await new YahooQuotesBuilder()
     .WithPriceHistory(baseCurrency: "JPY")
-    .HistoryStart(Instant.FromUtc(2020, 7, 15, 0, 0))
+    .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
     .Build()
     .GetAsync("TSLA")
     ?? throw new ArgumentException("Unknown symbol: TSLA.");
