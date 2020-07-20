@@ -14,7 +14,8 @@ using YahooQuotesApi;
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-IReadOnlyDictionary<string, Security?> securities = await yahooQuotes.GetAsync(new[] { "AAPL", "X" });
+IReadOnlyDictionary<string, Security?> securities =
+    await yahooQuotes.GetAsync(new[] { "AAPL", "X" });
 
 Assert.Equal(2, securities.Count);
 
