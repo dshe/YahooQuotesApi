@@ -10,54 +10,85 @@
 using NodaTime;
 using YahooQuotesApi;
 ```
-#### Quote Snapshots
+### snapshots
 ```csharp
-YahooSnapshot Snapshot = new YahooSnapshot();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-Dictionary<string, Security?> securities = await Snapshot.GetAsync(new List<string>() { "C", "IBM" });
+IReadOnlyDictionary<string, Security?> securities =
+    await yahooQuotes.GetAsync(new[] { "AAPL", "X" });
 
-Security? security = securities["IBM"];
+Assert.Equal(2, securities.Count);
 
+Security? security = securities["AAPL"];
 if (security == null)
-    throw new Exception("Unknown symbol: IBM");
+    throw new ArgumentException("Unknown symbol: AAPL.");
 
-Assert.True(security.RegularMarketPrice > 100);
-Assert.NotNull(security.LongName);
+Assert.Equal("Apple Inc.", security.LongName);
+Assert.True(security.RegularMarketPrice > 0);
 ```
-#### Price History
+### history
 ```csharp
-YahooHistory History = new YahooHistory();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+    .WithPriceHistory()
+    .WithDividendHistory()
+    .WithSplitHistory()
+    .Build();
 
-List<PriceTick> prices = await History.FromDays(90).GetPricesAsync("IBM");
+Security? security = await yahooQuotes.GetAsync("MSFT");
 
-Assert.True(prices[0].Close > 10);
+Assert.True(security!.RegularMarketPrice > 0);
+Assert.Equal("NasdaqGS", security!.FullExchangeName);
+
+IReadOnlyList<DividendTick>? dividendHistory = security.DividendHistory;
+Assert.Equal(new LocalDate(2003, 2, 19), dividendHistory![0].Date);
+Assert.Equal(0.08, dividendHistory[0].Dividend);
+
+IReadOnlyList<SplitTick>? splitHistory = security.SplitHistory;
+Assert.Equal(new LocalDate(2003, 2, 18), splitHistory![0].Date);
+Assert.Equal(1, splitHistory[0].BeforeSplit);
+Assert.Equal(2, splitHistory[0].AfterSplit);
+
+IReadOnlyList<PriceTick>? priceHistory = security.PriceHistory;
+PriceTick tick = priceHistory![0];
+ZonedDateTime zdt = tick.Date;
+Assert.Equal("America/New_York", zdt.Zone.Id);
+Assert.Equal(new LocalDate(2000, 1, 3), zdt.Date);
+Assert.Equal(new LocalTime(16, 0, 0), zdt.TimeOfDay);
+Assert.Equal(58.28125, tick.Close);
 ```
-#### Dividend History
+### currency rates
 ```csharp
-YahooHistory History = new YahooHistory();
+YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+    .WithPriceHistory()
+    .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .Build();
 
-List<DividendTick> dividends = await History.GetDividendsAsync("IBM");
+Security? security = await yahooQuotes.GetAsync("EURUSD=X");
 
-Assert.True(dividends[0].Dividend > 0);
+Assert.Equal("EURUSD=X", security!.Symbol);
+Assert.Equal("EUR/USD", security.ShortName);
+Assert.Equal("USD", security.Currency); // base currency
+Assert.True(security.RegularMarketPrice > 0);
+
+PriceTick tick = security.PriceHistory!.First();
+Assert.Equal("Europe/London", tick.Date.Zone.Id);
+Assert.Equal(new LocalDateTime(2020, 1, 1, 16, 0, 0), tick.Date.LocalDateTime);
+Assert.Equal(1.122083, tick.Close);
 ```
-#### Split History
+### history in base currency
 ```csharp
-YahooHistory History = new YahooHistory();
+var security = await new YahooQuotesBuilder()
+    .WithPriceHistory(baseCurrency: "JPY")
+    .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
+    .Build()
+    .GetAsync("TSLA")
+    ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
-List<SplitTick> splits = await History.GetSplitsAsync("IBM");
+Assert.Equal("Tesla, Inc.", security.ShortName);
+Assert.Equal("USD", security.Currency);
+Assert.True(security.RegularMarketPrice > 0);
 
-Assert.True(splits[0].BeforeSplit < splits[0].AfterSplit);
-```
-#### Currency Rate History (https://www.bankofengland.co.uk)
-```csharp
-CurrencyHistory CurrencyHistory = new CurrencyHistory();
-
-string currency     = "EUR";
-string baseCurrency = "USD";
-
-List<RateTick> rates = await CurrencyHistory
-    .FromDate(new LocalDate(2010,1,1))
-    .GetRatesAsync(currency, baseCurrency);
-
-Assert.True(rates[0].Rate > 0);
+PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
+Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
+Assert.Equal(165696.20317687377, tick.Close); // in JPY
 ```
