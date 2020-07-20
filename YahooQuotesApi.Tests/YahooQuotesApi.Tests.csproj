@@ -11,13 +11,11 @@
     <Compile Remove="ExchangesTest.cs" />
     <Compile Remove="SnapshotTests.cs" />
     <Compile Remove="YahooCurrencyTests.cs" />
-    <Compile Remove="~\YahooCurrencyTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Utilities\QuoteFieldWriter.cs" />
-    <None Include="~\YahooCurrencyTests.cs" />
-    <None Include="Core\YahooHistoryTests.cs" />
+    <None Include="Core\HistoryTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

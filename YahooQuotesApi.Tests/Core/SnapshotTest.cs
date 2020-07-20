@@ -3,7 +3,6 @@ using MXLogger;
 using NodaTime;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,48 +11,43 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
-    public class YahooSnapshotTest : TestBase
+    public class SnapshotTest : TestBase
     {
         private readonly YahooQuotes YahooQuotes;
-        public YahooSnapshotTest(ITestOutputHelper output) : base(output) =>
+        public SnapshotTest(ITestOutputHelper output) : base(output) =>
             YahooQuotes = new YahooQuotesBuilder(Logger).Build();
 
         [Fact]
         public async Task SingleQuery()
         {
-            var symbol = "C";
-            var security = await YahooQuotes.GetAsync(symbol);
-            if (security == null)
-                throw new ArgumentException();
+            var security = await YahooQuotes.GetAsync("C") ?? throw new ArgumentException();
             Assert.Equal("Citigroup, Inc.", security.ShortName);
         }
 
         [Fact]
         public async Task MultiQuery()
         {
-            IReadOnlyDictionary<string, Security?> securities = await YahooQuotes.GetAsync(new[] { "C", "MSFT" });
-            Assert.Equal(2, securities.Count);
-            Security? msft = securities["MSFT"];
-            if (msft == null)
-                throw new ArgumentException();
-            Assert.True(msft.RegularMarketVolume > 0);
+            var symbols = new[] { "C", "JPYUSD=X", "USDJPY=X", "EURJPY=X", "JPYEUR=X", "JPY=X" };
+            var securities = await YahooQuotes.GetAsync(symbols);
+            Assert.Equal(6, securities.Count);
+            var c = securities["C"] ?? throw new ArgumentException();
+            Assert.True(c.RegularMarketVolume > 0);
         }
 
         [Fact]
-        public async Task BadSymbol()
+        public async Task DuplicateTest()
         {
-            var security = await YahooQuotes.GetAsync("InvalidSymbol");
-            Assert.Null(security);
+            var securities = await YahooQuotes.GetAsync(new[] { "C", "X", "MSFT", "C" }) ?? throw new ArgumentException();
+            Assert.Equal(3, securities.Count);
         }
 
         [Fact]
-        public async Task BadSymbols()
+        public async Task TestCancellation()
         {
-            var snaps = await YahooQuotes.GetAsync(new[] { "MSFT", "InvalidSymbol" });
-            Assert.Equal(2, snaps.Count);
-            var msft = snaps["MSFT"];
-            Assert.NotNull(msft);
-            Assert.Null(snaps["InvalidSymbol"]);
+            var ct = new System.Threading.CancellationToken(true);
+            var task = YahooQuotes.GetAsync("IBM", ct);
+            var e = await Assert.ThrowsAnyAsync<Exception>(async () => await task);
+            Assert.True(e.InnerException is OperationCanceledException);
         }
 
         [Fact]
@@ -70,42 +64,22 @@ namespace YahooQuotesApi.Tests
         [InlineData("XX=X")]
         [InlineData("JPYX=X")]
         [InlineData("JPYJPY=X")]
-        public async Task TestBadSymbolArgument(params string[] symbols)
+        public async Task TestInvalidSymbols(params string[] symbols)
         {
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(symbols));
         }
 
         [Fact]
-        public async Task TestManySymbols()
+        public async Task UnknownSymbols()
         {
-            var loggerFactory = new LoggerFactory().AddMXLogger(Write, LogLevel.Warning);
-            var yahooQuotes = new YahooQuotesBuilder(loggerFactory.CreateLogger("test")).Build();
-
-            var symbols = File.ReadAllLines(@"..\..\..\symbols.txt")
-                .Where(line => !line.StartsWith("#"))
-                .Take(1000)
-                .ToList();
-
-            Write($"requested symbols: {symbols.Count}");
-
-            var securities = await yahooQuotes.GetAsync(symbols);
-            Assert.Equal(symbols.Count, securities.Count);
-
-            var validSecurities = securities.Where(kvp => kvp.Value != null).ToList();
-            Write($"invalid symbols: {securities.Count - validSecurities.Count}");
-
-            var counted = symbols.Where(s => securities.ContainsKey(s)).Count();
-            Write($"missing: {symbols.Count - counted}");
+            var snaps = await YahooQuotes.GetAsync(new[] { "MSFT", "UnknownSymbol" });
+            Assert.Equal(2, snaps.Count);
+            Assert.NotNull(snaps["MSFT"]);
+            Assert.Null(snaps["UnknownSymbol"]);
         }
 
         [Fact]
-        public async Task TestValidCurrencyRates()
-        {
-            await YahooQuotes.GetAsync(new [] { "JPYUSD=X", "USDJPY=X", "EURJPY=X", "JPYEUR=X", "JPY=X" });
-        }
-
-        [Fact]
-        public async Task TestFields()
+        public async Task TestFieldAccess()
         {
             Security security = await YahooQuotes.GetAsync("AAPL") ?? throw new ArgumentException();
             Assert.Equal("Apple Inc.", security["LongName"]); // dynamic type!
@@ -139,6 +113,9 @@ namespace YahooQuotesApi.Tests
             var ftd = snap["FirstTradeDate"]; // probably already in zone
             Assert.IsType<LocalDateTime>(ftd);
         }
+
+
+
     }
 
 }

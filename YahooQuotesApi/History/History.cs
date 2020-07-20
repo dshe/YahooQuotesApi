@@ -25,21 +25,28 @@ namespace YahooQuotesApi
             Cache = new AsyncLazyCache<string, List<object>>(cacheDuration);
         }
 
-        internal async Task<List<PriceTick>> GetPricesAsync(string symbol, Frequency frequency, LocalTime closeTime, DateTimeZone tz, CancellationToken ct) =>
+        internal async Task<List<PriceTick>?> GetPricesAsync(string symbol, Frequency frequency, LocalTime closeTime, DateTimeZone tz, CancellationToken ct) =>
             await GetTicksAsync<PriceTick>(symbol, frequency, closeTime, tz, ct).ConfigureAwait(false);
 
-        internal async Task<List<DividendTick>> GetDividendsAsync(string symbol, CancellationToken ct) =>
+        internal async Task<List<DividendTick>?> GetDividendsAsync(string symbol, CancellationToken ct) =>
             await GetTicksAsync<DividendTick>(symbol, Frequency.Daily, null, null, ct).ConfigureAwait(false);
 
-        internal async Task<List<SplitTick>> GetSplitsAsync(string symbol, CancellationToken ct) =>
+        internal async Task<List<SplitTick>?> GetSplitsAsync(string symbol, CancellationToken ct) =>
             await GetTicksAsync<SplitTick>(symbol, Frequency.Daily, null, null, ct).ConfigureAwait(false);
 
-        private async Task<List<T>> GetTicksAsync<T>(string symbol, Frequency frequency, LocalTime? closeTime, DateTimeZone? tz, CancellationToken ct)
+        private async Task<List<T>?> GetTicksAsync<T>(string symbol, Frequency frequency, LocalTime? closeTime, DateTimeZone? tz, CancellationToken ct)
         {
             var type = typeof(T);
             var key = $"{symbol},{type.Name},{frequency.Name()}";
-            var ticks = await Cache.Get(key, () => Produce(symbol, type, frequency, closeTime, tz, ct)).ConfigureAwait(false);
-            return ticks.Cast<T>().ToList();
+            try
+            {
+                var ticks = await Cache.Get(key, () => Produce(symbol, type, frequency, closeTime, tz, ct)).ConfigureAwait(false);
+                return ticks.Cast<T>().ToList();
+            }
+            catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
         }
 
         private async Task<List<object>> Produce(string symbol, Type type, Frequency frequency, LocalTime? closeTime, DateTimeZone? tz, CancellationToken ct)
@@ -66,7 +73,8 @@ namespace YahooQuotesApi
                 }
                 catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"Unknown symbol: {symbol}.", ex);
+                    Logger.LogDebug($"No history for symbol: {symbol}.");
+                    throw;
                 }
             }
 

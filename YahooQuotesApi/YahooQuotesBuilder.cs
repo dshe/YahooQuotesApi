@@ -7,12 +7,14 @@ namespace YahooQuotesApi
 {
     public sealed class YahooQuotesBuilder
     {
+        public static Instant DefaultHistoryStartDate = Instant.FromUtc(2000, 1, 1, 0, 0);
+        public static Duration DefaultHistoryCacheDuration = Duration.Zero;
+        private Instant HistoryStartDate = DefaultHistoryStartDate;
+        private Duration HistoryCacheDuration = DefaultHistoryCacheDuration;
         private readonly ILogger Logger;
         private HistoryFlags HistoryFlags;
         private Frequency PriceHistoryFrequency = Frequency.Daily;
         private string PriceHistoryBaseCurrency = "";
-        private Instant HistoryStartDate = Instant.FromUtc(2000, 1, 1, 0, 0);
-        private Duration HistoryCacheDuration = Duration.Zero;
 
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) => Logger = logger;
@@ -37,7 +39,7 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotesBuilder HistoryStart(Instant start)
+        public YahooQuotesBuilder HistoryStarting(Instant start)
         {
             HistoryStartDate = start;
             return this;
@@ -48,13 +50,15 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotes Build() => 
-            new YahooQuotes(
+        public YahooQuotes Build()
+        {
+            return new YahooQuotes(
                 Logger,
-                HistoryFlags, 
+                HistoryFlags,
                 PriceHistoryFrequency,
                 PriceHistoryBaseCurrency,
                 HistoryStartDate,
                 HistoryCacheDuration);
+        }
     }
 }

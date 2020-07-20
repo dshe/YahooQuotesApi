@@ -36,7 +36,7 @@ namespace YahooQuotesApi
                     TaskCache[key] = item;
                 }
             }
-            return await item.task.ConfigureAwait(false);
+            return await item.task.ConfigureAwait(false); // await outside lock
         }
 
         internal void Clear()

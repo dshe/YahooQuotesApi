@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NodaTime;
 using System;
 using System.Collections.Generic;
@@ -65,9 +64,12 @@ namespace YahooQuotesApi
                     continue;
                 if (HistoryFlags.HasFlag(HistoryFlags.PriceHistory))
                 {
-                    var closeTime = (LocalTime) dict["ExchangeCloseTime"];
-                    var tz = (DateTimeZone) dict["ExchangeTimezone"];
-                    dict.Add("PriceHistory", History.GetPricesAsync(symbol, PriceHistoryFrequency, closeTime, tz, ct));
+                    var closeTime = (LocalTime?)dict["ExchangeCloseTime"];
+                    if (dict.TryGetValue("ExchangeTimezone", out object o))
+                    {
+                        var tz = (DateTimeZone)o;
+                        dict.Add("PriceHistory", History.GetPricesAsync(symbol, PriceHistoryFrequency, closeTime.GetValueOrDefault(), tz, ct));
+                    }
                 }
                 if (HistoryFlags.HasFlag(HistoryFlags.DividendHistory))
                     dict.Add("DividendHistory", History.GetDividendsAsync(symbol, ct));
@@ -82,9 +84,11 @@ namespace YahooQuotesApi
             {
                 if (HistoryFlags.HasFlag(HistoryFlags.PriceHistory))
                 {
-                    dynamic task = dict["PriceHistory"];
-                    dict["PriceHistory"] = await task.ConfigureAwait(false);
-                    ModifyPriceHistory(dict, currencyRateSnapshots);
+                    if (dict.TryGetValue("PriceHistory", out dynamic task))
+                    {
+                        dict["PriceHistory"] = await task.ConfigureAwait(false);
+                        ModifyPriceHistory(dict, currencyRateSnapshots);
+                    }
                 }
                 if (HistoryFlags.HasFlag(HistoryFlags.DividendHistory))
                 {
@@ -124,8 +128,11 @@ namespace YahooQuotesApi
                 if (snapshot == null)
                     throw new InvalidOperationException($"No data for symbol: {symbol}.");
                 var ticks = await currencyHistoryTasks[i].ConfigureAwait(false);
-                snapshot.Add("PriceHistory", ticks);
-                ModifyPriceHistory(snapshot);
+                if (ticks != null)
+                {
+                    snapshot.Add("PriceHistory", ticks);
+                    ModifyPriceHistory(snapshot);
+                }
             }
 
             return currencySnapshots;
@@ -161,7 +168,9 @@ namespace YahooQuotesApi
         private void ModifyPriceHistory(Dictionary<string, object> snapshot,
             Dictionary<string, Dictionary<string, object>?> currencySnapshots)
         {
-            var ticks = (IReadOnlyList<PriceTick>) snapshot["PriceHistory"];
+            var ticks = (IReadOnlyList<PriceTick>?) snapshot["PriceHistory"];
+            if (ticks == null)
+                return;
             var date = (ZonedDateTime) snapshot["RegularMarketTime"];
             var appendSnapshot = date.ToInstant() <= ticks.Last().Date.ToInstant();
             if (!currencySnapshots.Any())
