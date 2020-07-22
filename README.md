@@ -29,9 +29,11 @@ Assert.True(security.RegularMarketPrice > 0);
 ### history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-    .WithPriceHistory()
+    .WithPriceHistory(Frequency.Daily)
     .WithDividendHistory()
     .WithSplitHistory()
+    .HistoryStarting(Instant.FromUtc(2000, 1, 1, 0, 0))
+    .HistoryCache(Duration.FromHours(3))
     .Build();
 
 Security? security = await yahooQuotes.GetAsync("MSFT");
@@ -78,10 +80,10 @@ Assert.Equal(1.122083, tick.Close);
 ### history in base currency
 ```csharp
 var security = await new YahooQuotesBuilder()
-    .WithPriceHistory(baseCurrency: "JPY")
+    .WithPriceHistory()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
     .Build()
-    .GetAsync("TSLA")
+    .GetAsync("TSLA", historyBaseCurrency: "JPY")
     ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
 Assert.Equal("Tesla, Inc.", security.ShortName);
