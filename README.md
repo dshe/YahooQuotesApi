@@ -83,14 +83,14 @@ var security = await new YahooQuotesBuilder()
     .WithPriceHistory()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
     .Build()
-    .GetAsync("TSLA", historyBaseCurrency: "JPY")
+    .GetAsync("TSLA", historyBase: "JPY=X")
     ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
 Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
-Assert.True(security.RegularMarketPrice > 0);
+Assert.True(security.RegularMarketPrice > 1);
 
-PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
+PriceTick tick = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
 Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
 Assert.Equal(165696.20317687377, tick.Close); // in JPY
 ```
