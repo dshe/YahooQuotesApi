@@ -3,7 +3,7 @@
 namespace YahooQuotesApi
 {
     [Flags]
-    internal enum HistoryFlags
+    public enum HistoryFlags
     {
         None = 0,
         PriceHistory = 1,

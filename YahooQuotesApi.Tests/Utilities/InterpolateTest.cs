@@ -87,10 +87,10 @@ namespace YahooQuotesApi.Tests
 
             IReadOnlyList<double> ilist = list;
 
-            var index = ilist.BinarySearch2(0.0, x => x);
+            var index = ilist.BinarySearch(0.0, x => x);
             Assert.Equal(~0, index);
 
-            index = ilist.BinarySearch2(2.0, x => x);
+            index = ilist.BinarySearch(2.0, x => x);
             Assert.Equal(~1, index);
         }
 
@@ -108,7 +108,7 @@ namespace YahooQuotesApi.Tests
 
             IReadOnlyList<double> ilist = list;
 
-            var index = ilist.BinarySearch2(searchValue, x => x);
+            var index = ilist.BinarySearch(searchValue, x => x);
             Assert.Equal(expectedIndex, index);
         }
     }

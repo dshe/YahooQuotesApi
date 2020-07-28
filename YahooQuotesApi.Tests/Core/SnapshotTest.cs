@@ -27,9 +27,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task MultiQuery()
         {
-            var symbols = new[] { "C", "JPYUSD=X", "USDJPY=X", "EURJPY=X", "JPYEUR=X", "JPY=X" };
+            var symbols = new[] { "C", "JPYUSD=X", "USDJPY=X", "EURJPY=X", "JPYEUR=X" };
             var securities = await YahooQuotes.GetAsync(symbols);
-            Assert.Equal(6, securities.Count);
+            Assert.Equal(5, securities.Count);
             var c = securities["C"] ?? throw new ArgumentException();
             Assert.True(c.RegularMarketVolume > 0);
         }
@@ -45,7 +45,7 @@ namespace YahooQuotesApi.Tests
         public async Task TestCancellation()
         {
             var ct = new System.Threading.CancellationToken(true);
-            var task = YahooQuotes.GetAsync("IBM", ct);
+            var task = YahooQuotes.GetAsync("IBM", ct: ct);
             var e = await Assert.ThrowsAnyAsync<Exception>(async () => await task);
             Assert.True(e.InnerException is OperationCanceledException);
         }
@@ -57,12 +57,11 @@ namespace YahooQuotesApi.Tests
         }
 
         [Theory]
-        [InlineData(null)]
         [InlineData("")]
         [InlineData("C", "A", "C ")]
         [InlineData("=X")]
-        [InlineData("XX=X")]
         [InlineData("JPYX=X")]
+        [InlineData("JPY=X")]
         [InlineData("JPYJPY=X")]
         public async Task TestInvalidSymbols(params string[] symbols)
         {

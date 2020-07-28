@@ -87,6 +87,7 @@ namespace YahooQuotesApi
         public Int64? PreMarketTimeSeconds => GetD();
         public Int64? PriceHint => GetD();
         public IReadOnlyList<PriceTick>? PriceHistory => GetD();
+        public IReadOnlyList<PriceTick>? PriceHistoryBase => GetD();
         public Decimal? PriceToBook => GetD();
         public String QuoteSourceName => GetS();
         public String QuoteType => GetS();

@@ -39,27 +39,15 @@ namespace YahooQuotesApi
             yield return value;
         }
 
-        internal static IEnumerable<string> CheckSymbols(this IEnumerable<string> symbols)
-        {
-            if (symbols == null)
-                throw new ArgumentNullException(nameof(symbols));
-            return symbols.Select(s => CheckSymbol(s)).Distinct();
-        }
-
-        private static string CheckSymbol(string symbol)
+        internal static string CheckSymbol(this string symbol)
         {
             if (string.IsNullOrEmpty(symbol))
                 throw new ArgumentException(nameof(symbol));
             if (symbol.Any(char.IsWhiteSpace))
                 throw new ArgumentException($"Symbol: '{symbol}'.");
-            symbol = symbol.ToUpper(); // for simplicity
-            if (symbol.EndsWith("=X")) // currency
-            {
-                var len = symbol.Length;
-                if ((len != 8 && len != 5) || (len == 8 && string.Equals(symbol.Substring(0, 3), symbol.Substring(3, 3))))
-                    throw new ArgumentException($"Symbol: '{symbol}'.");
-            }
-            return symbol;
+            return symbol.ToUpper(); // for simplicity
         }
+
+
     }
 }

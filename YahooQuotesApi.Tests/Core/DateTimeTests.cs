@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using MXLogger;
-using NodaTime;
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
+using NodaTime;
+using MXLogger;
 
 namespace YahooQuotesApi.Tests
 {
@@ -31,48 +31,55 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(zdt, security.RegularMarketTime);
         }
 
-        [Theory]
-        [InlineData("GMEXICOB.MX")] // Mexico City - 6
-        [InlineData("TD.TO")]  // Canada -5
-        [InlineData("SPY")]    // USA -5
-        [InlineData("PETR4.SA")] //Sao_Paulo -3
-        [InlineData("BP.L")]   // London 0:
-        [InlineData("AIR.PA")] // Paris +1
-        [InlineData("AIR.DE")] // Xetra +1
-        [InlineData("AGL.JO")] //Johannesburg +2
-        [InlineData("AFLT.ME")] // Moscow +3:00
-        [InlineData("UNITECH.BO")] // IST (India) +5:30
-        [InlineData("2800.HK")] // Hong Kong +8
-        [InlineData("000001.SS")] // Shanghai +8
-        [InlineData("2448.TW")] // Taiwan +8
-        [InlineData("005930.KS")] // Seoul +9
-        [InlineData("7203.T")] // Tokyo +9 (Toyota)
-        [InlineData("NAB.AX")] // Sydney +10
-        [InlineData("FBU.NZ")] // Auckland + 12
-        public async Task TestInternationalStocks(string symbol)
+        [Fact]
+        public async Task TestInternationalStocks()
         {
-            var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
+            var symbols = new []
+            {
+                "GMEXICOB.MX", // Mexico City - 6
+                "TD.TO",  // Canada -5
+                "SPY",    // USA -5
+                "PETR4.SA", //Sao_Paulo -3
+                "BP.L",   // London 0:
+                "AIR.PA", // Paris +1
+                "AIR.DE", // Xetra +1
+                "AGL.JO", //Johannesburg +2
+                "AFLT.ME", // Moscow +3:00
+                "UNITECH.BO", // IST (India) +5:30
+                "2800.HK", // Hong Kong +8
+                "000001.SS", // Shanghai +8
+                "2448.TW", // Taiwan +8
+                "005930.KS", // Seoul +9
+                "7203.T", // Tokyo +9 (Toyota)
+                "NAB.AX", // Sydney +10
+                "FBU.NZ" // Auckland + 12
+            };
+
+            var securities = await new YahooQuotesBuilder(Logger)
                 .Build()
-                .GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+                .GetAsync(symbols);
 
-            Write($"Symbol:            {symbol}");
-            Write($"TimeZone:          {security.ExchangeTimezone}");
-            Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
-            Write($"RegularMarketTime: {security.RegularMarketTime}");
+            foreach (var security in securities.Values)
+            {
+                var symbol = security!.Symbol;
+                Write($"Symbol:            {symbol}");
+                Write($"TimeZone:          {security.ExchangeTimezone}");
+                Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
+                Write($"RegularMarketTime: {security.RegularMarketTime}");
 
-            var zdt = new LocalDate(2019, 9, 4)
-                .At(security.ExchangeCloseTime.GetValueOrDefault())
-                .InZoneStrictly(security.ExchangeTimezone!);
+                var zdt = new LocalDate(2020, 7, 17)
+                    .At(security.ExchangeCloseTime.GetValueOrDefault())
+                    .InZoneStrictly(security.ExchangeTimezone!);
 
-            security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
-                .HistoryStarting(zdt.ToInstant())
-                .Build()
-                .GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+                var securityWithHistory = await new YahooQuotesBuilder(Logger)
+                    .WithPriceHistory()
+                    .HistoryStarting(zdt.ToInstant())
+                    .Build()
+                    .GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
-            var ticks = security.PriceHistory;
-            Assert.Equal(zdt, ticks.First().Date);
+                var ticks = securityWithHistory.PriceHistory;
+                Assert.Equal(zdt, ticks.First().Date);
+            }
         }
 
         [Fact]
@@ -133,11 +140,10 @@ namespace YahooQuotesApi.Tests
             count = secs.Where(v => v.Value!.ExchangeTimezone == null).Count();
             Write($"Securities with no ExchangeTimezone: {count}.");
 
-            // for large numbers of symbols (thousands)
-            // If (message.StartsWith("Call failed. Collection was modified")).
+            // For large numbers of symbols (thousands),
+            // if (message.StartsWith("Call failed. Collection was modified")).
             // This is a bug in Flurl: https://github.com/tmenier/Flurl/issues/366
-            // Will probably be fixed in version 3.
+            // which will hopefully be fixed in version 3.
         }
-
     }
 }

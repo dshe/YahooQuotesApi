@@ -15,7 +15,6 @@ namespace YahooQuotesApi
         private readonly Dictionary<TKey, (Instant, Task<TResult>)> TaskCache = new Dictionary<TKey, (Instant, Task<TResult>)>();
         private readonly Duration Duration;
 
-        internal AsyncLazyCache() : this(SystemClock.Instance, Duration.Zero) { }
         internal AsyncLazyCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
         internal AsyncLazyCache(IClock clock, Duration cacheDuration)
         {
@@ -36,7 +35,7 @@ namespace YahooQuotesApi
                     TaskCache[key] = item;
                 }
             }
-            return await item.task.ConfigureAwait(false); // await outside lock
+            return await item.task.ConfigureAwait(false); // await task outside lock
         }
 
         internal void Clear()

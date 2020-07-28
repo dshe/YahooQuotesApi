@@ -31,6 +31,7 @@ namespace YahooQuotesApi
             //var intersection = before.XOr(after);
         }
 
+        // used for testing
         private static List<string> GetData(IDictionary<string, dynamic> d) =>
             d.Select(x => $"{x.Key} = {x.Value.ToString()}").OrderBy(x => x).ToList();
 

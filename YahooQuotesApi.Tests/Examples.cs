@@ -31,12 +31,14 @@ namespace YahooQuotesApi.Tests
         }
 
         [Fact]
-        public async Task History()
+        public async Task SecurityPriceHistory()
         {
             YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
+                .WithPriceHistory(Frequency.Daily)
                 .WithDividendHistory()
                 .WithSplitHistory()
+                .HistoryStarting(Instant.FromUtc(2000, 1, 1, 0, 0))
+                .HistoryCache(Duration.FromHours(1))
                 .Build();
 
             Security? security = await yahooQuotes.GetAsync("MSFT");
@@ -63,7 +65,7 @@ namespace YahooQuotesApi.Tests
         }
 
         [Fact]
-        public async Task Currency_Rates()
+        public async Task CurrencyRateHistory()
         {
             YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
                 .WithPriceHistory()
@@ -84,20 +86,20 @@ namespace YahooQuotesApi.Tests
         }
 
         [Fact]
-        public async Task History_In_Base_Currency()
+        public async Task SecurityPriceHistoryInBaseCurrency()
         {
             var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory(baseCurrency: "JPY")
+                .WithPriceHistory()
                 .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
                 .Build()
-                .GetAsync("TSLA")
+                .GetAsync("TSLA", historyBase: "JPY=X")
                 ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
             Assert.Equal("Tesla, Inc.", security.ShortName);
             Assert.Equal("USD", security.Currency);
             Assert.True(security.RegularMarketPrice > 0);
 
-            PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
+            PriceTick tick = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
             Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
             Assert.Equal(165696.20317687377, tick.Close); // in JPY
         }

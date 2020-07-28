@@ -16,17 +16,19 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly Instant Start;
+        private readonly Frequency PriceHistoryFrequency;
         private readonly AsyncLazyCache<string, List<object>> Cache;
 
-        internal History(ILogger logger, Instant start, Duration cacheDuration)
+        internal History(ILogger logger, Instant start, Duration cacheDuration, Frequency priceHistoryFrequency)
         {
             Logger = logger;
             Start = start;
             Cache = new AsyncLazyCache<string, List<object>>(cacheDuration);
+            PriceHistoryFrequency = priceHistoryFrequency;
         }
 
-        internal async Task<List<PriceTick>?> GetPricesAsync(string symbol, Frequency frequency, LocalTime closeTime, DateTimeZone tz, CancellationToken ct) =>
-            await GetTicksAsync<PriceTick>(symbol, frequency, closeTime, tz, ct).ConfigureAwait(false);
+        internal async Task<List<PriceTick>?> GetPricesAsync(string symbol, LocalTime closeTime, DateTimeZone tz, CancellationToken ct) =>
+            await GetTicksAsync<PriceTick>(symbol, PriceHistoryFrequency, closeTime, tz, ct).ConfigureAwait(false);
 
         internal async Task<List<DividendTick>?> GetDividendsAsync(string symbol, CancellationToken ct) =>
             await GetTicksAsync<DividendTick>(symbol, Frequency.Daily, null, null, ct).ConfigureAwait(false);
@@ -45,7 +47,7 @@ namespace YahooQuotesApi
             }
             catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == HttpStatusCode.NotFound)
             {
-                return null;
+                return null; // indicates that history is unavailable
             }
         }
 
@@ -80,7 +82,7 @@ namespace YahooQuotesApi
 
             Task<Stream> _GetResponseStreamAsync(IFlurlClient _client, string _crumb)
             {
-                var url = "https://query1.finance.yahoo.com/v7/finance/download"
+                var url = "https://query2.finance.yahoo.com/v7/finance/download"
                     .AppendPathSegment(symbol)
                     .SetQueryParam("period1", Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())
                     .SetQueryParam("period2", Instant.MaxValue.ToUnixTimeSeconds())

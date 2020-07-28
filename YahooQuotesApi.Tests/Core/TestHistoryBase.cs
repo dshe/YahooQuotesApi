@@ -1,0 +1,158 @@
+﻿using Microsoft.Extensions.Logging;
+using NodaTime;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace YahooQuotesApi.Tests
+{
+    public class TestHistoryBase : TestBase
+    {
+        public TestHistoryBase(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData("SPY", "USD=X")]
+        [InlineData("SPY", "JPY=X")]
+        [InlineData("7203.T", "JPY=X")]
+        [InlineData("7203.T", "USD=X")]
+        [InlineData("7203.T", "EUR=X")]
+        public async Task TestSecurityBaseCurrency(string symbol, string baseSymbol)
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2020, 7, 1, 0, 0))
+                .Build();
+
+            Security security1 = await yahooQuotes.GetAsync(symbol, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+            var date = security1.PriceHistoryBase.First().Date.ToInstant();
+            var resultFound = security1.PriceHistoryBase.First().Close;
+
+            /* ------------------------------------ */
+
+            Security security2 = await yahooQuotes.GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+            var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
+            var price = priceHistory.Interpolate(date);
+            var result = price;
+
+            if (security2.Currency != baseSymbol.Substring(0, 3))
+            {
+                if (security2.Currency != "USD")
+                {
+                    var rateSymbol = "USD" + security2.Currency + "=X";
+                    var sec = await yahooQuotes.GetAsync(rateSymbol) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
+                    var rate = sec.PriceHistory!.Interpolate(date);
+                    price /= rate;
+                }
+
+                if (baseSymbol != "USD=X")
+                {
+                    var sec = await yahooQuotes.GetAsync("USD" + baseSymbol) ?? throw new Exception($"Unknown symbol:?");
+                    var rate = sec.PriceHistory!.Interpolate(date);
+                    price *= rate;
+                }
+            }
+
+            Write($"{symbol} {baseSymbol} => {price} == {resultFound}.");
+            Assert.Equal(price, resultFound);
+        }
+
+        [Theory]
+        [InlineData("SPY", "SPY")]
+        [InlineData("GOOG", "SPY")]
+        [InlineData("7203.T", "7203.T")]
+        [InlineData("7203.T", "1306.T")]
+        [InlineData("7203.T", "SPY")]
+        [InlineData("7203.T", "HXT.TO")]
+        public async Task TestSecurityBaseSecurity(string symbol, string baseSymbol)
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2020, 7, 1, 0, 0))
+                .Build();
+
+            Security security1 = await yahooQuotes.GetAsync(symbol, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+            var date = security1.PriceHistoryBase.First().Date.ToInstant();
+            var resultFound = security1.PriceHistoryBase.First().Close;
+
+            /* ------------------------------------ */
+
+            Security security2 = await yahooQuotes.GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+            var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
+            var price = priceHistory.Interpolate(date);
+
+            var sec = await yahooQuotes.GetAsync(baseSymbol) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
+            if (security2.Currency != sec.Currency)
+            {
+                if (security2.Currency != "USD")
+                {
+                    var rateSymbol = $"USD{security2.Currency}=X";
+                    var secx = await yahooQuotes.GetAsync(rateSymbol) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
+                    var rate = secx.PriceHistory!.Interpolate(date);
+                    price /= rate;
+                }
+                if (sec.Currency != "USD")
+                {
+                    var currency = $"USD{sec.Currency}=X";
+                    var secCurrency = await yahooQuotes.GetAsync(currency) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
+                    var rate = secCurrency.PriceHistory!.Interpolate(date);
+                    price *= rate;
+                }
+            }
+
+            var rate3 = sec.PriceHistory!.Interpolate(date);
+            price /= rate3;
+
+            Write($"{symbol} {baseSymbol} => {price} == {resultFound}.");
+            Assert.Equal(price, resultFound);
+        }
+
+        [Theory] // (AAAZZZ=X BBB=X) => AAABBB=X
+        [InlineData("JPYUSD=X", "USD=X")] // same base => no change
+        [InlineData("USDEUR=X", "USD=X")] // change base to USD => 1
+        [InlineData("USDEUR=X", "JPY=X")] // change base to JPY
+        [InlineData("EURJPY=X", "MYR=X")] // change base to MYR
+        public async Task TestRateBaseCurrency(string currencyRateSymbol, string baseCurrencySymbol)
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2020, 7, 1, 0, 0))
+                .Build();
+
+            Security security = await yahooQuotes.GetAsync(currencyRateSymbol, baseCurrencySymbol) ?? throw new Exception($"Unknown symbol: {currencyRateSymbol}.");
+            var date = security.PriceHistoryBase.First().Date.ToInstant();
+            var resultFound = security.PriceHistoryBase.First().Close;
+
+            /* ------------------------------------ */
+
+            var currency1 = currencyRateSymbol.Substring(0, 3);
+            var currency2 = currencyRateSymbol.Substring(3, 3); // old base
+            currency2 = baseCurrencySymbol.Substring(0, 3);
+
+            var ratex = 1d;
+
+            if (currency1 != "USD")
+            {
+                var rate1 = $"USD{currency1}=X";
+                var security1 = await yahooQuotes.GetAsync(rate1) ?? throw new Exception($"Unknown symbol: {rate1}.");
+                var priceHistory = security1.PriceHistory ?? throw new Exception($"No price history: {rate1}.");
+                var rate = priceHistory.Interpolate(date);
+                ratex /= rate;
+            }
+            if (currency2 != "USD")
+            {
+                var rate2 = $"USD{currency2}=X";
+                var security1 = await yahooQuotes.GetAsync(rate2) ?? throw new Exception($"Unknown symbol: {rate2}.");
+                var priceHistory = security1.PriceHistory ?? throw new Exception($"No price history: {rate2}.");
+                var rate = priceHistory.Interpolate(date);
+                ratex *= rate;
+            }
+
+            Write($"{currencyRateSymbol} {baseCurrencySymbol} => {ratex} == {resultFound}.");
+            Assert.Equal(ratex, resultFound, 2);
+        }
+
+    }
+}

@@ -7,37 +7,46 @@ namespace YahooQuotesApi
 {
     internal static class InterpolateExtensions
     {
-        private static readonly Duration FutureLimit = Duration.FromDays(3);
+        private static readonly Duration FutureLimit = Duration.FromDays(1);
+        private static readonly Duration PastLimit = Duration.FromDays(1);
 
-        internal static double Interpolate(this IReadOnlyList<PriceTick> list, Instant instant)
+        internal static double Interpolate(this IReadOnlyList<PriceTick> list, Instant date) =>
+            Interpolate(list, date, x => x.Date.ToInstant(), x => x.AdjustedClose);
+
+        internal static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
         {
             if (list.Count < 2)
                 throw new ArgumentException(nameof(list));
 
-            if (instant < list[0].Date.ToInstant()) // not enough data
-                return double.NaN;
+            var first = list[0];
+            var past = getDate(first) - date;
+            if (past >= Duration.Zero) // not enough data
+                return past <= PastLimit ? getValue(first) : double.NaN;
 
             var last = list[list.Count - 1];
-            var future = instant - last.Date.ToInstant();
+            var future = date - getDate(last);
             if (future >= Duration.Zero)
-                return future <= FutureLimit ? last.AdjustedClose : double.NaN;
+                return future <= FutureLimit ? getValue(last) : double.NaN;
 
-            var p = list.BinarySearch2(instant, x => x.Date.ToInstant());
+            var p = list.BinarySearch(date, x => getDate(x));
 
             if (p >= 0) // found
-                return list[p].AdjustedClose;
+                return getValue(list[p]);
 
-            p = ~p; // not found, ~p is next highest position in list; linear interpolation
-            var t1 = list[p - 1].Date.ToInstant();
-            var t2 = list[p].Date.ToInstant();
-            var v1 = list[p - 1].AdjustedClose;
-            var v2 = list[p].AdjustedClose;
-            var rate = v1 + (instant - t1) / (t2 - t1) * (v2 - v1);
+            // not found, use linear interpolation
+            p = ~p; // ~p is next highest position in list
+            var next = list[p];
+            var prev = list[p - 1];
+            var t1 = getDate(prev);
+            var t2 = getDate(next);
+            var v1 = getValue(prev);
+            var v2 = getValue(next);
+            var rate = v1 + (date - t1) / (t2 - t1) * (v2 - v1);
             return rate;
         }
 
         // This BinarySearch supports IReadOnlyList<T>.
-        internal static int BinarySearch2<T>(this IReadOnlyList<T> list, IComparable searchValue, Func<T, IComparable> getComparable)
+        internal static int BinarySearch<T>(this IReadOnlyList<T> list, IComparable searchValue, Func<T, IComparable> getComparable)
         {
             if (!list.Any())
                 throw new ArgumentException(nameof(list));
