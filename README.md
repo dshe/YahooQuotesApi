@@ -26,7 +26,7 @@ if (security == null)
 Assert.Equal("Apple Inc.", security.LongName);
 Assert.True(security.RegularMarketPrice > 0);
 ```
-### history
+### price history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory(Frequency.Daily)
@@ -58,7 +58,7 @@ Assert.Equal(new LocalDate(2000, 1, 3), zdt.Date);
 Assert.Equal(new LocalTime(16, 0, 0), zdt.TimeOfDay);
 Assert.Equal(58.28125, tick.Close);
 ```
-### currency rates
+### currency rate history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithPriceHistory()
@@ -77,7 +77,7 @@ Assert.Equal("Europe/London", tick.Date.Zone.Id);
 Assert.Equal(new LocalDateTime(2020, 1, 1, 16, 0, 0), tick.Date.LocalDateTime);
 Assert.Equal(1.122083, tick.Close);
 ```
-### history in base currency
+### price history in base currency
 ```csharp
 var security = await new YahooQuotesBuilder()
     .WithPriceHistory()
@@ -90,7 +90,10 @@ Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
 Assert.True(security.RegularMarketPrice > 1);
 
-PriceTick tick = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
 Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
-Assert.Equal(165696.20317687377, tick.Close); // in JPY
+Assert.Equal(1546.01, tick.AdjustedClose, 2); // in USD
+
+PriceTick tickBase = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+Assert.Equal(165696, tickBase.AdjustedClose, 0); // in JPY
 ```
