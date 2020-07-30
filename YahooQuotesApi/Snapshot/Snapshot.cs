@@ -31,9 +31,11 @@ namespace YahooQuotesApi
         private readonly ILogger Logger;
         internal Snapshot(ILogger logger) => Logger = logger;
 
-        internal async Task<Dictionary<string, Dictionary<string, object>?>> GetAsync(List<string> symbols, CancellationToken ct)
+        //internal async Task<Dictionary<string, Dictionary<string, object>?>> GetAsync(List<Symbol> symbols, CancellationToken ct)
+        internal async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsync(List<Symbol> symbols, CancellationToken ct)
         {
-            var dictionary = new Dictionary<string, Dictionary<string, object>?>(symbols.Count, StringComparer.OrdinalIgnoreCase);
+            //var dictionary = new Dictionary<string, Dictionary<string, object>?>(symbols.Count, StringComparer.OrdinalIgnoreCase);
+            var dictionary = new Dictionary<Symbol, Dictionary<string, object>?>(symbols.Count);
             if (!symbols.Any())
                 return dictionary;
             foreach (var symbol in symbols)
@@ -63,7 +65,7 @@ namespace YahooQuotesApi
 
                     var symbol = (string)dict["Symbol"];
 
-                    if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && !dictionary.ContainsKey(symbol)) // sometimes currency USDXXX=X is returned as XXX=X
+                    if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && !dictionary.ContainsKey(new Symbol(symbol))) // sometimes currency USDXXX=X is returned as XXX=X
                     {
                         // Sometimes currency USDXXX=X is returned as XXX=X, and vice-versa.
                         string? newSymbol = null;
@@ -71,27 +73,31 @@ namespace YahooQuotesApi
                             newSymbol = "USD" + symbol;
                         else if (symbol.Length == 8 && symbol.StartsWith("USD", StringComparison.OrdinalIgnoreCase))
                             newSymbol = symbol.Substring(3);
-                        if (newSymbol != null && dictionary.ContainsKey(newSymbol))
+
+                        if (newSymbol != null && dictionary.ContainsKey(new Symbol(newSymbol)))
                         {
                             symbol = newSymbol;
                             dict["Symbol"] = newSymbol;
                         }
                     }
 
-                    FieldModifier.Modify(symbol, dict);
+                    var theNewSymbol = new Symbol(symbol);
 
-                    if (!dictionary.TryGetValue(symbol, out var value))
-                        throw new Exception($"Symbol not found, and may have changed: {symbol}.");
+                    var closeTime = Exchanges.GetCloseTimeFromSymbol(theNewSymbol.Name);
+                    FieldModifier.Modify(closeTime, dict);
+
+                    if (!dictionary.TryGetValue(theNewSymbol, out var value))
+                        throw new Exception($"Symbol not found, and may have changed: {theNewSymbol}.");
                     if (value != null)
-                        throw new Exception($"Symbol already set: {symbol}.");
-                    dictionary[symbol] = dict;
+                        throw new Exception($"Symbol already set: {theNewSymbol}.");
+                    dictionary[theNewSymbol] = dict;
                 }
             }
 
             return dictionary;
         }
 
-        private static List<string> GetUrls(List<string> symbols)
+        private static List<string> GetUrls(List<Symbol> symbols)
         {
             const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote";
             return GetLists(symbols)
@@ -99,16 +105,16 @@ namespace YahooQuotesApi
                 .ToList();
         }
 
-        private static List<List<string>> GetLists(List<string> strings, int maxLength = 1000, int maxItems = 10000)
+        private static List<List<string>> GetLists(List<Symbol> symbols, int maxLength = 1000, int maxItems = 10000)
         {
             int len = 0;
             var lists = new List<List<string>>();
             var list = new List<string>();
             lists.Add(list);
 
-            foreach (var s in strings)
+            foreach (var symbol in symbols)
             {
-                var str = WebUtility.UrlEncode(s); // just encode the symbols
+                var str = WebUtility.UrlEncode(symbol.Name); // just encode the symbols
                 if (len + str.Length > maxLength || list.Count == maxItems)
                 {
                     list = new List<string>();

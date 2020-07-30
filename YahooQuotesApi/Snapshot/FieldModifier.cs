@@ -7,10 +7,10 @@ namespace YahooQuotesApi
 {
     internal static class FieldModifier
     {
-        internal static void Modify(string symbol, IDictionary<string, dynamic> d)
+        internal static void Modify(LocalTime closeTime, IDictionary<string, dynamic> d)
         {
             //var before = GetData(d);
-            d.Add("ExchangeCloseTime", Exchanges.GetCloseTimeFromSymbol(symbol));
+            d.Add("ExchangeCloseTime", closeTime);
             ChangeFieldName(d, "RegularMarketTime", "RegularMarketTimeSeconds");
             ChangeFieldName(d, "PreMarketTime", "PreMarketTimeSeconds");
             ChangeFieldName(d, "PostMarketTime", "PostMarketTimeSeconds");

@@ -40,7 +40,7 @@ namespace YahooQuotesApi
         {
             var symbolsChecked = symbols.Select(s => new Symbol(s)).Distinct().ToList();
             if (symbolsChecked.Any(s => s.IsEmpty))
-                throw new ArgumentException("Invalid empty symbol.");
+                throw new ArgumentException("Invalid: empty symbol(s) found.");
             var historyBaseSymbol = new Symbol(historyBase);
             if (historyBaseSymbol.IsEmpty)
             {
@@ -57,17 +57,15 @@ namespace YahooQuotesApi
                     throw new ArgumentException("Invalid currency and base symbol: USD=X.");
             }
             var snapshots = await GetAsyncDictionary(symbolsChecked, historyBaseSymbol, ct).ConfigureAwait(false);
-            return snapshots.ToDictionary(kvp => kvp.Key, kvp => kvp.Value == null ? null : new Security(kvp.Value), StringComparer.OrdinalIgnoreCase);
+            return snapshots.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value == null ? null : new Security(kvp.Value), StringComparer.OrdinalIgnoreCase);
         }
 
-        private async Task<Dictionary<string, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
         {
-            var snapshotSymbols = new List<Symbol>(symbols.Where(s => !s.IsCurrency));
-
+            var snapshotSymbols = symbols.Where(s => !s.IsCurrency).ToList();
             if (!historyBase.IsEmpty && !historyBase.IsCurrency && !snapshotSymbols.Contains(historyBase))
                 snapshotSymbols.Add(historyBase);
-            var snapshots = await Snapshot.GetAsync(snapshotSymbols
-                .Select(x => x.Name).ToList(), ct).ConfigureAwait(false);
+            var snapshots = await Snapshot.GetAsync(snapshotSymbols, ct).ConfigureAwait(false);
             if (HistoryFlags == HistoryFlags.None)
                 return snapshots;
 
@@ -109,17 +107,21 @@ namespace YahooQuotesApi
             if (!historyBase.IsEmpty)
                 ModifyPriceHistory(symbols, historyBase, snapshots);
 
-            return symbols.ToDictionary(symbol => symbol.Name, symbol => snapshots[AdjustSymbol(symbol, historyBase).Name]);
+            return symbols.ToDictionary(symbol => symbol, symbol =>
+                snapshots[AdjustSymbol(symbol, historyBase)]);
         }
 
         private static Symbol AdjustSymbol(Symbol symbol, Symbol historyBase)
         {
             if (symbol.IsCurrency && historyBase.IsCurrency)
-                symbol = new Symbol($"USD{(symbol.Name != "USD=X" ? symbol.Name : historyBase.Name)}");
+            {
+                var baseCurrency = symbol.Name != "USD=X" ? symbol.Name : historyBase.Name;
+                symbol = new Symbol($"USD{baseCurrency}");
+            }
             return symbol;
         }
 
-        private async Task AddCurrenciesToSnapshots(Dictionary<string, Dictionary<string, object>?> snapshots, List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
+        private async Task AddCurrenciesToSnapshots(Dictionary<Symbol, Dictionary<string, object>?> snapshots, List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
         {
             var invalid = snapshots.Values.WhereNotNull().FirstOrDefault(v => !v.ContainsKey("Currency"));
             if (invalid != null)
@@ -135,6 +137,7 @@ namespace YahooQuotesApi
                     .Where(c => c != "USD")
                     .Select(c => $"USD{c}=X")
                     .Distinct()
+                    .Select(s => new Symbol(s))
                     .Where(c => !snapshots.ContainsKey(c)) // in case already retrieved
                     .ToList();
 
@@ -163,26 +166,26 @@ namespace YahooQuotesApi
         private static IReadOnlyList<PriceTick> UnifyTicks(IReadOnlyList<PriceTick> oldTicks) =>
             oldTicks.Select(t => new PriceTick(t.Date)).ToList();
 
-        private void ModifyPriceHistory(List<Symbol> symbols, Symbol historyBase, Dictionary<string, Dictionary<string, object>?> securities)
+        private void ModifyPriceHistory(List<Symbol> symbols, Symbol historyBase, Dictionary<Symbol, Dictionary<string, object>?> securities)
         {
             IReadOnlyList<PriceTick>? securityBaseTicks = null, currencyBaseTicks = null;
             if (historyBase.IsCurrency)
             {
                 if (historyBase.Currency != "USD")
                 {
-                    var symbol = "USD" + historyBase.Name;
+                    var symbol = new Symbol("USD" + historyBase.Name);
                     var security = securities[symbol] ?? throw new ArgumentException($"HistoryBase not found: {symbol}.");
                     currencyBaseTicks = (IReadOnlyList<PriceTick>?)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {symbol}.");
                 }
             }
             else
             {
-                var security = securities[historyBase.Name] ?? throw new ArgumentException($"HistoryBase not found: {historyBase}.");
+                var security = securities[historyBase] ?? throw new ArgumentException($"HistoryBase not found: {historyBase}.");
                 securityBaseTicks = (IReadOnlyList<PriceTick>)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {historyBase}.");
                 var currencyBaseSymbol = (string)security["Currency"] ?? throw new ArgumentException("Currency not found.");
                 if (currencyBaseSymbol != "USD")
                 {
-                    var symbol = $"USD{currencyBaseSymbol}=X";
+                    var symbol = new Symbol($"USD{currencyBaseSymbol}=X");
                     var currencyBase = securities[symbol] ?? throw new ArgumentException($"HistoryBase currency not found: {symbol}.");
                     currencyBaseTicks = (IReadOnlyList<PriceTick>)currencyBase["PriceHistory"] ?? throw new ArgumentException($"HistoryBase currency PriceHistory: {symbol}.");
                 }
@@ -191,7 +194,7 @@ namespace YahooQuotesApi
             foreach (var sym in symbols)
             {
                 var symbol = AdjustSymbol(sym, historyBase);
-                var security = securities[symbol.Name];
+                var security = securities[symbol];
                 if (security == null) // unknown symbol
                     continue;
                 var ticks = (IReadOnlyList<PriceTick>?)security["PriceHistory"];
@@ -207,7 +210,8 @@ namespace YahooQuotesApi
                     var currencySymbol = (string)security["Currency"] ?? throw new ArgumentException($"No currency found for: {symbol.Name}.");
                     if (currencySymbol != "USD")
                     {
-                        var sec = securities[$"USD{currencySymbol}=X"];
+                        var rateSymbol = new Symbol($"USD{currencySymbol}=X");
+                        var sec = securities[rateSymbol];
                         currencyTicks = (IReadOnlyList<PriceTick>?)sec!["PriceHistory"];
                     }
                 }

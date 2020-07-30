@@ -166,5 +166,6 @@ namespace YahooQuotesApi.Tests
 
             var result = await yahooQuotes.GetAsync("XIU.TO", "USD=X");
         }
+
     }
 }

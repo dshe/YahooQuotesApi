@@ -16,9 +16,10 @@ namespace YahooQuotesApi.Tests
 
         private async Task<List<KeyValuePair<string, object>>> GetFields()
         {
-            var symbols = new[] { "C", "2800.HK", "JPYUSD=X", "HXT.TO", "NAB.AX" }; // Sydney +10 };
+            var syms = new[] { "C", "2800.HK", "JPYUSD=X", "HXT.TO", "NAB.AX" }; // Sydney +10 };
+            var symbols = syms.Select(x => new Symbol(x)).ToList();
 
-            var results = await new Snapshot(NullLogger.Instance).GetAsync(symbols.ToList(), default);
+            var results = await new Snapshot(NullLogger.Instance).GetAsync(symbols, default);
             var dict = results.Values.SelectMany(x => x).Unique(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
 
             // available only before the market opens

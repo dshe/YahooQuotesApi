@@ -38,14 +38,5 @@ namespace YahooQuotesApi
                 yield return item;
             yield return value;
         }
-
-        internal static string CheckSymbol(this string symbol)
-        {
-            if (string.IsNullOrEmpty(symbol))
-                throw new ArgumentException(nameof(symbol));
-            if (symbol.Any(char.IsWhiteSpace))
-                throw new ArgumentException($"Symbol: '{symbol}'.");
-            return symbol.ToUpper(); // for simplicity
-        }
     }
 }
