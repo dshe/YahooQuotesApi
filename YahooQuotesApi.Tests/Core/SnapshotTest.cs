@@ -27,9 +27,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task MultiQuery()
         {
-            var symbols = new[] { "C", "JPYUSD=X", "USDJPY=X", "EURJPY=X", "JPYEUR=X" };
+            var symbols = new[] { "C", "MSFT", "ORCL" };
             var securities = await YahooQuotes.GetAsync(symbols);
-            Assert.Equal(5, securities.Count);
+            Assert.Equal(3, securities.Count);
             var c = securities["C"] ?? throw new ArgumentException();
             Assert.True(c.RegularMarketVolume > 0);
         }
@@ -59,10 +59,9 @@ namespace YahooQuotesApi.Tests
         [Theory]
         [InlineData("")]
         [InlineData("C", "A", "C ")]
-        [InlineData("=X")]
-        [InlineData("JPYX=X")]
+        //[InlineData("=X")]
+        //[InlineData("JPYX=X")]
         [InlineData("JPY=X")]
-        [InlineData("JPYJPY=X")]
         public async Task TestInvalidSymbols(params string[] symbols)
         {
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(symbols));

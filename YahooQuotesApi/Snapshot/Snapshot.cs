@@ -62,6 +62,7 @@ namespace YahooQuotesApi
                         dict.Add(kvp.Key.ToPascal(), kvp.Value);
 
                     var symbol = (string)dict["Symbol"];
+
                     if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && !dictionary.ContainsKey(symbol)) // sometimes currency USDXXX=X is returned as XXX=X
                     {
                         // Sometimes currency USDXXX=X is returned as XXX=X, and vice-versa.
@@ -76,14 +77,17 @@ namespace YahooQuotesApi
                             dict["Symbol"] = newSymbol;
                         }
                     }
+
                     FieldModifier.Modify(symbol, dict);
+
                     if (!dictionary.TryGetValue(symbol, out var value))
-                        throw new Exception($"Symbol not found: {symbol}.");
+                        throw new Exception($"Symbol not found, and may have changed: {symbol}.");
                     if (value != null)
                         throw new Exception($"Symbol already set: {symbol}.");
                     dictionary[symbol] = dict;
                 }
             }
+
             return dictionary;
         }
 

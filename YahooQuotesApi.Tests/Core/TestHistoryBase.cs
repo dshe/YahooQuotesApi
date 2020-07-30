@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using NodaTime;
+﻿using NodaTime;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -109,12 +107,11 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(price, resultFound);
         }
 
-        [Theory] // (AAAZZZ=X BBB=X) => AAABBB=X
-        [InlineData("JPYUSD=X", "USD=X")] // same base => no change
-        [InlineData("USDEUR=X", "USD=X")] // change base to USD => 1
-        [InlineData("USDEUR=X", "JPY=X")] // change base to JPY
-        [InlineData("EURJPY=X", "MYR=X")] // change base to MYR
-        public async Task TestRateBaseCurrency(string currencyRateSymbol, string baseCurrencySymbol)
+        [Theory] // (AAA=X BBB=X) => AAABBB=X
+        [InlineData("JPY=X", "USD=X")] // same base => no change
+        [InlineData("USD=X", "JPY=X")] // change base to JPY
+        [InlineData("EUR=X", "CAD=X")] // change base to MYR
+        public async Task TestCurrencyBaseCurrency(string currencyRateSymbol, string baseCurrencySymbol)
         {
             YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
                 .WithPriceHistory()
@@ -127,32 +124,47 @@ namespace YahooQuotesApi.Tests
 
             /* ------------------------------------ */
 
-            var currency1 = currencyRateSymbol.Substring(0, 3);
-            var currency2 = currencyRateSymbol.Substring(3, 3); // old base
-            currency2 = baseCurrencySymbol.Substring(0, 3);
-
-            var ratex = 1d;
-
-            if (currency1 != "USD")
-            {
-                var rate1 = $"USD{currency1}=X";
-                var security1 = await yahooQuotes.GetAsync(rate1) ?? throw new Exception($"Unknown symbol: {rate1}.");
-                var priceHistory = security1.PriceHistory ?? throw new Exception($"No price history: {rate1}.");
-                var rate = priceHistory.Interpolate(date);
-                ratex /= rate;
-            }
-            if (currency2 != "USD")
-            {
-                var rate2 = $"USD{currency2}=X";
-                var security1 = await yahooQuotes.GetAsync(rate2) ?? throw new Exception($"Unknown symbol: {rate2}.");
-                var priceHistory = security1.PriceHistory ?? throw new Exception($"No price history: {rate2}.");
-                var rate = priceHistory.Interpolate(date);
-                ratex *= rate;
-            }
-
-            Write($"{currencyRateSymbol} {baseCurrencySymbol} => {ratex} == {resultFound}.");
-            Assert.Equal(ratex, resultFound, 2);
+            var symbol = $"{currencyRateSymbol.Substring(0, 3)}{baseCurrencySymbol}";
+            var security2 = await yahooQuotes.GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+            var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
+            var rate = priceHistory.Interpolate(date);
+            Assert.Equal(rate, resultFound, 1);
         }
 
+        [Fact]
+        public async Task TestNoCurrency()
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2020, 7, 1, 0, 0))
+                .Build();
+
+            // Symbol SFO does not specify a currency.
+            await Assert.ThrowsAsync<ArgumentException>(async() =>
+                await yahooQuotes.GetAsync("SFO", "USD=X"));
+        }
+
+        [Fact]
+        public async Task TestUSDUSD()
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2020, 7, 1, 0, 0))
+                .Build();
+
+            await Assert.ThrowsAsync<ArgumentException>(async () =>
+                await yahooQuotes.GetAsync("USD=X", "USD=X"));
+        }
+
+        //[Fact]
+        public async Task TestXIU()
+        {
+            YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
+                .WithPriceHistory()
+                .HistoryStarting(Instant.FromUtc(2019, 1, 1, 0, 0))
+                .Build();
+
+            var result = await yahooQuotes.GetAsync("XIU.TO", "USD=X");
+        }
     }
 }

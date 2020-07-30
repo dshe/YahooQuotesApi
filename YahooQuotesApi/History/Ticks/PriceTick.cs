@@ -25,17 +25,42 @@ namespace YahooQuotesApi
             Volume = row[6].ToLong();
         }
 
-        internal PriceTick(PriceTick tick, double rate)
+        internal PriceTick(ZonedDateTime date)
+        {
+            Date = date;
+            Open = 1;
+            High = 1;
+            Low = 1;
+            Close = 1;
+            AdjustedClose = 1;
+            Volume = 0;
+        }
+
+        internal PriceTick(PriceTick tick, double rate, bool invert = false)
         {
             Date = tick.Date;
-
-            Open = tick.Open * rate;
-            High = tick.High * rate;
-            Low = tick.Low * rate;
-            Close = tick.Close * rate;
-            AdjustedClose = tick.AdjustedClose * rate;
-
             Volume = tick.Volume;
+
+            Open  = tick.Open;
+            High  = tick.High;
+            Low   = tick.Low;
+            Close = tick.Close;
+            AdjustedClose = tick.AdjustedClose;
+
+            if (invert)
+            {
+                Open =  1 / Open;
+                High =  1 / High;
+                Low =   1 / Low;
+                Close = 1 / Close;
+                AdjustedClose = 1 / AdjustedClose;
+            }
+
+            Open  *= rate;
+            High  *= rate;
+            Low   *= rate;
+            Close *= rate;
+            AdjustedClose *= rate;
         }
 
         internal PriceTick(IDictionary<string, dynamic> dict, double rate)

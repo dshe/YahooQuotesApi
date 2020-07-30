@@ -47,7 +47,5 @@ namespace YahooQuotesApi
                 throw new ArgumentException($"Symbol: '{symbol}'.");
             return symbol.ToUpper(); // for simplicity
         }
-
-
     }
 }

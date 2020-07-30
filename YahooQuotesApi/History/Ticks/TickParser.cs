@@ -28,6 +28,8 @@ namespace YahooQuotesApi
                 object tick;
                 if (type == typeof(PriceTick))
                 {
+                    if (row[5] == "null")
+                        continue;
                     if (closeTime == null)
                         throw new ArgumentNullException(nameof(closeTime));
                     if (tz == null)

@@ -72,17 +72,16 @@ namespace YahooQuotesApi.Tests
                 .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
                 .Build();
 
-            Security? security = await yahooQuotes.GetAsync("EURUSD=X");
+            Security? security = await yahooQuotes.GetAsync("EUR=X", "USD=X");
+            Assert.Equal("USDEUR=X", security!.Symbol);
+            Assert.Equal("USD/EUR", security.ShortName);
+            Assert.Equal("EUR", security.Currency); // base currency
+            Assert.True(security!.RegularMarketPrice > 0);
 
-            Assert.Equal("EURUSD=X", security!.Symbol);
-            Assert.Equal("EUR/USD", security.ShortName);
-            Assert.Equal("USD", security.Currency); // base currency
-            Assert.True(security.RegularMarketPrice > 0);
-
-            PriceTick tick = security.PriceHistory!.First();
+            PriceTick tick = security.PriceHistoryBase.First();
             Assert.Equal("Europe/London", tick.Date.Zone.Id);
             Assert.Equal(new LocalDateTime(2020, 1, 1, 16, 0, 0), tick.Date.LocalDateTime);
-            Assert.Equal(1.122083, tick.Close);
+            Assert.Equal(1.122083, tick.Close, 5);
         }
 
         [Fact]
@@ -97,11 +96,14 @@ namespace YahooQuotesApi.Tests
 
             Assert.Equal("Tesla, Inc.", security.ShortName);
             Assert.Equal("USD", security.Currency);
-            Assert.True(security.RegularMarketPrice > 0);
+            Assert.True(security.RegularMarketPrice > 1);
 
-            PriceTick tick = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+            PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
             Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
-            Assert.Equal(165696.20317687377, tick.Close); // in JPY
+            Assert.Equal(1546.01, tick.AdjustedClose, 2); // in USD
+
+            PriceTick tickBase = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+            Assert.Equal(165696, tickBase.AdjustedClose, 0); // in JPY
         }
     }
 }
