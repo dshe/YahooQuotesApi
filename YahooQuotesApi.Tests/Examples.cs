@@ -31,17 +31,15 @@ namespace YahooQuotesApi.Tests
         }
 
         [Fact]
-        public async Task SecurityPriceHistory()
+        public async Task SecurityHistory()
         {
             YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory(Frequency.Daily)
-                .WithDividendHistory()
-                .WithSplitHistory()
+                .SetPriceHistoryFrequency(Frequency.Daily)
                 .HistoryStarting(Instant.FromUtc(2000, 1, 1, 0, 0))
-                .HistoryCache(Duration.FromHours(1))
+                .WithCaching(Duration.FromMinutes(1), Duration.FromHours(1))
                 .Build();
 
-            Security? security = await yahooQuotes.GetAsync("MSFT");
+            Security? security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.All);
 
             Assert.True(security!.RegularMarketPrice > 0);
             Assert.Equal("NasdaqGS", security!.FullExchangeName);
@@ -68,11 +66,10 @@ namespace YahooQuotesApi.Tests
         public async Task CurrencyRateHistory()
         {
             YahooQuotes yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
                 .Build();
 
-            Security? security = await yahooQuotes.GetAsync("EUR=X", "USD=X");
+            Security? security = await yahooQuotes.GetAsync("EUR=X", HistoryFlags.PriceHistory, "USD=X");
             Assert.Equal("USDEUR=X", security!.Symbol);
             Assert.Equal("USD/EUR", security.ShortName);
             Assert.Equal("EUR", security.Currency); // base currency
@@ -88,10 +85,9 @@ namespace YahooQuotesApi.Tests
         public async Task SecurityPriceHistoryInBaseCurrency()
         {
             var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
                 .Build()
-                .GetAsync("TSLA", historyBase: "JPY=X")
+                .GetAsync("TSLA", HistoryFlags.PriceHistory, historyBase: "JPY=X")
                 ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
             Assert.Equal("Tesla, Inc.", security.ShortName);

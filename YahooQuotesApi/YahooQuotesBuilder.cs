@@ -1,36 +1,20 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NodaTime;
+using System;
 
 namespace YahooQuotesApi
 {
     public sealed class YahooQuotesBuilder
     {
         private readonly ILogger Logger;
-        private HistoryFlags HistoryFlags;
         private Instant HistoryStartDate = Instant.FromUtc(2000, 1, 1, 0, 0);
         private Frequency PriceHistoryFrequency = Frequency.Daily;
         private Duration HistoryCacheDuration = Duration.Zero;
+        private Duration SnapshotCacheDuration = Duration.Zero;
 
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) => Logger = logger;
-
-        public YahooQuotesBuilder WithDividendHistory()
-        {
-            HistoryFlags |= HistoryFlags.DividendHistory;
-            return this;
-        }
-        public YahooQuotesBuilder WithSplitHistory()
-        {
-            HistoryFlags |= HistoryFlags.SplitHistory;
-            return this;
-        }
-        public YahooQuotesBuilder WithPriceHistory(Frequency frequency = Frequency.Daily)
-        {
-            HistoryFlags |= HistoryFlags.PriceHistory;
-            PriceHistoryFrequency = frequency;
-            return this;
-        }
 
         public YahooQuotesBuilder HistoryStarting(Instant start)
         {
@@ -38,9 +22,18 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotesBuilder HistoryCache(Duration cacheDuration)
+        public YahooQuotesBuilder SetPriceHistoryFrequency(Frequency frequency)
         {
-            HistoryCacheDuration = cacheDuration;
+            PriceHistoryFrequency = frequency;
+            return this;
+        }
+
+        public YahooQuotesBuilder WithCaching(Duration snapshotDuration, Duration historyDuration)
+        {
+            if (snapshotDuration > historyDuration)
+                throw new ArgumentException("snapshotCacheDuration > historyCacheDuration.");
+            SnapshotCacheDuration = snapshotDuration;
+            HistoryCacheDuration = historyDuration;
             return this;
         }
 
@@ -48,8 +41,8 @@ namespace YahooQuotesApi
         {
             return new YahooQuotes(
                 Logger,
-                HistoryFlags,
                 HistoryStartDate,
+                SnapshotCacheDuration,
                 HistoryCacheDuration,
                 PriceHistoryFrequency);
         }

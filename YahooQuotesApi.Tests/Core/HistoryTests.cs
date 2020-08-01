@@ -16,10 +16,9 @@ namespace YahooQuotesApi.Tests
         public async Task SingleSecurityTest()
         {
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
                 .Build();
-            var security = await yahooQuotes.GetAsync("IBM");
+            var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory);
             Assert.NotEmpty(security!.PriceHistory);
         }
 
@@ -33,10 +32,9 @@ namespace YahooQuotesApi.Tests
                 .ToInstant();
 
             var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(instant)
                 .Build()
-                .GetAsync("AAPL");
+                .GetAsync("AAPL", HistoryFlags.PriceHistory);
 
             var history = security?.PriceHistory;
             var tick = history.First();
@@ -55,10 +53,9 @@ namespace YahooQuotesApi.Tests
             var instant = new LocalDateTime(2019, 3, 19, 15, 0).InZoneStrictly(timeZone).ToInstant();
 
             var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(instant)
                 .Build()
-                .GetAsync("2618.TW");
+                .GetAsync("2618.TW", HistoryFlags.PriceHistory);
 
             var ticks = security!.PriceHistory ?? throw new NullReferenceException();
 
@@ -79,11 +76,10 @@ namespace YahooQuotesApi.Tests
             var instant = date.AtStartOfDayInZone(timeZone!).ToInstant().Minus(Duration.FromSeconds(1));
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithDividendHistory()
                 .HistoryStarting(instant)
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL");
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory);
             IReadOnlyList<DividendTick> list = security?.DividendHistory ?? throw new ArgumentException();
 
             Assert.Equal(0.77d, list[0].Dividend);
@@ -98,11 +94,10 @@ namespace YahooQuotesApi.Tests
             var instant = date.AtStartOfDayInZone(timeZone!).ToInstant();
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithSplitHistory()
                 .HistoryStarting(instant)
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL");
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory);
             IReadOnlyList<SplitTick> splits = security?.SplitHistory ?? throw new ArgumentException();
 
             Assert.Equal(1, splits[0].BeforeSplit);
@@ -117,11 +112,11 @@ namespace YahooQuotesApi.Tests
             var zdt = startDate.At(new LocalTime(16, 0, 0)).InZoneStrictly(timeZone!);
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory(Frequency.Daily)
+                .SetPriceHistoryFrequency(Frequency.Daily)
                 .HistoryStarting(zdt.ToInstant())
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL");
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
             var ticks = security?.PriceHistory ?? throw new ArgumentException();
 
             Assert.Equal(zdt, ticks[0].Date);
@@ -136,11 +131,11 @@ namespace YahooQuotesApi.Tests
             var zdt = startDate.At(new LocalTime(16, 0, 0)).InZoneStrictly(timeZone!);
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory(Frequency.Weekly)
+                .SetPriceHistoryFrequency(Frequency.Weekly)
                 .HistoryStarting(zdt.ToInstant())
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL");
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
             var ticks = security?.PriceHistory ?? throw new ArgumentException();
 
             var instant1 = new LocalDateTime(2019, 1, 7, 16, 0).InZoneStrictly(timeZone!);
@@ -158,11 +153,11 @@ namespace YahooQuotesApi.Tests
             var zdt = startDate.At(new LocalTime(16, 0, 0)).InZoneStrictly(timeZone!);
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .WithPriceHistory(Frequency.Monthly)
+                .SetPriceHistoryFrequency(Frequency.Monthly)
                 .HistoryStarting(zdt.ToInstant())
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL");
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
             var ticks = security?.PriceHistory ?? throw new ArgumentException();
 
             foreach (var tick in ticks)

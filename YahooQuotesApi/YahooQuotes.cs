@@ -21,22 +21,20 @@ namespace YahooQuotesApi
         private static readonly LocalTime CurrencyCloseTime = new LocalTime(16, 0, 0);
         private static readonly DateTimeZone CurrencyTimezone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London")!;
         private readonly ILogger Logger;
-        private readonly HistoryFlags HistoryFlags;
         private readonly Snapshot Snapshot;
         private readonly History History;
 
-        internal YahooQuotes(ILogger logger, HistoryFlags historyFlags, Instant historyStart, Duration cacheDuration, Frequency priceHistoryFrequency)
+        internal YahooQuotes(ILogger logger, Instant historyStart, Duration snapshotCacheDuration, Duration historyCacheDuration, Frequency priceHistoryFrequency)
         {
             Logger = logger;
-            HistoryFlags = historyFlags;
-            Snapshot = new Snapshot(logger);
-            History = new History(logger, historyStart, cacheDuration, priceHistoryFrequency);
+            Snapshot = new Snapshot(logger, snapshotCacheDuration);
+            History = new History(logger, historyStart, historyCacheDuration, priceHistoryFrequency);
         }
 
-        public async Task<Security?> GetAsync(string symbol, string historyBase = "", CancellationToken ct = default) =>
-            (await GetAsync(new[] { symbol }, historyBase, ct).ConfigureAwait(false)).Values.Single();
+        public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
+            (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-        public async Task<IReadOnlyDictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, string historyBase = "", CancellationToken ct = default)
+        public async Task<IReadOnlyDictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
         {
             var symbolsChecked = symbols.Select(s => new Symbol(s)).Distinct().ToList();
             if (symbolsChecked.Any(s => s.IsEmpty))
@@ -49,24 +47,24 @@ namespace YahooQuotesApi
             }
             else
             {
-                if (!HistoryFlags.HasFlag(HistoryFlags.PriceHistory))
+                if (!historyFlags.HasFlag(HistoryFlags.PriceHistory))
                     throw new ArgumentException("PriceHistory must be enabled before specifying historyBase.");
                 if (symbolsChecked.Any(s => s.IsCurrencyRate))
                     throw new ArgumentException("Currency symbols must in the form ABC=X.");
                 if (historyBaseSymbol.Name == "USD=X" && symbolsChecked.Any(s => s.Name == "USD=X"))
                     throw new ArgumentException("Invalid currency and base symbol: USD=X.");
             }
-            var snapshots = await GetAsyncDictionary(symbolsChecked, historyBaseSymbol, ct).ConfigureAwait(false);
+            var snapshots = await GetAsyncDictionary(symbolsChecked, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
             return snapshots.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value == null ? null : new Security(kvp.Value), StringComparer.OrdinalIgnoreCase);
         }
 
-        private async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
         {
             var snapshotSymbols = symbols.Where(s => !s.IsCurrency).ToList();
             if (!historyBase.IsEmpty && !historyBase.IsCurrency && !snapshotSymbols.Contains(historyBase))
                 snapshotSymbols.Add(historyBase);
             var snapshots = await Snapshot.GetAsync(snapshotSymbols, ct).ConfigureAwait(false);
-            if (HistoryFlags == HistoryFlags.None)
+            if (historyFlags == HistoryFlags.None)
                 return snapshots;
 
             if (!historyBase.IsEmpty)
@@ -76,18 +74,18 @@ namespace YahooQuotesApi
             foreach (var dict in snapshots.Values.WhereNotNull())
             {
                 var symbol = (string)dict["Symbol"];
-                if (HistoryFlags.HasFlag(HistoryFlags.PriceHistory))
+                if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
                 {
                     if (!dict.TryGetValue("ExchangeTimezone", out object o))
                         throw new ArgumentException($"No timezone found for symbol: {symbol}.");
                     var tz = (DateTimeZone)o;
                     var closeTime = (LocalTime)dict["ExchangeCloseTime"];
-                    dict.Add("PriceHistory", History.GetPricesAsync(symbol, closeTime, tz, ct));
+                    dict["PriceHistory"] = History.GetPricesAsync(symbol, closeTime, tz, ct);
                 }
-                if (HistoryFlags.HasFlag(HistoryFlags.DividendHistory))
-                    dict.Add("DividendHistory", History.GetDividendsAsync(symbol, ct));
-                if (HistoryFlags.HasFlag(HistoryFlags.SplitHistory))
-                    dict.Add("SplitHistory", History.GetSplitsAsync(symbol, ct));
+                if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
+                    dict["DividendHistory"] = History.GetDividendsAsync(symbol, ct);
+                if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
+                    dict["SplitHistory"] = History.GetSplitsAsync(symbol, ct);
             }
 
             // await history tasks

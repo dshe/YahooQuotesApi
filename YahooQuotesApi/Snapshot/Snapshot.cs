@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Flurl.Http;
 using Flurl.Http.Configuration;
+using NodaTime;
 
 // Invalid symbols are often, but not always, ignored by Yahoo.
 // So the number of symbols returned may be less than requested.
@@ -29,12 +30,22 @@ namespace YahooQuotesApi
         }
 
         private readonly ILogger Logger;
-        internal Snapshot(ILogger logger) => Logger = logger;
+        private readonly Duration CacheDuration;
+        private readonly AsyncItemsCache<Symbol, Dictionary<string, object>?> Cache;
 
-        //internal async Task<Dictionary<string, Dictionary<string, object>?>> GetAsync(List<Symbol> symbols, CancellationToken ct)
-        internal async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsync(List<Symbol> symbols, CancellationToken ct)
+        internal Snapshot(ILogger logger, Duration cacheDuration)
         {
-            //var dictionary = new Dictionary<string, Dictionary<string, object>?>(symbols.Count, StringComparer.OrdinalIgnoreCase);
+            Logger = logger;
+            CacheDuration = cacheDuration;
+            Cache = new AsyncItemsCache<Symbol, Dictionary<string, object>?>(cacheDuration);
+        }
+
+        internal async Task<Dictionary<Symbol, Dictionary<string, object>?>>
+            GetAsync(List<Symbol> symbols, CancellationToken ct) =>
+                await Cache.Get(symbols, () => Producer(symbols, ct));
+
+        private async Task<Dictionary<Symbol, Dictionary<string, object>?>> Producer(List<Symbol> symbols, CancellationToken ct)
+        {
             var dictionary = new Dictionary<Symbol, Dictionary<string, object>?>(symbols.Count);
             if (!symbols.Any())
                 return dictionary;

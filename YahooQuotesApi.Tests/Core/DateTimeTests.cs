@@ -72,10 +72,9 @@ namespace YahooQuotesApi.Tests
                     .InZoneStrictly(security.ExchangeTimezone!);
 
                 var securityWithHistory = await new YahooQuotesBuilder(Logger)
-                    .WithPriceHistory()
                     .HistoryStarting(zdt.ToInstant())
                     .Build()
-                    .GetAsync(symbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+                    .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
                 var ticks = securityWithHistory.PriceHistory;
                 Assert.Equal(zdt, ticks.First().Date);
@@ -90,10 +89,9 @@ namespace YahooQuotesApi.Tests
             var zdt = new LocalDateTime(2017, 10, 10, 16, 30).InZoneStrictly(timeZone!);
 
             var security = await new YahooQuotesBuilder(Logger)
-                .WithPriceHistory()
                 .HistoryStarting(zdt.ToInstant())
                 .Build()
-                .GetAsync(symbol);
+                .GetAsync(symbol, HistoryFlags.PriceHistory);
 
             Assert.Equal(timeZone, security!.ExchangeTimezone);
 
@@ -117,10 +115,9 @@ namespace YahooQuotesApi.Tests
             var instant = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(10));
 
             var securities = await new YahooQuotesBuilder(logger)
-                .WithPriceHistory()
                 .HistoryStarting(instant)
                 .Build()
-                .GetAsync(symbols);
+                .GetAsync(symbols, HistoryFlags.PriceHistory);
 
             Write($"Requested Symbols: {symbols.Count}.");
             Assert.Equal(symbols.Count, securities.Count);

@@ -17,13 +17,13 @@ namespace YahooQuotesApi
         private readonly ILogger Logger;
         private readonly Instant Start;
         private readonly Frequency PriceHistoryFrequency;
-        private readonly AsyncLazyCache<string, List<object>> Cache;
+        private readonly AsyncItemCache<string, List<object>> Cache;
 
         internal History(ILogger logger, Instant start, Duration cacheDuration, Frequency priceHistoryFrequency)
         {
             Logger = logger;
             Start = start;
-            Cache = new AsyncLazyCache<string, List<object>>(cacheDuration);
+            Cache = new AsyncItemCache<string, List<object>>(cacheDuration);
             PriceHistoryFrequency = priceHistoryFrequency;
         }
 

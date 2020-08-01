@@ -18,7 +18,7 @@
   <ItemGroup>
     <None Include="Utilities\QuoteFieldWriter.cs" />
     <None Include="Core\HistoryTests.cs" />
-    <None Include="Utilities\AsyncCacheTest.cs" />
+    <None Include="Utilities\AsyncItemCacheTest.cs" />
     <None Include="~\CurrencyCompare.cs" />
   </ItemGroup>
 

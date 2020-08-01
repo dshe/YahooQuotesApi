@@ -5,12 +5,12 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
-    public class AsyncCacheTest : TestBase
+    public class AsyncItemCacheTest : TestBase
     {
-        public AsyncCacheTest(ITestOutputHelper output) : base(output) { }
+        public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
 
-        private readonly AsyncLazyCache<string, string> Cache
-            = new AsyncLazyCache<string, string>(Duration.FromDays(1));
+        private readonly AsyncItemCache<string, string> Cache
+            = new AsyncItemCache<string, string>(Duration.FromDays(1));
 
         private int Produces = 0;
 
