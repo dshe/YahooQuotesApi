@@ -62,7 +62,8 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
-Security? security = await yahooQuotes.GetAsync("EUR=X", HistoryFlags.PriceHistory, "USD=X");
+Security? security = await yahooQuotes.GetAsync(
+            "EUR=X", HistoryFlags.PriceHistory, "USD=X");
 
 Assert.Equal("EURUSD=X", security!.Symbol);
 Assert.Equal("EUR/USD", security.ShortName);
@@ -86,10 +87,10 @@ Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
 Assert.True(security.RegularMarketPrice > 1);
 
-PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
+PriceTick tick = security.PriceHistory.First();
 Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
 Assert.Equal(1546.01, tick.AdjustedClose, 2); // in USD
 
-PriceTick tickBase = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+PriceTick tickBase = security.PriceHistoryBase.First();
 Assert.Equal(165696, tickBase.AdjustedClose, 0); // in JPY
 ```
