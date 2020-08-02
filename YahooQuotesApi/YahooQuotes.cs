@@ -234,17 +234,17 @@ namespace YahooQuotesApi
 
             if (currencyRates != null)
             {
-                var r = currencyRates.Interpolate(date);
+                var r = currencyRates.InterpolateAdjustedClose(date);
                 rate /= r;
             }
             if (baseCurrencyRates != null)
             {
-                var r = baseCurrencyRates.Interpolate(date);
+                var r = baseCurrencyRates.InterpolateAdjustedClose(date);
                 rate *= r;
             }
             if (baseSecurityRates != null)
             {
-                var r = baseSecurityRates.Interpolate(date);
+                var r = baseSecurityRates.InterpolateAdjustedClose(date);
                 rate /= r;
             }
             return rate;

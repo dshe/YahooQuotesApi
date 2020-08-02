@@ -20,7 +20,7 @@ namespace YahooQuotesApi.Tests
             var symbols = syms.Select(x => new Symbol(x)).ToList();
 
             var results = await new Snapshot(NullLogger.Instance, Duration.Zero).GetAsync(symbols, default);
-            var dict = results.Values.SelectMany(x => x).Unique(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            var dict = results.Values.SelectMany(x => x).DistinctBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
 
             // available only before the market opens
             dict["PreMarketPrice"] = 1m; // decimal
@@ -37,6 +37,7 @@ namespace YahooQuotesApi.Tests
             dict["PostMarketChangePercent"] = 1m; // decimal
 
             dict["PriceHistory"] = ""; // (IReadOnlyList<PriceTick>) new List<PriceTick>();
+            dict["PriceHistoryBase"] = ""; // (IReadOnlyList<PriceTick>) new List<PriceTick>();
             dict["DividendHistory"] = "";
             dict["SplitHistory"] = "";
 
@@ -67,10 +68,16 @@ namespace YahooQuotesApi.Tests
                 var value = field.Value;
                 Type type = value.GetType();
 
-                if (name.EndsWith("History"))
+                if (name == "PriceHistory")
                 {
-                    var historyType = name.Substring(0, name.IndexOf("History"));
-                    Write($"public IReadOnlyList<{historyType}Tick>? {name} => GetN();");
+                    //var historyType = name.Substring(0, name.IndexOf("History"));
+                    Write($"public IReadOnlyList<PriceTick>? {name} => GetN();");
+                    continue;
+                }
+                if (name == "PriceHistoryBase")
+                {
+                    //var historyType = name.Substring(0, name.IndexOf("History"));
+                    Write($"public IReadOnlyList<PriceTick>? {name} => GetN();");
                     continue;
                 }
                 var typeName = type.Name;

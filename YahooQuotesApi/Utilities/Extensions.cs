@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace YahooQuotesApi
@@ -27,18 +26,24 @@ namespace YahooQuotesApi
         internal static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source) where T : class =>
             source.Where(item => item != null).Cast<T>();
 
-        internal static IEnumerable<T> Unique<T,TKey>(this IEnumerable<T> source, Func<T, TKey> getKey)
+        public static IEnumerable<T> DistinctBy<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector)
         {
             var keys = new HashSet<TKey>();
-            return source.Where(item => keys.Add(getKey(item)));
+            foreach (T element in source)
+            {
+                if (keys.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
         }
 
         internal static IEnumerable<T> Append<T>(this IEnumerable<T> source, T value)
         {
+            //source.Concat(new T[] { value });
             foreach (var item in source)
                 yield return item;
             yield return value;
         }
-
     }
 }

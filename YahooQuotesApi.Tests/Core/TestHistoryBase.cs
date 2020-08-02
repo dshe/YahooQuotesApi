@@ -31,7 +31,7 @@ namespace YahooQuotesApi.Tests
 
             Security security2 = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
             var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
-            var price = priceHistory.Interpolate(date);
+            var price = priceHistory.InterpolateAdjustedClose(date);
             var result = price;
 
             if (security2.Currency != baseSymbol.Substring(0, 3))
@@ -40,14 +40,14 @@ namespace YahooQuotesApi.Tests
                 {
                     var rateSymbol = "USD" + security2.Currency + "=X";
                     var sec = await yahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
-                    var rate = sec.PriceHistory!.Interpolate(date);
+                    var rate = sec.PriceHistory!.InterpolateAdjustedClose(date);
                     price /= rate;
                 }
 
                 if (baseSymbol != "USD=X")
                 {
                     var sec = await yahooQuotes.GetAsync("USD" + baseSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
-                    var rate = sec.PriceHistory!.Interpolate(date);
+                    var rate = sec.PriceHistory!.InterpolateAdjustedClose(date);
                     price *= rate;
                 }
             }
@@ -77,7 +77,7 @@ namespace YahooQuotesApi.Tests
 
             Security security2 = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
             var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
-            var price = priceHistory.Interpolate(date);
+            var price = priceHistory.InterpolateAdjustedClose(date);
 
             var sec = await yahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
             if (security2.Currency != sec.Currency)
@@ -86,19 +86,19 @@ namespace YahooQuotesApi.Tests
                 {
                     var rateSymbol = $"USD{security2.Currency}=X";
                     var secx = await yahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
-                    var rate = secx.PriceHistory!.Interpolate(date);
+                    var rate = secx.PriceHistory!.InterpolateAdjustedClose(date);
                     price /= rate;
                 }
                 if (sec.Currency != "USD")
                 {
                     var currency = $"USD{sec.Currency}=X";
                     var secCurrency = await yahooQuotes.GetAsync(currency, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
-                    var rate = secCurrency.PriceHistory!.Interpolate(date);
+                    var rate = secCurrency.PriceHistory!.InterpolateAdjustedClose(date);
                     price *= rate;
                 }
             }
 
-            var rate3 = sec.PriceHistory!.Interpolate(date);
+            var rate3 = sec.PriceHistory!.InterpolateAdjustedClose(date);
             price /= rate3;
 
             Write($"{symbol} {baseSymbol} => {price} == {resultFound}.");
@@ -124,7 +124,7 @@ namespace YahooQuotesApi.Tests
             var symbol = $"{currencyRateSymbol.Substring(0, 3)}{baseCurrencySymbol}";
             var security2 = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
             var priceHistory = security2.PriceHistory ?? throw new Exception($"No price history: {symbol}.");
-            var rate = priceHistory.Interpolate(date);
+            var rate = priceHistory.InterpolateAdjustedClose(date);
             Assert.Equal(rate, resultFound, 1);
         }
 

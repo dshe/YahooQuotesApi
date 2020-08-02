@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NodaTime;
@@ -16,7 +15,7 @@ namespace YahooQuotesApi
     {
         private readonly IClock Clock;
         private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1);
-        private readonly Dictionary<TKey, (Instant, TResult)> Cache = new Dictionary<TKey, (Instant, TResult)>();
+        private readonly Dictionary<TKey, (TResult, Instant)> Cache = new Dictionary<TKey, (TResult, Instant)>();
         private readonly Duration Duration;
 
         internal AsyncItemsCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
@@ -28,21 +27,21 @@ namespace YahooQuotesApi
 
         internal async Task<Dictionary<TKey, TResult>> Get(List<TKey> keys, Func<Task<Dictionary<TKey, TResult>>> factory)
         {
-            await Semaphore.WaitAsync().ConfigureAwait(false); // serialize
+            await Semaphore.WaitAsync().ConfigureAwait(false); // serialize requests
             try
             {
                 var now = Clock.GetCurrentInstant();
 
-                var results = GetFromCache(keys, now);
+                var dictionary = GetFromCache(keys, now);
 
-                if (!results.Any())
+                if (!dictionary.Any())
                 {
-                    results = await factory().ConfigureAwait(false);
-                    foreach (var kvp in results)
-                        Cache[kvp.Key] = (now, kvp.Value);
+                    dictionary = await factory().ConfigureAwait(false);
+                    foreach (var kvp in dictionary)
+                        Cache[kvp.Key] = (kvp.Value, now);
                 }
 
-                return results;
+                return dictionary;
             }
             finally
             {
@@ -50,13 +49,14 @@ namespace YahooQuotesApi
             }
         }
 
+        // Return results only if results for all keys are present in the cache and not expired.
         private Dictionary<TKey, TResult> GetFromCache(List<TKey> keys, Instant now)
         {
-           var results = new Dictionary<TKey, TResult>();
+            var results = new Dictionary<TKey, TResult>(keys.Count);
 
             foreach (var key in keys)
             {
-                if (Cache.TryGetValue(key, out (Instant time, TResult value) item) && now - item.time <= Duration)
+                if (Cache.TryGetValue(key, out (TResult value, Instant time) item) && now - item.time <= Duration)
                     results.Add(key, item.value);
                 else
                 {

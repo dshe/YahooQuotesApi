@@ -55,6 +55,5 @@ namespace YahooQuotesApi
                 dictionary[oldFieldName] = func(value);
             }
         }
-
     }
 }

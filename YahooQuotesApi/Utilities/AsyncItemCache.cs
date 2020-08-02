@@ -12,7 +12,7 @@ namespace YahooQuotesApi
     internal class AsyncItemCache<TKey, TResult>
     {
         private readonly IClock Clock;
-        private readonly Dictionary<TKey, (Instant, Task<TResult>)> TaskCache = new Dictionary<TKey, (Instant, Task<TResult>)>();
+        private readonly Dictionary<TKey, (Task<TResult>, Instant)> TaskCache = new Dictionary<TKey, (Task<TResult>, Instant)>();
         private readonly Duration Duration;
 
         internal AsyncItemCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
@@ -24,14 +24,14 @@ namespace YahooQuotesApi
 
         internal async Task<TResult> Get(TKey key, Func<Task<TResult>> factory)
         {
-            (Instant time, Task<TResult> task) item;
+            (Task<TResult> task, Instant time) item;
             lock (TaskCache)
             {
                 var now = Clock.GetCurrentInstant();
                 if (!TaskCache.TryGetValue(key, out item) || now - item.time > Duration)
                 {
                     var task = factory(); // start task
-                    item = (now, task);
+                    item = (task, now);
                     TaskCache[key] = item;
                 }
             }

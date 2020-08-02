@@ -1,5 +1,6 @@
 ﻿using NodaTime;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,29 +18,30 @@ namespace YahooQuotesApi.Tests
 
         private async Task<Dictionary<string,string>> Producer(List<string> keys)
         {
-            //Write($"producing using key {key}");
+            Write($"producing using keys: {string.Join(',', keys)}");
             await Task.Yield();
             Produces++;
             var d = new Dictionary<string, string>();
             foreach (var key in keys)
-                d.Add(key, "value" + key + " " + Produces);
+                d.Add(key, $"value for key: {key} {Produces}.");
             return d;
         }
 
         private async Task<Dictionary<string, string>> Get(List<string> keys)
         {
-            //Write($"getting key {key}");
+            Write($"getting keys: {string.Join(',', keys)}");
             return await Cache.Get(keys, () => Producer(keys));
         }
-
 
         [Fact]
         public async Task TestCache1()
         {
-            var result1 = await Get(new List<string>() { "1" });
-            var result2 = await Get(new List<string>() { "1." });
+            var result1 = await Get(new List<string>() { "a", "b", "c" });
+            var result2 = await Get(new List<string>() { "b" });
+            var result3 = await Get(new List<string>() { "c", "a" });
+            var result4 = await Get(new List<string>() { "b", "z" });
             ;
-            //Assert.Equal(3, Produces);
+            Assert.Equal(2, Produces);
         }
     }
 }

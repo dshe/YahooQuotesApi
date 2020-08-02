@@ -12,7 +12,7 @@ namespace YahooQuotesApi
         internal static LocalTime GetCloseTimeFromSymbol(string symbol)
         {
             if (string.IsNullOrEmpty(symbol))
-                throw new ArgumentException("symbol");
+                throw new ArgumentException(nameof(symbol));
 
             var suffix = GetSuffix(symbol);
 
