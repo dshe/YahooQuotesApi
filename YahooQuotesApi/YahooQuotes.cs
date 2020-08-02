@@ -55,7 +55,7 @@ namespace YahooQuotesApi
                     throw new ArgumentException("Invalid currency and base symbol: USD=X.");
             }
             var snapshots = await GetAsyncDictionary(symbolsChecked, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
-            return snapshots.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value == null ? null : new Security(kvp.Value), StringComparer.OrdinalIgnoreCase);
+            return snapshots.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value == null ? null : new Security(kvp.Value, Logger), StringComparer.OrdinalIgnoreCase);
         }
 
         private async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)

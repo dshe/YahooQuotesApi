@@ -95,7 +95,7 @@ namespace YahooQuotesApi.Tests
 
             Assert.Equal(timeZone, security!.ExchangeTimezone);
 
-            var ticks = security.PriceHistory ?? throw new Exception();
+            var ticks = security.PriceHistory;
             Assert.Equal(zdt, ticks[0].Date);
             Assert.Equal(616.50, ticks[0].Close);
             Assert.Equal(615.00, ticks[1].Close);

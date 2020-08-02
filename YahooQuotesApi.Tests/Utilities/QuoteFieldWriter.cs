@@ -68,25 +68,28 @@ namespace YahooQuotesApi.Tests
                 var value = field.Value;
                 Type type = value.GetType();
 
-                if (name == "PriceHistory")
+                if (name == "DividendHistory")
                 {
-                    //var historyType = name.Substring(0, name.IndexOf("History"));
-                    Write($"public IReadOnlyList<PriceTick>? {name} => GetN();");
+                    Write($"public IReadOnlyList<DividendTick> {name} {{ get; private set; }} = new List<DividendTick>();");
                     continue;
                 }
-                if (name == "PriceHistoryBase")
+                if (name == "SplitHistory")
                 {
-                    //var historyType = name.Substring(0, name.IndexOf("History"));
-                    Write($"public IReadOnlyList<PriceTick>? {name} => GetN();");
+                    Write($"public IReadOnlyList<SplitTick> {name} {{ get; private set; }} = new List<SplitTick>();");
+                    continue;
+                }
+                if (name == "PriceHistory" || name == "PriceHistoryBase")
+                {
+                    Write($"public IReadOnlyList<PriceTick> {name} {{ get; private set; }} = new List<PriceTick>();");
                     continue;
                 }
                 var typeName = type.Name;
                 if (typeName == "CachedDateTimeZone") // may be a NodaTime bug
                     typeName = "DateTimeZone";
                 if (typeName == "String") // Symbol, Currency
-                    Write($"public {typeName} {name} => GetS();");
+                    Write($"public {typeName} {name} {{ get; private set; }} = \"\";");
                 else
-                    Write($"public {typeName}? {name} => GetN();");
+                    Write($"public {typeName}? {name} {{ get; private set; }}");
             }
             Write(Environment.NewLine);
         }

@@ -18,8 +18,8 @@ namespace YahooQuotesApi.Tests
             var yahooQuotes = new YahooQuotesBuilder(Logger)
                 .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
                 .Build();
-            var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory);
-            Assert.NotEmpty(security!.PriceHistory);
+            var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory) ?? throw new ArgumentNullException();
+            Assert.NotEmpty(security.PriceHistory);
         }
 
         [Fact]
@@ -57,7 +57,7 @@ namespace YahooQuotesApi.Tests
                 .Build()
                 .GetAsync("2618.TW", HistoryFlags.PriceHistory);
 
-            var ticks = security!.PriceHistory ?? throw new NullReferenceException();
+            var ticks = security!.PriceHistory;
 
             Assert.Equal(14.8567, ticks[0].Close);
             Assert.Equal(14.8082, ticks[1].Close);
@@ -79,8 +79,8 @@ namespace YahooQuotesApi.Tests
                 .HistoryStarting(instant)
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory);
-            IReadOnlyList<DividendTick> list = security?.DividendHistory ?? throw new ArgumentException();
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory) ?? throw new ArgumentException();
+            IReadOnlyList<DividendTick> list = security.DividendHistory;
 
             Assert.Equal(0.77d, list[0].Dividend);
             Assert.Equal(date, list[0].Date);
@@ -97,8 +97,8 @@ namespace YahooQuotesApi.Tests
                 .HistoryStarting(instant)
                 .Build();
 
-            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory);
-            IReadOnlyList<SplitTick> splits = security?.SplitHistory ?? throw new ArgumentException();
+            var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory) ?? throw new ArgumentException();
+            IReadOnlyList<SplitTick> splits = security.SplitHistory;
 
             Assert.Equal(1, splits[0].BeforeSplit);
             Assert.Equal(7, splits[0].AfterSplit);
@@ -117,7 +117,7 @@ namespace YahooQuotesApi.Tests
                 .Build();
 
             var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
-            var ticks = security?.PriceHistory ?? throw new ArgumentException();
+            var ticks = security!.PriceHistory;
 
             Assert.Equal(zdt, ticks[0].Date);
             Assert.Equal(152.880005, ticks[1].Open);
@@ -136,7 +136,7 @@ namespace YahooQuotesApi.Tests
                 .Build();
 
             var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
-            var ticks = security?.PriceHistory ?? throw new ArgumentException();
+            var ticks = security!.PriceHistory;
 
             var instant1 = new LocalDateTime(2019, 1, 7, 16, 0).InZoneStrictly(timeZone!);
             Assert.Equal(instant1, ticks[0].Date); // previous Monday
@@ -158,7 +158,7 @@ namespace YahooQuotesApi.Tests
                 .Build();
 
             var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
-            var ticks = security?.PriceHistory ?? throw new ArgumentException();
+            var ticks = security!.PriceHistory;
 
             foreach (var tick in ticks)
                 Write($"{tick.Date} {tick.Close}");

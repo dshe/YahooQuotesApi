@@ -44,17 +44,17 @@ namespace YahooQuotesApi.Tests
             Assert.True(security!.RegularMarketPrice > 0);
             Assert.Equal("NasdaqGS", security!.FullExchangeName);
 
-            IReadOnlyList<DividendTick>? dividendHistory = security.DividendHistory;
-            Assert.Equal(new LocalDate(2003, 2, 19), dividendHistory![0].Date);
+            IReadOnlyList<DividendTick> dividendHistory = security.DividendHistory;
+            Assert.Equal(new LocalDate(2003, 2, 19), dividendHistory[0].Date);
             Assert.Equal(0.08, dividendHistory[0].Dividend);
 
-            IReadOnlyList<SplitTick>? splitHistory = security.SplitHistory;
-            Assert.Equal(new LocalDate(2003, 2, 18), splitHistory![0].Date);
+            IReadOnlyList<SplitTick> splitHistory = security.SplitHistory;
+            Assert.Equal(new LocalDate(2003, 2, 18), splitHistory[0].Date);
             Assert.Equal(1, splitHistory[0].BeforeSplit);
             Assert.Equal(2, splitHistory[0].AfterSplit);
 
-            IReadOnlyList<PriceTick>? priceHistory = security.PriceHistory;
-            PriceTick tick = priceHistory![0];
+            IReadOnlyList<PriceTick> priceHistory = security.PriceHistory;
+            PriceTick tick = priceHistory[0];
             ZonedDateTime zdt = tick.Date;
             Assert.Equal("America/New_York", zdt.Zone.Id);
             Assert.Equal(new LocalDate(2000, 1, 3), zdt.Date);
@@ -94,11 +94,11 @@ namespace YahooQuotesApi.Tests
             Assert.Equal("USD", security.Currency);
             Assert.True(security.RegularMarketPrice > 1);
 
-            PriceTick tick = security.PriceHistory?.First() ?? throw new ArgumentException();
+            PriceTick tick = security.PriceHistory.First();
             Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tick.Date.LocalDateTime);
             Assert.Equal(1546.01, tick.AdjustedClose, 2); // in USD
 
-            PriceTick tickBase = security.PriceHistoryBase?.First() ?? throw new ArgumentException();
+            PriceTick tickBase = security.PriceHistoryBase.First();
             Assert.Equal(165696, tickBase.AdjustedClose, 0); // in JPY
         }
     }
