@@ -18,13 +18,15 @@ namespace YahooQuotesApi
         private readonly Instant Start;
         private readonly Frequency PriceHistoryFrequency;
         private readonly AsyncItemCache<string, List<object>> Cache;
+        private readonly Func<string, PriceTick, bool>? Filter;
 
-        internal History(ILogger logger, Instant start, Duration cacheDuration, Frequency priceHistoryFrequency)
+        internal History(ILogger logger, Instant start, Duration cacheDuration, Frequency priceHistoryFrequency, Func<string, PriceTick, bool>? filter)
         {
             Logger = logger;
             Start = start;
             Cache = new AsyncItemCache<string, List<object>>(cacheDuration);
             PriceHistoryFrequency = priceHistoryFrequency;
+            Filter = filter;
         }
 
         internal async Task<List<PriceTick>?> GetPricesAsync(string symbol, LocalTime closeTime, DateTimeZone tz, CancellationToken ct) =>
@@ -55,7 +57,7 @@ namespace YahooQuotesApi
         {
             using var stream = await GetResponseStreamAsync(symbol, type, frequency, ct).ConfigureAwait(false);
             using var streamReader = new StreamReader(stream);
-            return TickParser.GetTicks(streamReader, type, closeTime, tz);
+            return TickParser.GetTicks(symbol, streamReader, type, closeTime, tz, Filter);
         }
 
         private async Task<Stream> GetResponseStreamAsync(string symbol, Type type, Frequency frequency, CancellationToken ct)

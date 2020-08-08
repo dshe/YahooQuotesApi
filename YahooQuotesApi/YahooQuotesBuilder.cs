@@ -12,6 +12,7 @@ namespace YahooQuotesApi
         private Frequency PriceHistoryFrequency = Frequency.Daily;
         private Duration HistoryCacheDuration = Duration.Zero;
         private Duration SnapshotCacheDuration = Duration.Zero;
+        private Func<string, PriceTick, bool>? Filter = null;
 
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) => Logger = logger;
@@ -37,6 +38,12 @@ namespace YahooQuotesApi
             return this;
         }
 
+        public YahooQuotesBuilder WithHistoryFilter(Func<string, PriceTick, bool> filter)
+        {
+            Filter = filter;
+            return this;
+        }
+
         public YahooQuotes Build()
         {
             return new YahooQuotes(
@@ -44,7 +51,8 @@ namespace YahooQuotesApi
                 HistoryStartDate,
                 SnapshotCacheDuration,
                 HistoryCacheDuration,
-                PriceHistoryFrequency);
+                PriceHistoryFrequency,
+                Filter);
         }
     }
 }

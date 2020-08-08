@@ -169,5 +169,25 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(zdt2, ticks[1].Date);
             Assert.Equal(174.279999, ticks[1].Open);
         }
+
+        [Fact]
+        public async Task PriceTickFilter()
+        {
+            var security = await new YahooQuotesBuilder(Logger)
+                .HistoryStarting(Instant.FromUtc(2020,1,1,0,0))
+                .WithHistoryFilter(MyFilter)
+                .Build()
+                .GetAsync("AAPL", HistoryFlags.PriceHistory);
+
+            var history = security?.PriceHistory;
+            Assert.DoesNotContain(history, x => x.Date.LocalDateTime.Date == new LocalDate(2020, 1, 9));
+        }
+
+        private static bool MyFilter(string symbol, PriceTick tick)
+        {
+            if (symbol == "AAPL" && tick.Date.LocalDateTime.Date == new LocalDate(2020, 1, 9))
+                return false;
+            return true;
+        }
     }
 }

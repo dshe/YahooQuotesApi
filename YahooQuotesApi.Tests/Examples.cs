@@ -42,7 +42,7 @@ namespace YahooQuotesApi.Tests
             Security? security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.All);
 
             Assert.True(security!.RegularMarketPrice > 0);
-            Assert.Equal("NasdaqGS", security!.FullExchangeName);
+            Assert.Equal("NasdaqGS", security.FullExchangeName);
 
             IReadOnlyList<DividendTick> dividendHistory = security.DividendHistory;
             Assert.Equal(new LocalDate(2003, 2, 19), dividendHistory[0].Date);
@@ -73,7 +73,7 @@ namespace YahooQuotesApi.Tests
             Assert.Equal("USDEUR=X", security!.Symbol);
             Assert.Equal("USD/EUR", security.ShortName);
             Assert.Equal("EUR", security.Currency); // base currency
-            Assert.True(security!.RegularMarketPrice > 0);
+            Assert.True(security.RegularMarketPrice > 0);
 
             PriceTick tick = security.PriceHistoryBase.First();
             Assert.Equal("Europe/London", tick.Date.Zone.Id);

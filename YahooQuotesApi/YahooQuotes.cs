@@ -24,11 +24,11 @@ namespace YahooQuotesApi
         private readonly Snapshot Snapshot;
         private readonly History History;
 
-        internal YahooQuotes(ILogger logger, Instant historyStart, Duration snapshotCacheDuration, Duration historyCacheDuration, Frequency priceHistoryFrequency)
+        internal YahooQuotes(ILogger logger, Instant historyStart, Duration snapshotCacheDuration, Duration historyCacheDuration, Frequency priceHistoryFrequency, Func<string, PriceTick, bool>? filter)
         {
             Logger = logger;
             Snapshot = new Snapshot(logger, snapshotCacheDuration);
-            History = new History(logger, historyStart, historyCacheDuration, priceHistoryFrequency);
+            History = new History(logger, historyStart, historyCacheDuration, priceHistoryFrequency, filter);
         }
 
         public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
@@ -38,7 +38,7 @@ namespace YahooQuotesApi
         {
             var symbolsChecked = symbols.Select(s => new Symbol(s)).Distinct().ToList();
             if (symbolsChecked.Any(s => s.IsEmpty))
-                throw new ArgumentException("Invalid: empty symbol(s) found.");
+                throw new ArgumentException("Invalid: empty symbol found.");
             var historyBaseSymbol = new Symbol(historyBase);
             if (historyBaseSymbol.IsEmpty)
             {
@@ -73,11 +73,11 @@ namespace YahooQuotesApi
             // start history tasks
             foreach (var dict in snapshots.Values.WhereNotNull())
             {
-                var symbol = (string)dict["Symbol"];
+                string symbol = (string)dict["Symbol"];
                 if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
                 {
                     if (!dict.TryGetValue("ExchangeTimezone", out object o))
-                        throw new ArgumentException($"No timezone found for symbol: {symbol}.");
+                        throw new ArgumentException($"No timezone found for symbol: {symbol}.").AddData("Symbol", symbol);
                     var tz = (DateTimeZone)o;
                     var closeTime = (LocalTime)dict["ExchangeCloseTime"];
                     dict["PriceHistory"] = History.GetPricesAsync(symbol, closeTime, tz, ct);
@@ -121,11 +121,14 @@ namespace YahooQuotesApi
 
         private async Task AddCurrenciesToSnapshots(Dictionary<Symbol, Dictionary<string, object>?> snapshots, List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
         {
-            var invalid = snapshots.Values.WhereNotNull().FirstOrDefault(v => !v.ContainsKey("Currency"));
+            Dictionary<string, object>? invalid = snapshots.Values.WhereNotNull().FirstOrDefault(v => !v.ContainsKey("Currency"));
             if (invalid != null)
-                throw new ArgumentException($"Currency not found for symbol: {invalid["Symbol"]}.");
+            {
+                var symbol = (string)invalid["Symbol"];
+                throw new ArgumentException($"Currency not found for symbol: {symbol}.").AddData("Symbol", symbol);
+            }
 
-            var rateSymbols = snapshots.Values
+            List<Symbol>? rateSymbols = snapshots.Values
                     .WhereNotNull()
                     .Select(d => (string)d["Currency"])
                     .Concat(symbols.Where(s => s.IsCurrency).Select(s => s.Currency))
@@ -172,20 +175,20 @@ namespace YahooQuotesApi
                 if (historyBase.Currency != "USD")
                 {
                     var symbol = new Symbol("USD" + historyBase.Name);
-                    var security = securities[symbol] ?? throw new ArgumentException($"HistoryBase not found: {symbol}.");
-                    currencyBaseTicks = (IReadOnlyList<PriceTick>?)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {symbol}.");
+                    var security = securities[symbol] ?? throw new ArgumentException($"HistoryBase not found: {symbol}.").AddData("HistoryBase", symbol.Name);
+                    currencyBaseTicks = (IReadOnlyList<PriceTick>?)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {symbol}.").AddData("HistoryBase", symbol.Name);
                 }
             }
             else
             {
-                var security = securities[historyBase] ?? throw new ArgumentException($"HistoryBase not found: {historyBase}.");
-                securityBaseTicks = (IReadOnlyList<PriceTick>)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {historyBase}.");
-                var currencyBaseSymbol = (string)security["Currency"] ?? throw new ArgumentException("Currency not found.");
+                var security = securities[historyBase] ?? throw new ArgumentException($"HistoryBase not found: {historyBase}.").AddData("HistoryBase", historyBase.Name);
+                securityBaseTicks = (IReadOnlyList<PriceTick>)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {historyBase}.").AddData("HistoryBase", historyBase.Name);
+                var currencyBaseSymbol = (string)security["Currency"] ?? throw new ArgumentException($"Currency not found for security: {historyBase}.").AddData("HistoryBase", historyBase.Name);
                 if (currencyBaseSymbol != "USD")
                 {
                     var symbol = new Symbol($"USD{currencyBaseSymbol}=X");
-                    var currencyBase = securities[symbol] ?? throw new ArgumentException($"HistoryBase currency not found: {symbol}.");
-                    currencyBaseTicks = (IReadOnlyList<PriceTick>)currencyBase["PriceHistory"] ?? throw new ArgumentException($"HistoryBase currency PriceHistory: {symbol}.");
+                    var currencyBase = securities[symbol] ?? throw new ArgumentException($"HistoryBase currency not found: {symbol}.").AddData("HistoryBase", symbol.Name);
+                    currencyBaseTicks = (IReadOnlyList<PriceTick>)currencyBase["PriceHistory"] ?? throw new ArgumentException($"HistoryBase currency PriceHistory: {symbol}.").AddData("HistoryBase", symbol.Name);
                 }
             }
 
@@ -205,7 +208,7 @@ namespace YahooQuotesApi
                 IReadOnlyList<PriceTick>? currencyTicks = null;
                 if (!sym.IsCurrency) // symbol???
                 {
-                    var currencySymbol = (string)security["Currency"] ?? throw new ArgumentException($"No currency found for: {symbol.Name}.");
+                    var currencySymbol = (string)security["Currency"] ?? throw new ArgumentException($"No currency found for: {symbol.Name}.").AddData("Symbol", symbol.Name);
                     if (currencySymbol != "USD")
                     {
                         var rateSymbol = new Symbol($"USD{currencySymbol}=X");

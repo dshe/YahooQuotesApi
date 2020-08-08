@@ -13,7 +13,7 @@ namespace YahooQuotesApi
     {
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
-        internal static List<object> GetTicks(StreamReader streamReader, Type type, LocalTime? closeTime, DateTimeZone? tz)
+        internal static List<object> GetTicks(string symbol, StreamReader streamReader, Type type, LocalTime? closeTime, DateTimeZone? tz, Func<string, PriceTick, bool>? filter)
         {
             using var reader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
             if (!reader.Read()) // skip headers
@@ -36,6 +36,8 @@ namespace YahooQuotesApi
                         throw new ArgumentNullException(nameof(tz));
                     var zdt = date.At(closeTime.Value).InZoneStrictly(tz);
                     tick = new PriceTick(zdt, row);
+                    if (filter != null && !filter(symbol, (PriceTick)tick))
+                        continue;
                 }
                 else if (type == typeof(DividendTick))
                     tick = new DividendTick(date, row[1]);
