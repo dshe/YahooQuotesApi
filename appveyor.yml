@@ -26,4 +26,4 @@ nuget:
   project_feed: true
   disable_publish_on_pr: true
 artifacts:
-- path: '**\*.nupkg'
+- path: '**\YahooQuotesApi.$(package_version).nupkg'
