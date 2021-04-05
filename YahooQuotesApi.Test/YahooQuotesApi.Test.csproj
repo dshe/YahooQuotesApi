@@ -5,6 +5,8 @@
     <IsPackable>false</IsPackable>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
+    <RootNamespace>YahooQuotesApi.Test</RootNamespace>
+    <AssemblyName>YahooQuotesApi.Test</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,25 +15,31 @@
     <Compile Remove="YahooCurrencyTests.cs" />
     <Compile Remove="~\AsyncCacheTest.cs" />
     <Compile Remove="~\CurrencyCompare.cs" />
+    <Compile Remove="~\CurrencyTests.cs" />
+    <Compile Remove="~\Experimental.cs" />
+    <Compile Remove="~\QuoteFieldWriter.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Utilities\QuoteFieldWriter.cs" />
-    <None Include="Core\HistoryTests.cs" />
-    <None Include="Utilities\AsyncItemCacheTest.cs" />
+    <None Include="Tests\HistoryTests.cs" />
+    <None Include="Tests\HistoryBaseTests.cs" />
     <None Include="~\CurrencyCompare.cs" />
+    <None Include="~\CurrencyTests.cs" />
+    <None Include="~\Experimental.cs" />
+    <None Include="~\QuoteFieldWriter.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.6" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
-    <PackageReference Include="MXLogger" Version="1.1.1" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+    <PackageReference Include="MXLogger" Version="1.1.3" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="1.3.0">
+    <PackageReference Include="coverlet.collector" Version="3.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

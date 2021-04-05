@@ -10,9 +10,13 @@ namespace YahooQuotesApi
     {
         internal static string ToPascal(this string source)
         {
-            if (source.Count() <= 1)
-                return source.ToUpper();
-            return source.Substring(0, 1).ToUpper() + source.Substring(1);
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (source == "")
+                return "";
+            char[] chars = source.ToCharArray();
+            chars[0] = Char.ToUpper(chars[0]);
+            return new string(chars);
         }
 
         internal static string Name<T>(this T source) where T : Enum
@@ -23,34 +27,13 @@ namespace YahooQuotesApi
             return name;
         }
 
-        internal static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source) where T : class =>
-            source.Where(item => item != null).Cast<T>();
-
-        public static IEnumerable<T> DistinctBy<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector)
+        internal static IEnumerable<T> NotNull<T>(this IEnumerable<T?> source) where T: class
         {
-            var keys = new HashSet<TKey>();
-            foreach (T element in source)
+            foreach (T? item in source)
             {
-                if (keys.Add(keySelector(element)))
-                {
-                    yield return element;
-                }
+                if (item != null)
+                    yield return item;
             }
         }
-
-        internal static IEnumerable<T> Append<T>(this IEnumerable<T> source, T value)
-        {
-            //source.Concat(new T[] { value });
-            foreach (var item in source)
-                yield return item;
-            yield return value;
-        }
-
-        internal static T AddData<T>(this T exception, object key, object value) where T: Exception
-        {
-            exception.Data.Add(key, value);
-            return exception;
-        }
-
     }
 }

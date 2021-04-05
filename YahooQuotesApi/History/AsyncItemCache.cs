@@ -11,18 +11,13 @@ namespace YahooQuotesApi
      */
     internal class AsyncItemCache<TKey, TResult>
     {
-        private readonly IClock Clock;
+        private readonly IClock Clock = SystemClock.Instance;
         private readonly Dictionary<TKey, (Task<TResult>, Instant)> TaskCache = new Dictionary<TKey, (Task<TResult>, Instant)>();
         private readonly Duration Duration;
+ 
+        internal AsyncItemCache(Duration cacheDuration) => Duration = cacheDuration;
 
-        internal AsyncItemCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
-        internal AsyncItemCache(IClock clock, Duration cacheDuration)
-        {
-            Clock = clock;
-            Duration = cacheDuration;
-        }
-
-        internal async Task<TResult> Get(TKey key, Func<Task<TResult>> factory)
+        internal async Task<TResult> Get(TKey key, Func<Task<TResult>> producer)
         {
             (Task<TResult> task, Instant time) item;
             lock (TaskCache)
@@ -30,7 +25,7 @@ namespace YahooQuotesApi
                 var now = Clock.GetCurrentInstant();
                 if (!TaskCache.TryGetValue(key, out item) || now - item.time > Duration)
                 {
-                    var task = factory(); // start task
+                    var task = producer(); // start task
                     item = (task, now);
                     TaskCache[key] = item;
                 }

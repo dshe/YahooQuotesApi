@@ -9,8 +9,8 @@ namespace YahooQuotesApi.Tests
     {
         public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
 
-        private readonly AsyncItemCache<string, string> Cache
-            = new AsyncItemCache<string, string>(Duration.FromDays(1));
+        private readonly AsyncItemCache<string, string> Cache = 
+            new AsyncItemCache<string, string>(Duration.MaxValue);
 
         private int Produces = 0;
 
@@ -27,7 +27,6 @@ namespace YahooQuotesApi.Tests
             Write($"getting key {key}");
             return await Cache.Get(key, () => Producer(key));
         }
-
 
         [Fact]
         public async Task TestCache1()

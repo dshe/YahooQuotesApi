@@ -1,5 +1,5 @@
 environment:
-  base_version: '4.0.0'
+  base_version: '4.0.0-beta1'
   version_suffix: ''
 version: $(base_version).{build}
 image: Visual Studio 2019
@@ -20,7 +20,7 @@ build:
   verbosity: minimal
   publish_nuget: true
 test_script:
-- ps: dotnet test .\YahooQuotesApi.Tests\YahooQuotesApi.Tests.csproj
+- ps: dotnet test .\Tests\Tests.csproj
 nuget:
   account_feed: false
   project_feed: true

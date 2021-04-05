@@ -13,20 +13,18 @@ namespace YahooQuotesApi
     */
     internal class AsyncItemsCache<TKey, TResult>
     {
-        private readonly IClock Clock;
+        private readonly IClock Clock = SystemClock.Instance;
         private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1);
         private readonly Dictionary<TKey, (TResult, Instant)> Cache = new Dictionary<TKey, (TResult, Instant)>();
         private readonly Duration Duration;
 
-        internal AsyncItemsCache(Duration cacheDuration) : this(SystemClock.Instance, cacheDuration) { }
-        internal AsyncItemsCache(IClock clock, Duration cacheDuration)
-        {
-            Clock = clock;
-            Duration = cacheDuration;
-        }
+        internal AsyncItemsCache(Duration cacheDuration) => Duration = cacheDuration;
 
         internal async Task<Dictionary<TKey, TResult>> Get(List<TKey> keys, Func<Task<Dictionary<TKey, TResult>>> factory)
         {
+            if (!keys.Any())
+                return new Dictionary<TKey, TResult>();
+
             await Semaphore.WaitAsync().ConfigureAwait(false); // serialize requests
             try
             {
@@ -52,6 +50,7 @@ namespace YahooQuotesApi
         // Return results only if results for all keys are present in the cache and not expired.
         private Dictionary<TKey, TResult> GetFromCache(List<TKey> keys, Instant now)
         {
+            // each request returns a new dictionary
             var results = new Dictionary<TKey, TResult>(keys.Count);
 
             foreach (var key in keys)

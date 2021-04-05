@@ -6,7 +6,7 @@ namespace YahooQuotesApi
     public sealed class SplitTick
     {
         public LocalDate Date { get; }
-        public double BeforeSplit { get;  }
+        public double BeforeSplit { get; }
         public double AfterSplit { get; }
 
         internal SplitTick(LocalDate date, string str)

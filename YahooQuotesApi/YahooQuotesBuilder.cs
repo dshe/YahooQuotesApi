@@ -8,12 +8,12 @@ namespace YahooQuotesApi
     public sealed class YahooQuotesBuilder
     {
         private readonly ILogger Logger;
-        private Instant HistoryStartDate = Instant.FromUtc(2000, 1, 1, 0, 0);
-        private Frequency PriceHistoryFrequency = Frequency.Daily;
-        private Duration HistoryCacheDuration = Duration.Zero;
+        private Instant HistoryStartDate = Instant.FromUtc(2020, 1, 1, 0, 0);
+        private Frequency HistoryFrequency = Frequency.Daily;
+        private Duration HistoryCacheDuration = Duration.MaxValue;
         private Duration SnapshotCacheDuration = Duration.Zero;
-        private Func<string, PriceTick, bool>? Filter = null;
-
+        private bool NonAdjustedClose = false; // used for testing
+         
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) => Logger = logger;
 
@@ -25,7 +25,7 @@ namespace YahooQuotesApi
 
         public YahooQuotesBuilder SetPriceHistoryFrequency(Frequency frequency)
         {
-            PriceHistoryFrequency = frequency;
+            HistoryFrequency = frequency;
             return this;
         }
 
@@ -38,9 +38,9 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotesBuilder WithHistoryFilter(Func<string, PriceTick, bool> filter)
+        public YahooQuotesBuilder UseNonAdjustedClose()
         {
-            Filter = filter;
+            NonAdjustedClose = true;
             return this;
         }
 
@@ -48,11 +48,11 @@ namespace YahooQuotesApi
         {
             return new YahooQuotes(
                 Logger,
-                HistoryStartDate,
                 SnapshotCacheDuration,
+                HistoryStartDate,
+                HistoryFrequency,
                 HistoryCacheDuration,
-                PriceHistoryFrequency,
-                Filter);
+                NonAdjustedClose);
         }
     }
 }

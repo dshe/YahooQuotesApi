@@ -8,25 +8,29 @@
     <PackageProjectUrl>https://github.com/dshe/YahooQuotesApi</PackageProjectUrl>
     <PackageTags>yahoo finance api quotes dividends splits</PackageTags>
     <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
-    <Authors>DavidS, Karl Wan</Authors>
-    <Version>4.0.0-alpha8</Version>
+    <Authors>DavidS</Authors>
+    <Version>4.0.0-beta1</Version>
     <AssemblyVersion>4.0.0</AssemblyVersion>
     <FileVersion>4.0.0</FileVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>worm64.png</PackageIcon>
     <RepositoryUrl>https://github.com/dshe/YahooQuotesApi</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
+    <Company>DavidS</Company>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="15.0.5" />
-    <PackageReference Include="Flurl.Http" Version="2.4.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
-    <PackageReference Include="NodaTime" Version="3.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+    <PackageReference Include="NodaTime" Version="3.0.5" />
+    <PackageReference Include="Polly" Version="7.2.1" />
+    <PackageReference Include="System.Text.Json" Version="5.0.1" />
     <None Include="worm64.png" Pack="true" PackagePath="\" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>$(AssemblyName).Test</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

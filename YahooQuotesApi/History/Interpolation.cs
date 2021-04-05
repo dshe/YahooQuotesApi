@@ -7,26 +7,29 @@ namespace YahooQuotesApi
 {
     internal static class InterpolateExtensions
     {
-        private static readonly Duration FutureLimit = Duration.FromDays(1);
-        private static readonly Duration PastLimit = Duration.FromDays(1);
+        private static readonly Duration FutureLimit = Duration.FromDays(4);
+        private static readonly Duration PastLimit = Duration.FromDays(4);
 
-        internal static double InterpolateAdjustedClose(this IReadOnlyList<PriceTick> list, Instant date) =>
-            Interpolate(list, date, x => x.Date.ToInstant(), x => x.AdjustedClose);
+        internal static double InterpolateClose(this IReadOnlyList<PriceTick> list, ZonedDateTime date) =>
+            InterpolateClose(list, date.ToInstant());
 
-        internal static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
+        private static double InterpolateClose(this IReadOnlyList<PriceTick> list, Instant date) =>
+            Interpolate(list, date, x => x.Date.ToInstant(), x => x.Price);
+
+        private static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
         {
             if (list.Count < 2)
                 throw new ArgumentException(nameof(list));
 
-            var first = list[0];
-            var past = getDate(first) - date;
-            if (past >= Duration.Zero) // not enough data
-                return past <= PastLimit ? getValue(first) : double.NaN;
+            var firstItem = list[0];
+            var firstDate = getDate(firstItem);
+            if (date <= firstDate) // not enough data
+                return firstDate - date <= PastLimit ? getValue(firstItem) : double.NaN;
 
-            var last = list[list.Count - 1];
-            var future = date - getDate(last);
-            if (future >= Duration.Zero)
-                return future <= FutureLimit ? getValue(last) : double.NaN;
+            var lastItem = list[list.Count - 1];
+            var lastDate = getDate(lastItem);
+            if (date >= lastDate)
+                return date - lastDate <= FutureLimit ? getValue(lastItem) : double.NaN;
 
             var p = list.BinarySearch(date, x => getDate(x));
 
@@ -45,7 +48,6 @@ namespace YahooQuotesApi
             return rate;
         }
 
-        // This BinarySearch supports IReadOnlyList<T>.
         internal static int BinarySearch<T>(this IReadOnlyList<T> list, IComparable searchValue, Func<T, IComparable> getComparable)
         {
             if (!list.Any())

@@ -10,10 +10,10 @@ namespace YahooQuotesApi.Tests
         protected readonly Action<string> Write;
         protected readonly ILogger Logger;
 
-        protected TestBase(ITestOutputHelper output)
+        protected TestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Debug)
         {
             Write = output.WriteLine;
-            Logger = new LoggerFactory()
+            Logger = LoggerFactory.Create(cfg => cfg.SetMinimumLevel(logLevel))
                 .AddMXLogger(Write)
                 .CreateLogger("Test");
         }

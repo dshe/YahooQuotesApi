@@ -1,5 +1,7 @@
 ﻿using NodaTime;
 
+// ex-dividend date
+
 namespace YahooQuotesApi
 {
     public sealed class DividendTick
@@ -7,10 +9,10 @@ namespace YahooQuotesApi
         public LocalDate Date { get; }
         public double Dividend { get; }
 
-        internal DividendTick(LocalDate date, string str)
+        internal DividendTick(LocalDate date, double dividend)
         {
             Date = date;
-            Dividend = str.ToDouble();
+            Dividend = dividend;
         }
 
         public override string ToString() => $"{Date}, {Dividend}";

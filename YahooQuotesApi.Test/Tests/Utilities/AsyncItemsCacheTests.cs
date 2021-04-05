@@ -1,15 +1,14 @@
 ﻿using NodaTime;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
-    public class AsyncItemsCacheTest : TestBase
+    public class AsyncItemsCacheTests : TestBase
     {
-        public AsyncItemsCacheTest(ITestOutputHelper output) : base(output) { }
+        public AsyncItemsCacheTests(ITestOutputHelper output) : base(output) { }
 
         private readonly AsyncItemsCache<string, string> Cache
             = new AsyncItemsCache<string, string>(Duration.FromDays(1));

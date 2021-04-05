@@ -6,251 +6,210 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-// Invalid symbols are often, but not always, ignored by Yahoo.
-// So the number of symbols returned may be less than requested.
-// When multiple symbols are requested here, null is returned for invalid symbols.
+/*
+Invalid symbols are often, but not always, ignored by Yahoo.
+So the number of symbols returned may be less than requested.
+When multiple symbols are requested here, null is returned for invalid symbols.
 
-// test duplicate symbols
-// check that same symbol is returned. Valid?
-// make sure symbols have a currency, and a symbol
+download all security snapshots + base if security
+download currency snapshots + base if currency
+download all history => PriceHisory (LocalDate)
+
+Symbol / Base => None  Currency  Stock  CurrencyRate
+Stock            Y     Y         Y      N
+Currency         N     Y         Y      N
+CurrencyRate     Y     N         N      N
+*/
 
 namespace YahooQuotesApi
 {
     public sealed class YahooQuotes
     {
-        private static readonly LocalTime CurrencyCloseTime = new LocalTime(16, 0, 0);
-        private static readonly DateTimeZone CurrencyTimezone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London")!;
         private readonly ILogger Logger;
-        private readonly Snapshot Snapshot;
-        private readonly History History;
+        private readonly YahooSnapshot Snapshot;
+        private readonly YahooHistory History;
+        private readonly bool UseNonAdjustedClose;
 
-        internal YahooQuotes(ILogger logger, Instant historyStart, Duration snapshotCacheDuration, Duration historyCacheDuration, Frequency priceHistoryFrequency, Func<string, PriceTick, bool>? filter)
+        public YahooQuotes(ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, bool nonAdjustedClose)
         {
             Logger = logger;
-            Snapshot = new Snapshot(logger, snapshotCacheDuration);
-            History = new History(logger, historyStart, historyCacheDuration, priceHistoryFrequency, filter);
+            var httpFactory = new HttpClientFactoryProducer(logger).Produce();
+            Snapshot = new YahooSnapshot(logger, httpFactory, snapshotCacheDuration);
+            History = new YahooHistory(logger, httpFactory, historyStartDate, historyCacheDuration, frequency);
+            UseNonAdjustedClose = nonAdjustedClose;
         }
 
         public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
             (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-        public async Task<IReadOnlyDictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
+        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
         {
-            var symbolsChecked = symbols.Select(s => new Symbol(s)).Distinct().ToList();
-            if (symbolsChecked.Any(s => s.IsEmpty))
-                throw new ArgumentException("Invalid: empty symbol found.");
-            var historyBaseSymbol = new Symbol(historyBase);
-            if (historyBaseSymbol.IsEmpty)
-            {
-                if (symbolsChecked.Any(s => s.IsCurrency))
-                    throw new ArgumentException("Currency rate symbols must be in the form ABCEFG=X.");
-            }
-            else
-            {
-                if (!historyFlags.HasFlag(HistoryFlags.PriceHistory))
-                    throw new ArgumentException("PriceHistory must be enabled before specifying historyBase.");
-                if (symbolsChecked.Any(s => s.IsCurrencyRate))
-                    throw new ArgumentException("Currency symbols must in the form ABC=X.");
-                if (historyBaseSymbol.Name == "USD=X" && symbolsChecked.Any(s => s.Name == "USD=X"))
-                    throw new ArgumentException("Invalid currency and base symbol: USD=X.");
-            }
-            var snapshots = await GetAsyncDictionary(symbolsChecked, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
-            return snapshots.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value == null ? null : new Security(kvp.Value, Logger), StringComparer.OrdinalIgnoreCase);
+            var historyBaseSymbol = Symbol.TryCreate(historyBase, true) ?? throw new ArgumentException($"Invalid base symbol: {historyBase}.");
+            var syms = symbols.ToSymbols().Distinct();
+            var securities = await GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
+            return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
         }
 
-        private async Task<Dictionary<Symbol, Dictionary<string, object>?>> GetAsyncDictionary(List<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
+        public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default)
         {
-            var snapshotSymbols = symbols.Where(s => !s.IsCurrency).ToList();
-            if (!historyBase.IsEmpty && !historyBase.IsCurrency && !snapshotSymbols.Contains(historyBase))
-                snapshotSymbols.Add(historyBase);
-            var snapshots = await Snapshot.GetAsync(snapshotSymbols, ct).ConfigureAwait(false);
+            try
+            {
+                return await GetAllSecuritiesAsync(symbols.Distinct().ToList(), historyFlags, historyBase, ct).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Logger.LogCritical(e, "YahooQuotes: GetAsync() error.");
+                throw;
+            }
+        }
+
+        private async Task<Dictionary<Symbol, Security?>> GetAllSecuritiesAsync(List<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
+        {
+            if (symbols.Any(s => s.IsEmpty))
+                throw new ArgumentException("Empty symbol.");
+            if (historyBase.IsCurrencyRate)
+                throw new ArgumentException($"Invalid base symbol: {historyBase}.");
+            if (!historyBase.IsEmpty && symbols.Any(s => s.IsCurrencyRate))
+                throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrencyRate)}.");
+            if (historyBase.IsEmpty && symbols.Any(s => s.IsCurrency))
+                throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrency)}.");
+            if (!historyBase.IsEmpty && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
+                throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
+
+            var securities = await GetSecuritiesyAsync(symbols, historyFlags, historyBase, ct).ConfigureAwait(false);
+            return symbols.ToDictionary(symbol => symbol, symbol => securities[symbol]);
+        }
+
+        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
+        {
+            var stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToList();
+            if (historyBase.IsStock && !stockAndCurrencyRateSymbols.Contains(historyBase))
+                stockAndCurrencyRateSymbols.Add(historyBase);
+            var securities = await Snapshot.GetAsync(stockAndCurrencyRateSymbols, ct).ConfigureAwait(false);
+
             if (historyFlags == HistoryFlags.None)
-                return snapshots;
+                return securities;
 
             if (!historyBase.IsEmpty)
-                await AddCurrenciesToSnapshots(snapshots, symbols, historyBase, ct).ConfigureAwait(false);
+                await AddCurrencies(symbols.Where(s => s.IsCurrency), historyBase, securities, ct).ConfigureAwait(false);
 
-            // start history tasks
-            foreach (var dict in snapshots.Values.WhereNotNull())
-            {
-                string symbol = (string)dict["Symbol"];
-                if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
-                {
-                    if (!dict.TryGetValue("ExchangeTimezone", out object o))
-                        throw new ArgumentException($"No timezone found for symbol: {symbol}.").AddData("Symbol", symbol);
-                    var tz = (DateTimeZone)o;
-                    var closeTime = (LocalTime)dict["ExchangeCloseTime"];
-                    dict["PriceHistory"] = History.GetPricesAsync(symbol, closeTime, tz, ct);
-                }
-                if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
-                    dict["DividendHistory"] = History.GetDividendsAsync(symbol, ct);
-                if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
-                    dict["SplitHistory"] = History.GetSplitsAsync(symbol, ct);
-            }
-
-            // await history tasks
-            foreach (var dict in snapshots.Values.WhereNotNull())
-            {
-                if (dict.TryGetValue("PriceHistory", out dynamic historyTask))
-                {
-                    dict["PriceHistory"] = await historyTask.ConfigureAwait(false);
-                    AppendToPriceHistory(dict);
-                }
-                if (dict.TryGetValue("DividendHistory", out dynamic dividendTask))
-                    dict["DividendHistory"] = await dividendTask.ConfigureAwait(false);
-                if (dict.TryGetValue("SplitHistory", out dynamic splitTask))
-                    dict["SplitHistory"] = await splitTask.ConfigureAwait(false);
-            }
+            await AddHistoryToSecurities(securities.Values.NotNull(), historyFlags, ct).ConfigureAwait(false);
 
             if (!historyBase.IsEmpty)
-                ModifyPriceHistory(symbols, historyBase, snapshots);
+                HistoryBaseComposer.Compose(symbols.ToList(), historyBase, securities);
 
-            return symbols.ToDictionary(symbol => symbol, symbol =>
-                snapshots[AdjustSymbol(symbol, historyBase)]);
+            return securities;
         }
 
-        private static Symbol AdjustSymbol(Symbol symbol, Symbol historyBase)
+        private async Task AddCurrencies(IEnumerable<Symbol> currencies, Symbol historyBase, Dictionary<Symbol, Security?> securities, CancellationToken ct)
         {
-            if (symbol.IsCurrency && historyBase.IsCurrency)
+            // currency securities + historyBase currency + security currencies
+            var currencySymbols = new HashSet<Symbol>(currencies);
+            if (historyBase.IsCurrency)
+                currencySymbols.Add(historyBase);
+            foreach (var security in securities.Values.NotNull())
             {
-                var baseCurrency = symbol.Name != "USD=X" ? symbol.Name : historyBase.Name;
-                symbol = new Symbol($"USD{baseCurrency}");
-            }
-            return symbol;
-        }
-
-        private async Task AddCurrenciesToSnapshots(Dictionary<Symbol, Dictionary<string, object>?> snapshots, List<Symbol> symbols, Symbol historyBase, CancellationToken ct)
-        {
-            Dictionary<string, object>? invalid = snapshots.Values.WhereNotNull().FirstOrDefault(v => !v.ContainsKey("Currency"));
-            if (invalid != null)
-            {
-                var symbol = (string)invalid["Symbol"];
-                throw new ArgumentException($"Currency not found for symbol: {symbol}.").AddData("Symbol", symbol);
+                var currencySymbol = Symbol.TryCreate(security.Currency + "=X");
+                if (currencySymbol != null)
+                    currencySymbols.Add(currencySymbol);
+                else
+                    security.PriceHistoryBase = Result<PriceTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
             }
 
-            List<Symbol>? rateSymbols = snapshots.Values
-                    .WhereNotNull()
-                    .Select(d => (string)d["Currency"])
-                    .Concat(symbols.Where(s => s.IsCurrency).Select(s => s.Currency))
-                    .Append(historyBase.IsCurrency ? historyBase.Currency : "")
-                    .Where(c => !string.IsNullOrEmpty(c))
-                    .Select(c => c.ToUpper())
-                    .Where(c => c != "USD")
-                    .Select(c => $"USD{c}=X")
-                    .Distinct()
-                    .Select(s => new Symbol(s))
-                    .Where(c => !snapshots.ContainsKey(c)) // in case already retrieved
-                    .ToList();
+            var rateSymbols = currencySymbols
+                .Where(c => c.Currency != "USD")
+                .Select(c => Symbol.TryCreate($"USD{c.Currency}=X"))
+                .NotNull()
+                .ToList();
 
             if (rateSymbols.Any())
             {
-                var currencySnapshots = await Snapshot.GetAsync(rateSymbols, ct).ConfigureAwait(false);
-                foreach (var snap in currencySnapshots)
-                    snapshots.Add(snap.Key, snap.Value); // long symbol
+                var currencyRateSecurities = await Snapshot.GetAsync(rateSymbols, ct).ConfigureAwait(false);
+                foreach (var security in currencyRateSecurities)
+                    securities[security.Key] = security.Value; // long symbol
             }
         }
 
-        private void AppendToPriceHistory(Dictionary<string, object> snapshot)
+        private async Task AddHistoryToSecurities(IEnumerable<Security> securities, HistoryFlags historyFlags, CancellationToken ct)
         {
-            var ticks = (IReadOnlyList<PriceTick>?)snapshot["PriceHistory"];
-            if (ticks == null)
-                return;
-            var date = (ZonedDateTime)snapshot["RegularMarketTime"];
-            if (date.ToInstant() <= ticks.Last().Date.ToInstant())
-                return;
-            snapshot["PriceHistory"] = new List<PriceTick>(ticks)
+            var dividendTasks = new List<(Security, Task<Result<DividendTick[]>>)>();
+            if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
+                dividendTasks = securities.Select(v => (v, History.GetDividendsAsync(v.Symbol, ct))).ToList();
+            var splitTasks = new List<(Security, Task<Result<SplitTick[]>>)>();
+            if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
+                splitTasks = securities.Select(v => (v, History.GetSplitsAsync(v.Symbol, ct))).ToList();
+            var candleTasks = new List<(Security, Task<Result<CandleTick[]>>)>();
+            if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
+                candleTasks = securities.Select(v => (v, History.GetCandlesAsync(v.Symbol, ct))).ToList();
+
+            foreach (var (security, task) in dividendTasks)
+                security.DividendHistory = await task.ConfigureAwait(false);
+
+            foreach (var (security, task) in splitTasks)
+                security.SplitHistory = await task.ConfigureAwait(false);
+            foreach (var (security, task) in candleTasks)
             {
-                new PriceTick(snapshot, 1)
-            };
+                var result = await task.ConfigureAwait(false);
+                security.PriceHistory = result;
+                security.PriceHistoryBase = GetPriceHistoryBaseAsync(result, security);
+            }
+            return;
         }
 
-        private static IReadOnlyList<PriceTick> UnifyTicks(IReadOnlyList<PriceTick> oldTicks) =>
-            oldTicks.Select(t => new PriceTick(t.Date)).ToList();
-
-        private void ModifyPriceHistory(List<Symbol> symbols, Symbol historyBase, Dictionary<Symbol, Dictionary<string, object>?> securities)
+        private Result<PriceTick[]> GetPriceHistoryBaseAsync(Result<CandleTick[]> result, Security security)
         {
-            IReadOnlyList<PriceTick>? securityBaseTicks = null, currencyBaseTicks = null;
-            if (historyBase.IsCurrency)
+            if (result.HasError)
+                return Result<PriceTick[]>.Fail(result.Error);
+            if (security.ExchangeTimezoneName == "")
+                return Result<PriceTick[]>.Fail("ExchangeTimezone not found.");
+            if (security.ExchangeCloseTime == default)
+                return Result<PriceTick[]>.Fail("ExchangeCloseTime not found.");
+            return Result<PriceTick[]>.From(() => GetTicks());
+
+            PriceTick[] GetTicks()
             {
-                if (historyBase.Currency != "USD")
-                {
-                    var symbol = new Symbol("USD" + historyBase.Name);
-                    var security = securities[symbol] ?? throw new ArgumentException($"HistoryBase not found: {symbol}.").AddData("HistoryBase", symbol.Name);
-                    currencyBaseTicks = (IReadOnlyList<PriceTick>?)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {symbol}.").AddData("HistoryBase", symbol.Name);
-                }
-            }
-            else
-            {
-                var security = securities[historyBase] ?? throw new ArgumentException($"HistoryBase not found: {historyBase}.").AddData("HistoryBase", historyBase.Name);
-                securityBaseTicks = (IReadOnlyList<PriceTick>)security["PriceHistory"] ?? throw new ArgumentException($"HistoryBase PriceHistory not found: {historyBase}.").AddData("HistoryBase", historyBase.Name);
-                var currencyBaseSymbol = (string)security["Currency"] ?? throw new ArgumentException($"Currency not found for security: {historyBase}.").AddData("HistoryBase", historyBase.Name);
-                if (currencyBaseSymbol != "USD")
-                {
-                    var symbol = new Symbol($"USD{currencyBaseSymbol}=X");
-                    var currencyBase = securities[symbol] ?? throw new ArgumentException($"HistoryBase currency not found: {symbol}.").AddData("HistoryBase", symbol.Name);
-                    currencyBaseTicks = (IReadOnlyList<PriceTick>)currencyBase["PriceHistory"] ?? throw new ArgumentException($"HistoryBase currency PriceHistory: {symbol}.").AddData("HistoryBase", symbol.Name);
-                }
+                var ticks = result.Value.Select(candleTick =>
+                    new PriceTick(candleTick, security.ExchangeCloseTime, security.ExchangeTimezone!, UseNonAdjustedClose)).ToList();
+                AppendToPriceHistory(ticks, security);
+                return ticks.ToArray();
             }
 
-            foreach (var sym in symbols)
+            void AppendToPriceHistory(List<PriceTick> ticks, Security security)
             {
-                var symbol = AdjustSymbol(sym, historyBase);
-                var security = securities[symbol];
-                if (security == null) // unknown symbol
-                    continue;
-                var ticks = (IReadOnlyList<PriceTick>?)security["PriceHistory"];
-                if (ticks == null) // no history
-                    continue;
-
-                if (sym.IsCurrency && sym.Currency == "USD")
-                    security["PriceHistory"] = ticks = UnifyTicks(ticks);
-
-                IReadOnlyList<PriceTick>? currencyTicks = null;
-                if (!sym.IsCurrency) // symbol???
+                if (!ticks.Any())
+                    return;
+                var historyDate = ticks.Last().Date;
+                var snapshotDate = security.RegularMarketTime;
+                if (snapshotDate == default)
                 {
-                    var currencySymbol = (string)security["Currency"] ?? throw new ArgumentException($"No currency found for: {symbol.Name}.").AddData("Symbol", symbol.Name);
-                    if (currencySymbol != "USD")
-                    {
-                        var rateSymbol = new Symbol($"USD{currencySymbol}=X");
-                        var sec = securities[rateSymbol];
-                        currencyTicks = (IReadOnlyList<PriceTick>?)sec!["PriceHistory"];
-                    }
+                    Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
+                    return;
                 }
 
-                var newTicks = new List<PriceTick>(ticks.Count);
-                foreach (var tick in ticks)
+                if (snapshotDate.Date < historyDate.Date)
                 {
-                    var rate = GetRate(tick.Date.ToInstant(), currencyTicks, currencyBaseTicks, securityBaseTicks);
-                    if (!double.IsNaN(rate))
-                        newTicks.Add(new PriceTick(tick, rate, invert: sym.IsCurrency));
+                    Logger.LogDebug($"RegularMarketTime precedes most recent history for symbol: {security.Symbol}.");
+                    return;
                 }
-                security["PriceHistoryBase"] = newTicks;
-            }
-        }
+                if (snapshotDate.Date == historyDate.Date)
+                    return;
 
-        double GetRate(Instant date, IReadOnlyList<PriceTick>? currencyRates, IReadOnlyList<PriceTick>? baseCurrencyRates, IReadOnlyList<PriceTick>? baseSecurityRates)
-        {
-            if (currencyRates == baseCurrencyRates)
-                currencyRates = baseCurrencyRates = null;
+                var close = security.RegularMarketPrice;
+                if (close == null)
+                {
+                    Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
+                    return;
+                }
 
-            double rate = 1;
+                var volume = security.RegularMarketVolume;
+                if (volume == null )
+                {
+                    Logger.LogDebug($"RegularMarketVolume unavailable for symbol: {security.Symbol}.");
+                    volume = 0;
+                }
 
-            if (currencyRates != null)
-            {
-                var r = currencyRates.InterpolateAdjustedClose(date);
-                rate /= r;
+                ticks.Add(new PriceTick(snapshotDate, Convert.ToDouble(close), volume.Value));
             }
-            if (baseCurrencyRates != null)
-            {
-                var r = baseCurrencyRates.InterpolateAdjustedClose(date);
-                rate *= r;
-            }
-            if (baseSecurityRates != null)
-            {
-                var r = baseSecurityRates.InterpolateAdjustedClose(date);
-                rate /= r;
-            }
-            return rate;
         }
     }
 }

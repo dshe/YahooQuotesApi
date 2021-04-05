@@ -6,22 +6,22 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
-    public class InterpolateTest
+    public class InterpolateTest : TestBase
     {
-        private readonly Action<string> Write;
-        public InterpolateTest(ITestOutputHelper output) => Write = output.WriteLine;
+        public InterpolateTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void TestNotEnoughData()
         {
             var list = new List<PriceTick>();
-            Assert.Throws<ArgumentException>(() => list.InterpolateAdjustedClose(new ZonedDateTime().ToInstant()));
+            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new ZonedDateTime()));
+            list.Add(new PriceTick(new ZonedDateTime(), 0, 0));
+
+            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new ZonedDateTime()));
+            list.Add(new PriceTick(new ZonedDateTime(), 0, 0));
+            Assert.Equal(0, list.InterpolateClose(new ZonedDateTime()));
             list.Add(new PriceTick(new ZonedDateTime(), 0));
-            Assert.Throws<ArgumentException>(() => list.InterpolateAdjustedClose(new ZonedDateTime().ToInstant()));
-            list.Add(new PriceTick(new ZonedDateTime(), 0));
-            Assert.Equal(0, list.InterpolateAdjustedClose(new ZonedDateTime().ToInstant()));
-            list.Add(new PriceTick(new ZonedDateTime(), 0));
-            Assert.Equal(0, list.InterpolateAdjustedClose(new ZonedDateTime().ToInstant()));
+            Assert.Equal(0, list.InterpolateClose(new ZonedDateTime()));
         }
 
         [Fact]
@@ -34,16 +34,16 @@ namespace YahooQuotesApi.Tests
             list.Add(new PriceTick(zdt1, 0));
             list.Add(new PriceTick(zdt2, 0));
 
-            var result = list.InterpolateAdjustedClose(zdt1.ToInstant());
+            var result = list.InterpolateClose(zdt1);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateAdjustedClose(zdt1.PlusHours(-7 * 24).ToInstant());
+            result = list.InterpolateClose(zdt1.PlusHours(-7 * 24));
             Assert.True(double.IsNaN(result)); // not enough data
 
-            result = list.InterpolateAdjustedClose(zdt2.ToInstant());
+            result = list.InterpolateClose(zdt2);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateAdjustedClose(zdt2.PlusHours(7 * 24).ToInstant());
+            result = list.InterpolateClose(zdt2.PlusHours(7 * 24));
             Assert.True(double.IsNaN(result)); // not enough data
         }
 
@@ -57,13 +57,12 @@ namespace YahooQuotesApi.Tests
             list.Add(new PriceTick(zdt1, 1));
             list.Add(new PriceTick(zdt2, 2));
 
-            var result = list.InterpolateAdjustedClose(zdt2.PlusTicks(1).ToInstant());
+            var result = list.InterpolateClose(zdt2.PlusTicks(1));
             Assert.Equal(2, result);
 
-            result = list.InterpolateAdjustedClose(zdt2.PlusHours(7 * 24).ToInstant());
+            result = list.InterpolateClose(zdt2.PlusHours(7 * 24));
             Assert.True(double.IsNaN(result)); // not enough data
         }
-
 
         [Fact]
         public void InterpolateTest1()
@@ -76,7 +75,7 @@ namespace YahooQuotesApi.Tests
             list.Add(new PriceTick(zdt1, 1));
             list.Add(new PriceTick(zdt2, 2));
 
-            var result = list.InterpolateAdjustedClose(zdt1.Plus(Duration.FromDays(1)).ToInstant());
+            var result = list.InterpolateClose(zdt1.Plus(Duration.FromDays(1)));
             Assert.Equal(1.25, result);
         }
 
