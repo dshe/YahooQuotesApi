@@ -62,7 +62,8 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
-Security? security = await yahooQuotes.GetAsync("EUR=X", HistoryFlags.PriceHistory, "USD=X");
+Security? security = await yahooQuotes.GetAsync(
+    "EUR=X", HistoryFlags.PriceHistory, "USD=X");
 Assert.Equal("USDEUR=X", security!.Symbol);
 Assert.Equal("USD/EUR", security.ShortName);
 Assert.Equal("EUR", security.Currency); // base currency
