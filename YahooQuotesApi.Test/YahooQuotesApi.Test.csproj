@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>YahooQuotesApi.Test</RootNamespace>
     <AssemblyName>YahooQuotesApi.Test</AssemblyName>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,9 +44,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\YahooQuotesApi\YahooQuotesApi.csproj" />
   </ItemGroup>
 

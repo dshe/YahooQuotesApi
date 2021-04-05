@@ -1,17 +1,17 @@
 environment:
-  base_version: '4.0.0-beta1'
-  version_suffix: ''
+  base_version: '4.0.0'
+  version_suffix: 'beta'
 version: $(base_version).{build}
 image: Visual Studio 2019
 configuration: Release
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '$(base_version)$(version_suffix)'
-  package_version: '$(base_version)$(version_suffix)'
+  version: '$(base_version)-$(version_suffix)'
+  package_version: '$(base_version)-$(version_suffix)'
   assembly_version: '{version}'
   file_version: '{version}'
-  informational_version: '$(base_version)$(version_suffix)'
+  informational_version: '$(base_version)-$(version_suffix)'
 before_build:
 - ps: dotnet restore
 after_build:
