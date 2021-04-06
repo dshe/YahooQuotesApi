@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
@@ -61,17 +60,6 @@ namespace YahooQuotesApi
 
         private async Task<Result<object[]>> Produce(string symbol, Type type, Frequency frequency, CancellationToken ct)
         {
-            var response = await GetResponseAsync(symbol, type, frequency, ct).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-                return Result<object[]>.Fail($"History not found.");
-            response.EnsureSuccessStatusCode();
-
-            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return Result<object[]>.From(() => stream.ToTicks(type));
-        }
-
-        private async Task<HttpResponseMessage> GetResponseAsync(string symbol, Type type, Frequency frequency, CancellationToken ct)
-        {
             var parm = type.Name switch
             {
                 nameof(CandleTick) => "history",
@@ -96,13 +84,22 @@ namespace YahooQuotesApi
 
                 Logger.LogInformation(url);
 
-                var response = await HttpClientFactory.CreateClient("history").GetAsync(url).ConfigureAwait(false);
+                var httpClient = HttpClientFactory.CreateClient("history");
+                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url) { Version = new Version(2, 0) };
+                using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 
-                if (response.StatusCode != HttpStatusCode.Unauthorized || reset)
-                    return response;
+                if (response.StatusCode == HttpStatusCode.Unauthorized && !reset)
+                {
+                    Logger.LogError("GetResponse: Unauthorized. Retrying...");
+                    reset = true;
+                    continue;
+                }
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return Result<object[]>.Fail($"History not found.");
+                response.EnsureSuccessStatusCode();
 
-                Logger.LogError("GetResponse: Unauthorized. Retrying...");
-                reset = true;
+                using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                return Result<object[]>.From(() => stream.ToTicks(type));
             }
         }
     }

@@ -47,7 +47,7 @@ namespace YahooQuotesApi
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
-                    return Result<PriceTick[]>.Fail($"Not enough history items.");
+                    return Result<PriceTick[]>.Fail($"Not enough history items({res.Value.Length}).");
                 tickLists[(int)TickListType.Stock] = res.Value;
 
                 var c = stockSecurity.Currency;
@@ -70,7 +70,7 @@ namespace YahooQuotesApi
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
-                    return Result<PriceTick[]>.Fail($"Currency rate not enough history items: '{currencyRate}'.");
+                    return Result<PriceTick[]>.Fail($"Currency rate not enough history items({res.Value.Length}): '{currencyRate}'.");
                 tickLists[(int)TickListType.Currency] = res.Value;
             }
 
@@ -85,7 +85,7 @@ namespace YahooQuotesApi
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
-                    return Result<PriceTick[]>.Fail($"Base stock security not enough history items: '{baseSymbol}'.");
+                    return Result<PriceTick[]>.Fail($"Base stock security not enough history items({res.Value.Length}): '{baseSymbol}'.");
                 tickLists[(int)TickListType.BaseStock] = res.Value;
 
                 var c = baseStockSecurity.Currency;
@@ -109,7 +109,7 @@ namespace YahooQuotesApi
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
-                    return Result<PriceTick[]>.Fail($"Base currency rate not enough history items: '{baseSymbol}'.");
+                    return Result<PriceTick[]>.Fail($"Base currency rate not enough history items({res.Value.Length}): '{baseSymbol}'.");
                 tickLists[(int)TickListType.BaseCurrency] = res.Value;
             }
 

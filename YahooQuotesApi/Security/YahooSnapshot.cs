@@ -36,7 +36,7 @@ namespace YahooQuotesApi
 
             return await Cache.Get(symbols, ct).ConfigureAwait(false);
         }
-        private async Task<Dictionary<Symbol, Security?>> Producer(List<Symbol> symbols, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
         {
             var dict = symbols.ToDictionary(s => s, s => (Security?)null);
             var elements = await GetElements(symbols, ct).ConfigureAwait(false);
@@ -93,10 +93,10 @@ namespace YahooQuotesApi
         private async Task<List<JsonElement>> MakeRequest(Uri uri, CancellationToken ct)
         {
             Logger.LogInformation(uri.ToString());
-            
+
             var httpClient = HttpClientFactory.CreateClient("snapshot");
-            
-            using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) };
+            using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);

@@ -26,7 +26,7 @@ namespace YahooQuotesApi
             }
         }
 
-        internal Dictionary<TKey, TResult> GetAll(List<TKey> keys)
+        internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
         {
             lock (Items)
             {
@@ -34,7 +34,7 @@ namespace YahooQuotesApi
             }
         }
 
-        internal Dictionary<TKey, TResult> GetAllElseEmpty(List<TKey> keys)
+        internal Dictionary<TKey, TResult> GetAllElseEmpty(HashSet<TKey> keys)
         {
             lock (Items)
             {

@@ -12,7 +12,7 @@ namespace YahooQuotesApi.Demo
         {
             var MyHost = new HostBuilder()
                 .ConfigureLogging((ctx, logging) => {
-                    logging.SetMinimumLevel(LogLevel.Warning);
+                    logging.SetMinimumLevel(LogLevel.Information);
                     logging.AddDebug();
                     //logging.AddConsole();
                     /*
@@ -28,10 +28,9 @@ namespace YahooQuotesApi.Demo
             var logger = MyHost.Services.GetRequiredService<ILogger<MyApp>>();
             var myApp = new MyApp(logger);
 
-            await myApp.Run(Int32.MaxValue, HistoryFlags.None, "");
-            ///await myApp.Run(Int32.MaxValue, HistoryFlags.All, "");
-            //await myApp.Run(Int32.MaxValue, HistoryFlags.All, "JPY=X");
-            //await myApp.Run(1000, HistoryFlags.All, "JPY=X");
+            //await myApp.Run(1, HistoryFlags.None, "");
+            //await myApp.Run(2, HistoryFlags.All, "");
+            await myApp.Run(Int32.MaxValue, HistoryFlags.All, "JPY=X");
 
             MyHost.Dispose(); // flushes console!
         }

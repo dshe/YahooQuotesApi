@@ -17,7 +17,7 @@ namespace YahooQuotesApi.Tests
             Cache = new AsyncItemsCache<int, string>(SystemClock.Instance, Duration.MaxValue, Duration.FromMilliseconds(1000), Producer);
         }
 
-        private async Task<Dictionary<int, string>> Producer(List<int> keys, CancellationToken ct)
+        private async Task<Dictionary<int, string>> Producer(IEnumerable<int> keys, CancellationToken ct)
         {
             var msg = String.Join(", ", keys);
             RequestHistory.Add(msg);

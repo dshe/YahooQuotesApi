@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -14,9 +15,9 @@ namespace YahooQuotesApi
         private readonly Cache<TKey, TResult> Cache;
         private readonly Delayer Delayer;
         private readonly Duration Delay;
-        private readonly Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
+        private readonly Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
 
-        internal AsyncItemsCache(IClock clock, Duration cacheDuration, Duration delay, Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
+        internal AsyncItemsCache(IClock clock, Duration cacheDuration, Duration delay, Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
         {
             Delayer = new Delayer(clock);
             Cache = new Cache<TKey, TResult>(clock, cacheDuration);
@@ -26,19 +27,20 @@ namespace YahooQuotesApi
 
         internal async Task<Dictionary<TKey, TResult>> Get(List<TKey> keys, CancellationToken ct)
         {
-            var results = Cache.GetAllElseEmpty(keys);
+            var ukeys = new HashSet<TKey>(keys); // ensure unique
+            var results = Cache.GetAllElseEmpty(ukeys);
             if (results.Any())
                 return results;
 
             lock (Pending)
             {
-                Pending.AddRange(keys);
+                Pending.AddRange(ukeys);
                 Delayer.Update();
             }
 
             await SemaphoreWrapper.Wrap<Task>(() => Process(ct));
 
-            return Cache.GetAll(keys);
+            return Cache.GetAll(ukeys);
 
         }
 
@@ -47,12 +49,12 @@ namespace YahooQuotesApi
             while (true)
             {
                 await Delayer.Delay(Delay, ct).ConfigureAwait(false);
-                var items = new List<TKey>();
+                HashSet<TKey> items;
                 lock (Pending)
                 {
-                    if (!Pending.Any())
+                    items = new HashSet<TKey>(Pending);
+                    if (!items.Any())
                         return;
-                    items.AddRange(Pending);
                     Pending.Clear();
                 }
                 var dictionary = await Produce(items, ct).ConfigureAwait(false);

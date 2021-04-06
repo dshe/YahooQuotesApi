@@ -60,6 +60,7 @@ namespace YahooQuotesApi
                         logger.LogError($"Circuit Resetting...");
                     });
 
+
             ServiceProvider = new ServiceCollection()
 
             .AddHttpClient("snapshot", client =>
@@ -71,7 +72,7 @@ namespace YahooQuotesApi
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             })
             .AddPolicyHandler(retryPolicy)
-            .AddPolicyHandler(timeoutPolicy)
+            //.AddPolicyHandler(timeoutPolicy)
             .AddPolicyHandler(circuitBreakerPolicy)
             .Services
 
@@ -82,11 +83,11 @@ namespace YahooQuotesApi
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                CookieContainer = new CookieContainer()
-                //MaxConnectionsPerServer = 16
+                CookieContainer = new CookieContainer(),
+                MaxConnectionsPerServer = 64 // The default is int.MaxValue
             })
             .AddPolicyHandler(retryPolicy)
-            .AddPolicyHandler(timeoutPolicy)
+            //.AddPolicyHandler(timeoutPolicy)
             .AddPolicyHandler(circuitBreakerPolicy)
             .Services
 
