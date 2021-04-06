@@ -7,71 +7,93 @@ using NodaTime;
 
 namespace YahooQuotesApi
 {
-    /*
-    * TResult - the type of result to be cached
-    * TKey - the type of the key used to identify the result
-    */
     internal class AsyncItemsCache<TKey, TResult>
     {
-        private readonly IClock Clock = SystemClock.Instance;
-        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1);
-        private readonly Dictionary<TKey, (TResult, Instant)> Cache = new Dictionary<TKey, (TResult, Instant)>();
-        private readonly Duration Duration;
+        private readonly SemaphoreWrapper SemaphoreWrapper = new SemaphoreWrapper(1, 1);
+        private readonly List<TKey> Pending = new List<TKey>();
+        private readonly Cache<TKey, TResult> Cache;
+        private readonly Delayer Delayer;
+        private readonly Duration Delay;
+        private readonly Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
 
-        internal AsyncItemsCache(Duration cacheDuration) => Duration = cacheDuration;
-
-        internal async Task<Dictionary<TKey, TResult>> Get(List<TKey> keys, Func<Task<Dictionary<TKey, TResult>>> factory)
+        internal AsyncItemsCache(IClock clock, Duration cacheDuration, Duration delay, Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
         {
-            if (!keys.Any())
-                return new Dictionary<TKey, TResult>();
-
-            await Semaphore.WaitAsync().ConfigureAwait(false); // serialize requests
-            try
-            {
-                var now = Clock.GetCurrentInstant();
-
-                var dictionary = GetFromCache(keys, now);
-
-                if (!dictionary.Any())
-                {
-                    dictionary = await factory().ConfigureAwait(false);
-                    foreach (var kvp in dictionary)
-                        Cache[kvp.Key] = (kvp.Value, now);
-                }
-
-                return dictionary;
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            Delayer = new Delayer(clock);
+            Cache = new Cache<TKey, TResult>(clock, cacheDuration);
+            Delay = delay;
+            Produce = produce;
         }
 
-        // Return results only if results for all keys are present in the cache and not expired.
-        private Dictionary<TKey, TResult> GetFromCache(List<TKey> keys, Instant now)
+        internal async Task<Dictionary<TKey, TResult>> Get(List<TKey> keys, CancellationToken ct)
         {
-            // each request returns a new dictionary
-            var results = new Dictionary<TKey, TResult>(keys.Count);
+            var results = Cache.GetAllElseEmpty(keys);
+            if (results.Any())
+                return results;
 
-            foreach (var key in keys)
+            lock (Pending)
             {
-                if (Cache.TryGetValue(key, out (TResult value, Instant time) item) && now - item.time <= Duration)
-                    results.Add(key, item.value);
-                else
+                Pending.AddRange(keys);
+                Delayer.Update();
+            }
+
+            await SemaphoreWrapper.Wrap<Task>(() => Process(ct));
+
+            return Cache.GetAll(keys);
+
+        }
+
+        private async Task Process(CancellationToken ct)
+        {
+            while (true)
+            {
+                await Delayer.Delay(Delay, ct).ConfigureAwait(false);
+                var items = new List<TKey>();
+                lock (Pending)
                 {
-                    results.Clear();
+                    if (!Pending.Any())
+                        return;
+                    items.AddRange(Pending);
+                    Pending.Clear();
+                }
+                var dictionary = await Produce(items, ct).ConfigureAwait(false);
+                Cache.Store(dictionary);
+            }
+        }
+    }
+
+    internal class Delayer
+    {
+        private readonly object lockObj = new object();
+        private readonly IClock Clock;
+        private Instant LastUpdateTime = Instant.MinValue;
+        
+        internal Delayer(IClock clock) => Clock = clock;
+        
+        internal void Update()
+        {
+            lock (lockObj)
+            {
+                LastUpdateTime = Clock.GetCurrentInstant();
+            }
+        }
+        
+        internal async Task Delay(Duration minimumDelay, CancellationToken ct)
+        {
+            while (true)
+            {
+                Duration delay = minimumDelay - GetTimeSinceLastUpdate();
+                if (delay <= Duration.Zero)
                     break;
-                }
-
+                await Task.Delay(delay.ToTimeSpan(), ct).ConfigureAwait(false);
             }
-            return results;
         }
-
-        internal async Task Clear()
+        
+        private Duration GetTimeSinceLastUpdate()
         {
-            await Semaphore.WaitAsync().ConfigureAwait(false);
-            Cache.Clear();
-            Semaphore.Release();
+            lock (lockObj)
+            {
+                return Clock.GetCurrentInstant() - LastUpdateTime;
+            }
         }
     }
 }

@@ -6,21 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-/*
-Invalid symbols are often, but not always, ignored by Yahoo.
-So the number of symbols returned may be less than requested.
-When multiple symbols are requested here, null is returned for invalid symbols.
-
-download all security snapshots + base if security
-download currency snapshots + base if currency
-download all history => PriceHisory (LocalDate)
-
-Symbol / Base => None  Currency  Stock  CurrencyRate
-Stock            Y     Y         Y      N
-Currency         N     Y         Y      N
-CurrencyRate     Y     N         N      N
-*/
-
 namespace YahooQuotesApi
 {
     public sealed class YahooQuotes
@@ -30,12 +15,12 @@ namespace YahooQuotesApi
         private readonly YahooHistory History;
         private readonly bool UseNonAdjustedClose;
 
-        public YahooQuotes(ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, bool nonAdjustedClose)
+        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, Duration snapshotDelay, bool nonAdjustedClose)
         {
             Logger = logger;
             var httpFactory = new HttpClientFactoryProducer(logger).Produce();
-            Snapshot = new YahooSnapshot(logger, httpFactory, snapshotCacheDuration);
-            History = new YahooHistory(logger, httpFactory, historyStartDate, historyCacheDuration, frequency);
+            Snapshot = new YahooSnapshot(clock, logger, httpFactory, snapshotCacheDuration, snapshotDelay);
+            History = new YahooHistory(clock, logger, httpFactory, historyStartDate, historyCacheDuration, frequency);
             UseNonAdjustedClose = nonAdjustedClose;
         }
 
@@ -52,19 +37,6 @@ namespace YahooQuotesApi
 
         public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default)
         {
-            try
-            {
-                return await GetAllSecuritiesAsync(symbols.Distinct().ToList(), historyFlags, historyBase, ct).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Logger.LogCritical(e, "YahooQuotes: GetAsync() error.");
-                throw;
-            }
-        }
-
-        private async Task<Dictionary<Symbol, Security?>> GetAllSecuritiesAsync(List<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
-        {
             if (symbols.Any(s => s.IsEmpty))
                 throw new ArgumentException("Empty symbol.");
             if (historyBase.IsCurrencyRate)
@@ -75,9 +47,16 @@ namespace YahooQuotesApi
                 throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrency)}.");
             if (!historyBase.IsEmpty && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
-
-            var securities = await GetSecuritiesyAsync(symbols, historyFlags, historyBase, ct).ConfigureAwait(false);
-            return symbols.ToDictionary(symbol => symbol, symbol => securities[symbol]);
+            try
+            {
+                var securities = await GetSecuritiesyAsync(symbols, historyFlags, historyBase, ct).ConfigureAwait(false);
+                return symbols.ToDictionary(symbol => symbol, symbol => securities[symbol]);
+            }
+            catch (Exception e)
+            {
+                Logger.LogCritical(e, "YahooQuotes: GetAsync() error.");
+                throw;
+            }
         }
 
         private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)

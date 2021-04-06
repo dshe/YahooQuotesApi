@@ -10,7 +10,7 @@ namespace YahooQuotesApi.Tests
         public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
 
         private readonly AsyncItemCache<string, string> Cache = 
-            new AsyncItemCache<string, string>(Duration.MaxValue);
+            new AsyncItemCache<string, string>(SystemClock.Instance, Duration.MaxValue);
 
         private int Produces = 0;
 

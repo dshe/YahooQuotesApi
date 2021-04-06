@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NodaTime;
 
@@ -11,11 +12,15 @@ namespace YahooQuotesApi
      */
     internal class AsyncItemCache<TKey, TResult>
     {
-        private readonly IClock Clock = SystemClock.Instance;
+        private readonly IClock Clock;
         private readonly Dictionary<TKey, (Task<TResult>, Instant)> TaskCache = new Dictionary<TKey, (Task<TResult>, Instant)>();
         private readonly Duration Duration;
- 
-        internal AsyncItemCache(Duration cacheDuration) => Duration = cacheDuration;
+
+        internal AsyncItemCache(IClock clock, Duration cacheDuration)
+        {
+            Duration = cacheDuration;
+            Clock = clock;
+        }
 
         internal async Task<TResult> Get(TKey key, Func<Task<TResult>> producer)
         {

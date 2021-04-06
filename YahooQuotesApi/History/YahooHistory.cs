@@ -20,14 +20,14 @@ namespace YahooQuotesApi
         private readonly AsyncItemCache<string, Result<object[]>> Cache;
         private readonly CrumbFactory ClientFactory;
 
-        internal YahooHistory(ILogger logger, IHttpClientFactory factory, Instant start, Duration cacheDuration, Frequency frequency)
+        internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory factory, Instant start, Duration cacheDuration, Frequency frequency)
         {
             Logger = logger;
             HttpClientFactory = factory;
             ClientFactory = new CrumbFactory(logger, factory);
             Start = start;
             PriceHistoryFrequency = frequency;
-            Cache = new AsyncItemCache<string, Result<object[]>>(cacheDuration);
+            Cache = new AsyncItemCache<string, Result<object[]>>(clock, cacheDuration);
         }
 
         internal async Task<Result<CandleTick[]>> GetCandlesAsync(Symbol symbol, CancellationToken ct = default) =>

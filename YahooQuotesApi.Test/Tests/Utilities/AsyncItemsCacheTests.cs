@@ -1,5 +1,7 @@
 ﻿using NodaTime;
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -8,39 +10,37 @@ namespace YahooQuotesApi.Tests
 {
     public class AsyncItemsCacheTests : TestBase
     {
-        public AsyncItemsCacheTests(ITestOutputHelper output) : base(output) { }
-
-        private readonly AsyncItemsCache<string, string> Cache
-            = new AsyncItemsCache<string, string>(Duration.FromDays(1));
-
-        private int Produces = 0;
-
-        private async Task<Dictionary<string,string>> Producer(List<string> keys)
+        private readonly AsyncItemsCache<int, string> Cache;
+        private readonly List<string> RequestHistory = new List<string>();
+        public AsyncItemsCacheTests(ITestOutputHelper output) : base(output) 
         {
-            Write($"producing using keys: {string.Join(',', keys)}");
-            await Task.Yield();
-            Produces++;
-            var d = new Dictionary<string, string>();
-            foreach (var key in keys)
-                d.Add(key, $"value for key: {key} {Produces}.");
-            return d;
+            Cache = new AsyncItemsCache<int, string>(SystemClock.Instance, Duration.MaxValue, Duration.FromMilliseconds(1000), Producer);
         }
 
-        private async Task<Dictionary<string, string>> Get(List<string> keys)
+        private async Task<Dictionary<int, string>> Producer(List<int> keys, CancellationToken ct)
         {
-            Write($"getting keys: {string.Join(',', keys)}");
-            return await Cache.Get(keys, () => Producer(keys));
+            var msg = String.Join(", ", keys);
+            RequestHistory.Add(msg);
+            var results = new Dictionary<int, string>();
+            foreach (var key in keys)
+            {
+                results.Add(key, msg);
+            }
+            await Task.CompletedTask;
+            return results;
         }
 
         [Fact]
-        public async Task TestCache1()
+        public async Task Test2()
         {
-            var result1 = await Get(new List<string>() { "a", "b", "c" });
-            var result2 = await Get(new List<string>() { "b" });
-            var result3 = await Get(new List<string>() { "c", "a" });
-            var result4 = await Get(new List<string>() { "b", "z" });
+            await Cache.Get(new List<int> { 1, 2, 3 }, default);
+            var result = await Cache.Get(new List<int> { 1, 2 }, default);
+            Assert.Equal(2, result.Count);
+            Assert.Single(RequestHistory);
+            result = await Cache.Get(new List<int> { 6, 1 }, default);
+            Assert.Equal(2, result.Count);
+            Assert.Equal(2, RequestHistory.Count);
             ;
-            Assert.Equal(2, Produces);
         }
     }
 }

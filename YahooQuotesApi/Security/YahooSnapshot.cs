@@ -21,11 +21,11 @@ namespace YahooQuotesApi
         private readonly IHttpClientFactory HttpClientFactory;
         private readonly AsyncItemsCache<Symbol, Security?> Cache;
 
-        internal YahooSnapshot(ILogger logger, IHttpClientFactory factory, Duration cacheDuration)
+        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration, Duration snapshotDelay)
         {
             Logger = logger;
             HttpClientFactory = factory;
-            Cache = new AsyncItemsCache<Symbol, Security?>(cacheDuration);
+            Cache = new AsyncItemsCache<Symbol, Security?>(clock, cacheDuration, snapshotDelay, Producer);
         }
 
         internal async Task<Dictionary<Symbol, Security?>> GetAsync(List<Symbol> symbols, CancellationToken ct = default)
@@ -33,9 +33,10 @@ namespace YahooQuotesApi
             var currency = symbols.FirstOrDefault(s => s.IsCurrency);
             if (currency != null)
                 throw new ArgumentException($"Invalid symbol: {currency} (currency).");
-            return await Cache.Get(symbols, () => Producer(symbols, ct)).ConfigureAwait(false);
+
+            return await Cache.Get(symbols, ct).ConfigureAwait(false);
         }
-        private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> Producer(List<Symbol> symbols, CancellationToken ct)
         {
             var dict = symbols.ToDictionary(s => s, s => (Security?)null);
             var elements = await GetElements(symbols, ct).ConfigureAwait(false);
