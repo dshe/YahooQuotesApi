@@ -33,8 +33,8 @@ Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory
 Assert.Equal("NasdaqGS", security.FullExchangeName);
 
 CandleTick[] priceHistory = security.PriceHistory.Value;
-
 CandleTick tick = priceHistory[0];
+
 Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
 Assert.Equal(160.62, tick.Close);
 ```
