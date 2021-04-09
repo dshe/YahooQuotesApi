@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace YahooQuotesApi
 {
@@ -12,7 +10,7 @@ namespace YahooQuotesApi
     {
         internal static string ToPascal(this string source)
         {
-            if (source == null)
+            if (source is null)
                 throw new ArgumentNullException(nameof(source));
             if (source == "")
                 return "";
@@ -37,5 +35,10 @@ namespace YahooQuotesApi
                     yield return item;
             }
         }
+
+        internal static Uri ToUri(this string url) => new Uri(url);
+
+        internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new HashSet<T>(items);
+
     }
 }

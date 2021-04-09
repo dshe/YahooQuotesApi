@@ -1,5 +1,5 @@
-﻿using System;
-using NodaTime;
+﻿using NodaTime;
+using System;
 
 namespace YahooQuotesApi
 {

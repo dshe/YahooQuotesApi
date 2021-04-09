@@ -6,7 +6,7 @@ namespace YahooQuotesApi
 {
     internal class SemaphoreWrapper
     {
-        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim Semaphore;
         internal SemaphoreWrapper(int initialCount, int maxCount) => Semaphore = new SemaphoreSlim(initialCount, maxCount);
 
         internal async Task Wrap<TResult>(Func<Task> fcn, CancellationToken ct = default)

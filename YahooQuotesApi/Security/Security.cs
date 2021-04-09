@@ -23,7 +23,7 @@ namespace YahooQuotesApi
                 throw new InvalidDataException("Security: no symbol.");
             if (Currency != "")
             {
-                if (Symbol.TryCreate(Currency) == null)
+                if (Symbol.TryCreate(Currency) is null)
                     logger.LogWarning($"Invalid currency value: '{Currency}'.");
             }
 

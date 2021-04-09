@@ -1,31 +1,29 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
-using System.Linq;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using NodaTime;
+using System;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace YahooQuotesApi
 {
     internal sealed class YahooHistory
     {
         private readonly ILogger Logger;
-        private readonly IHttpClientFactory HttpClientFactory;
         private readonly Instant Start;
         private readonly Frequency PriceHistoryFrequency;
         private readonly AsyncItemCache<string, Result<object[]>> Cache;
-        private readonly CrumbFactory ClientFactory;
+        private readonly YahooHistoryRequester YahooHistoryRequester;
 
-        internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory factory, Instant start, Duration cacheDuration, Frequency frequency)
+        internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory httpClientFactory, Instant start, Duration cacheDuration, Frequency frequency)
         {
             Logger = logger;
-            HttpClientFactory = factory;
-            ClientFactory = new CrumbFactory(logger, factory);
             Start = start;
             PriceHistoryFrequency = frequency;
+            YahooHistoryRequester = new YahooHistoryRequester(logger, httpClientFactory);
             Cache = new AsyncItemCache<string, Result<object[]>>(clock, cacheDuration);
         }
 
@@ -68,39 +66,27 @@ namespace YahooQuotesApi
                 _ => throw new Exception(type.Name)
             };
 
-            bool reset = false;
-            while (true)
-            {
-                var crumb = await ClientFactory.GetCrumbAsync(reset, ct).ConfigureAwait(false);
-                var url = new StringBuilder()
-                    .Append("https://query2.finance.yahoo.com/v7/finance/download/")
-                    .Append(symbol)
-                    .Append($"?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}")
-                    .Append($"&period2={Instant.MaxValue.ToUnixTimeSeconds()}")
-                    .Append($"&interval=1{frequency.Name()}")
-                    .Append($"&events={parm}")
-                    .Append($"&crumb={crumb}")
-                    .ToString();
+            var uri = new StringBuilder()
+                .Append("https://query2.finance.yahoo.com/v7/finance/download/")
+                .Append(symbol)
+                .Append($"?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}")
+                .Append($"&period2={Instant.MaxValue.ToUnixTimeSeconds()}")
+                .Append($"&interval=1{frequency.Name()}")
+                .Append($"&events={parm}")
+                .ToString()
+                .ToUri();
 
-                Logger.LogInformation(url);
+            Logger.LogInformation(uri.ToString());
 
-                var httpClient = HttpClientFactory.CreateClient("history");
-                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url) { Version = new Version(2, 0) };
-                using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            using var response = await YahooHistoryRequester.Request(uri, ct).ConfigureAwait(false);
 
-                if (response.StatusCode == HttpStatusCode.Unauthorized && !reset)
-                {
-                    Logger.LogError("GetResponse: Unauthorized. Retrying...");
-                    reset = true;
-                    continue;
-                }
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                    return Result<object[]>.Fail($"History not found.");
-                response.EnsureSuccessStatusCode();
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return Result<object[]>.Fail($"History not found.");
 
-                using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                return Result<object[]>.From(() => stream.ToTicks(type));
-            }
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return Result<object[]>.From(() => stream.ToTicks(type));
         }
     }
 }

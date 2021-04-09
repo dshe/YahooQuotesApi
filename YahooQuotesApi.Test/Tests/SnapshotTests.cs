@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using NodaTime;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
-using NodaTime;
-using Microsoft.Extensions.Logging;
 
 namespace YahooQuotesApi.Tests
 {
@@ -61,7 +61,7 @@ namespace YahooQuotesApi.Tests
             {
                 var symbol = kvp.Key;
                 var security = kvp.Value;
-                if (security == null)
+                if (security is null)
                     throw new Exception($"Unknown Symbol: {symbol}.");
                 Assert.Equal(symbol, security.Symbol);
                 Write($"Symbol:            {symbol}");

@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using NodaTime;
+using System.Collections.Generic;
 using System.Linq;
-using NodaTime;
 
 namespace YahooQuotesApi
 {
@@ -26,33 +26,30 @@ namespace YahooQuotesApi
             }
         }
 
-        internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
+        internal bool TryGetAll(HashSet<TKey> keys, out Dictionary<TKey, TResult> results)
         {
-            lock (Items)
-            {
-                return keys.ToDictionary(k => k, k => Items[k].Item1);
-            }
-        }
-
-        internal Dictionary<TKey, TResult> GetAllElseEmpty(HashSet<TKey> keys)
-        {
+            results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
             lock (Items)
             {
                 var now = Clock.GetCurrentInstant();
-                var results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
                 foreach (var key in keys)
                 {
                     if (Items.TryGetValue(key, out (TResult value, Instant time) item)
-                        && (now - item.time <= CacheDuration || item.value == null))
+                        && (now - item.time <= CacheDuration || item.value is null))
                         results.Add(key, item.value);
                     else
                     {
                         results.Clear();
-                        break;
+                        return false;
                     }
                 }
-                return results;
+                return true;
             }
+        }
+
+        internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
+        {
+            return keys.ToDictionary(k => k, k => Items[k].Item1);
         }
     }
 }

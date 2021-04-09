@@ -15,10 +15,10 @@ namespace YahooQuotesApi
         private readonly YahooHistory History;
         private readonly bool UseNonAdjustedClose;
 
-        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, Duration snapshotDelay, bool nonAdjustedClose)
+        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, int snapshotDelay, bool nonAdjustedClose)
         {
             Logger = logger;
-            var httpFactory = new HttpClientFactoryProducer(logger).Produce();
+            var httpFactory = new HttpClientFactoryConfigurator(logger).Produce();
             Snapshot = new YahooSnapshot(clock, logger, httpFactory, snapshotCacheDuration, snapshotDelay);
             History = new YahooHistory(clock, logger, httpFactory, historyStartDate, historyCacheDuration, frequency);
             UseNonAdjustedClose = nonAdjustedClose;
@@ -89,10 +89,10 @@ namespace YahooQuotesApi
             foreach (var security in securities.Values.NotNull())
             {
                 var currencySymbol = Symbol.TryCreate(security.Currency + "=X");
-                if (currencySymbol != null)
-                    currencySymbols.Add(currencySymbol);
-                else
+                if (currencySymbol is null)
                     security.PriceHistoryBase = Result<PriceTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
+                else
+                currencySymbols.Add(currencySymbol);
             }
 
             var rateSymbols = currencySymbols
@@ -174,14 +174,14 @@ namespace YahooQuotesApi
                     return;
 
                 var close = security.RegularMarketPrice;
-                if (close == null)
+                if (close is null)
                 {
                     Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
                     return;
                 }
 
                 var volume = security.RegularMarketVolume;
-                if (volume == null )
+                if (volume is null )
                 {
                     Logger.LogDebug($"RegularMarketVolume unavailable for symbol: {security.Symbol}.");
                     volume = 0;

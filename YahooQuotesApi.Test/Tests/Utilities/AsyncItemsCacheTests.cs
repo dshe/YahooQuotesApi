@@ -14,7 +14,7 @@ namespace YahooQuotesApi.Tests
         private readonly List<string> RequestHistory = new List<string>();
         public AsyncItemsCacheTests(ITestOutputHelper output) : base(output) 
         {
-            Cache = new AsyncItemsCache<int, string>(SystemClock.Instance, Duration.MaxValue, Duration.FromMilliseconds(1000), Producer);
+            Cache = new AsyncItemsCache<int, string>(SystemClock.Instance, Duration.MaxValue, 1000, Producer);
         }
 
         private async Task<Dictionary<int, string>> Producer(IEnumerable<int> keys, CancellationToken ct)
@@ -33,11 +33,11 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public async Task Test2()
         {
-            await Cache.Get(new List<int> { 1, 2, 3 }, default);
-            var result = await Cache.Get(new List<int> { 1, 2 }, default);
+            await Cache.Get(new HashSet<int> { 1, 2, 3 }, default);
+            var result = await Cache.Get(new HashSet<int> { 1, 2 }, default);
             Assert.Equal(2, result.Count);
             Assert.Single(RequestHistory);
-            result = await Cache.Get(new List<int> { 6, 1 }, default);
+            result = await Cache.Get(new HashSet<int> { 6, 1 }, default);
             Assert.Equal(2, result.Count);
             Assert.Equal(2, RequestHistory.Count);
             ;

@@ -13,7 +13,7 @@ namespace YahooQuotesApi
         private Frequency HistoryFrequency = Frequency.Daily;
         private Duration HistoryCacheDuration = Duration.MaxValue;
         private Duration SnapshotCacheDuration = Duration.Zero;
-        private Duration SnapshotDelay = Duration.Zero;
+        private int SnapshotDelay = 0;
         private bool NonAdjustedClose = false; // used for testing
          
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
@@ -51,9 +51,9 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotesBuilder SetSnapshotDelay(Duration snapshotDelay)
+        public YahooQuotesBuilder SetSnapshotDelay(int snapshotDelayMs)
         {
-            SnapshotDelay = snapshotDelay;
+            SnapshotDelay = snapshotDelayMs;
             return this;
         }
 

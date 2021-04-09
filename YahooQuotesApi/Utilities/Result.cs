@@ -70,6 +70,7 @@ namespace YahooQuotesApi
                 return Result<T>.Fail($"{e.GetType().Name}: {e.Message}.");
             }
         }
+
         public static async Task<Result<T>> Of(Func<Task<T>> producer)
         {
             try

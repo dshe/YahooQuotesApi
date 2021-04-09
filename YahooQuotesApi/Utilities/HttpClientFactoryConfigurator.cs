@@ -1,28 +1,26 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Http.Logging;
+using Polly;
+using Polly.Extensions.Http;
+using Polly.Timeout;
 using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Polly;
-using Polly.Timeout;
-using Polly.Extensions;
-using Polly.Extensions.Http;
 
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
 // The pooled HttpMessageHandler instances results in CookieContainer objects being shared. 
 
 namespace YahooQuotesApi
 {
-    internal class HttpClientFactoryProducer
+    internal class HttpClientFactoryConfigurator
     {
         private readonly ServiceProvider ServiceProvider;
 
         internal IHttpClientFactory Produce() =>
             ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
-        internal HttpClientFactoryProducer(ILogger logger)
+        internal HttpClientFactoryConfigurator(ILogger logger)
         {
             var retryPolicy = HttpPolicyExtensions
                 .HandleTransientHttpError()
@@ -70,6 +68,7 @@ namespace YahooQuotesApi
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = false
             })
             .AddPolicyHandler(retryPolicy)
             //.AddPolicyHandler(timeoutPolicy)
@@ -83,8 +82,9 @@ namespace YahooQuotesApi
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = false,
                 CookieContainer = new CookieContainer(),
-                MaxConnectionsPerServer = 64 // The default is int.MaxValue
+                //MaxConnectionsPerServer = 16 // The default is int.MaxValue
             })
             .AddPolicyHandler(retryPolicy)
             //.AddPolicyHandler(timeoutPolicy)

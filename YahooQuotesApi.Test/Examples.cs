@@ -1,6 +1,5 @@
 ﻿using NodaTime;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace YahooQuotesApi.Tests
             YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
             
             Security? security = await yahooQuotes.GetAsync("AAPL");
-            if (security == null)
+            if (security is null)
                 throw new ArgumentException("Unknown symbol: AAPL.");
 
             Assert.Equal("Apple Inc.", security.LongName);

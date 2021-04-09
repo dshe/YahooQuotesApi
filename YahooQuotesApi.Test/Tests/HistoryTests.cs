@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using NodaTime;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
-using NodaTime;
-using Microsoft.Extensions.Logging;
 
 namespace YahooQuotesApi.Tests
 {
@@ -115,7 +115,7 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(38.13, ticks[0].Open,1);
         }
 
-        //[Fact]
+        [Fact(Skip = "simplify")]
         public async Task TestFrequencyWeekly()
         {
             var timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("America/New_York");
@@ -134,7 +134,7 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(39.20, ticks[1].Close, 2);
         }
 
-        //[Fact]
+        [Fact(Skip = "simplify")]
         public async Task TestFrequencyMonthly()
         {
             var timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("America/New_York");

@@ -1,15 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using NodaTime;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using NodaTime;
-using Microsoft.Extensions.Logging.Abstractions;
-using System.Text.Json;
-using System.Net.Http;
 
 // Invalid symbols are ignored by Yahoo.
 
@@ -18,27 +17,29 @@ namespace YahooQuotesApi
     internal class YahooSnapshot
     {
         private readonly ILogger Logger;
-        private readonly IHttpClientFactory HttpClientFactory;
+        private readonly HttpClient HttpClient;
         private readonly AsyncItemsCache<Symbol, Security?> Cache;
 
-        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration, Duration snapshotDelay)
+        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration, int snapshotDelay)
         {
             Logger = logger;
-            HttpClientFactory = factory;
+            HttpClient = factory.CreateClient("snapshot");
             Cache = new AsyncItemsCache<Symbol, Security?>(clock, cacheDuration, snapshotDelay, Producer);
         }
 
         internal async Task<Dictionary<Symbol, Security?>> GetAsync(List<Symbol> symbols, CancellationToken ct = default)
         {
             var currency = symbols.FirstOrDefault(s => s.IsCurrency);
-            if (currency != null)
+            if (currency != default)
                 throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
-            return await Cache.Get(symbols, ct).ConfigureAwait(false);
+            return await Cache.Get(symbols.ToHashSet(), ct).ConfigureAwait(false);
         }
         private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
         {
             var dict = symbols.ToDictionary(s => s, s => (Security?)null);
+            if (!symbols.Any())
+                return dict;
             var elements = await GetElements(symbols, ct).ConfigureAwait(false);
             foreach (var element in elements)
             {
@@ -94,9 +95,8 @@ namespace YahooQuotesApi
         {
             Logger.LogInformation(uri.ToString());
 
-            var httpClient = HttpClientFactory.CreateClient("snapshot");
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) };
-            using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);

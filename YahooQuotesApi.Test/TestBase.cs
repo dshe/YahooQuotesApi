@@ -1,7 +1,7 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
+﻿using Microsoft.Extensions.Logging;
 using MXLogger;
+using System;
+using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests
 {
