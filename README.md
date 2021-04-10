@@ -12,9 +12,8 @@ using YahooQuotesApi;
 ```
 ### snapshot
 ```csharp
-YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+Security? security = await new YahooQuotesBuilder().Build().GetAsync("AAPL");
 
-Security? security = await yahooQuotes.GetAsync("AAPL");
 if (security == null)
     throw new ArgumentException("Unknown symbol: AAPL.");
 
