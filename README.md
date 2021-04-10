@@ -54,6 +54,7 @@ Assert.Equal(160.62, tick.Close);
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
+    .WithCaching(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
     .Build();
 
 Security security = await yahooQuotes
