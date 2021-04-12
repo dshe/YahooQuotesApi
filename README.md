@@ -63,12 +63,16 @@ Security security = await yahooQuotes
 
 Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
+Assert.Equal("America/New_York", security.ExchangeTimezone?.Id);
 
 CandleTick tick = security.PriceHistory.Value[0];
 Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
 Assert.Equal(309.202, tick.Close); // in USD
 
-PriceTick tickBase = security.PriceHistoryBase.Value[0];
-Assert.Equal(new LocalDateTime(2020, 7, 15, 16, 0, 0), tickBase.Date.LocalDateTime);
-Assert.Equal(33139, tickBase.Price, 0); // in JPY
+var instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
+    .InZoneLeniently(security.ExchangeTimezone!).ToInstant();
+
+ValueTick tickBase = security.PriceHistoryBase.Value[0];
+Assert.Equal(instant, tickBase.Date);
+Assert.Equal(33139, tickBase.Value, 0); // in JPY
 ```
