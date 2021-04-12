@@ -10,15 +10,27 @@
 using NodaTime;
 using YahooQuotesApi;
 ```
-### snapshots
+### snapshot
 ```csharp
-YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+Security? security = await new YahooQuotesBuilder().Build().GetAsync("AAPL");
 
-Security? security = await yahooQuotes.GetAsync("AAPL");
 if (security == null)
     throw new ArgumentException("Unknown symbol: AAPL.");
 
 Assert.Equal("Apple Inc.", security.LongName);
+Assert.True(security.RegularMarketPrice > 0);
+```
+### snapshots
+```csharp
+YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+
+Dictionary<string,Security?> securities = await yahooQuotes.GetAsync(new[] { "AAPL", "BP.L", "USDJPY=X" });
+
+Security security = securities["BP.L"] ?? throw new ArgumentException("Unknown symbol");
+
+Assert.Equal("BP p.l.c.", security.LongName);
+Assert.Equal("GBP", security.Currency, true);
+Assert.Equal("LSE", security.Exchange);
 Assert.True(security.RegularMarketPrice > 0);
 ```
 ### snapshots with history
@@ -38,10 +50,11 @@ CandleTick tick = priceHistory[0];
 Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
 Assert.Equal(160.62, tick.Close);
 ```
-### snapshots with history in a base currency
+### snapshots with history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
+    .WithCaching(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
     .Build();
 
 Security security = await yahooQuotes
