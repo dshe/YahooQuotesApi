@@ -69,17 +69,19 @@ namespace YahooQuotesApi.Tests
                 Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
                 Write($"RegularMarketTime: {security.RegularMarketTime}");
 
-                var zdt = new LocalDate(2020, 7, 17)
+                var date = new LocalDate(2020, 7, 17)
                     .At(security?.ExchangeCloseTime ?? throw new ArgumentException())
-                    .InZoneStrictly(security.ExchangeTimezone ?? throw new ArgumentException());
+                    .InZoneStrictly(security.ExchangeTimezone ?? throw new ArgumentException())
+                    .ToInstant();
+
 
                 var securityWithHistory = await new YahooQuotesBuilder(Logger)
-                    .HistoryStarting(zdt.ToInstant())
+                    .HistoryStarting(date)
                     .Build()
                     .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
                 var ticks = securityWithHistory.PriceHistoryBase.Value;
-                Assert.Equal(zdt, ticks.First().Date);
+                Assert.Equal(date, ticks.First().Date);
             }
         }
 
@@ -89,10 +91,10 @@ namespace YahooQuotesApi.Tests
             var symbol = "BA.L";
             var timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London") 
                 ?? throw new TimeZoneNotFoundException();
-            var zdt = new LocalDateTime(2021, 3, 17, 16, 30).InZoneStrictly(timeZone);
+            var date = new LocalDateTime(2021, 3, 17, 16, 30).InZoneStrictly(timeZone).ToInstant();
 
             var yahooQuotes = new YahooQuotesBuilder(Logger)
-                .HistoryStarting(zdt.ToInstant())
+                .HistoryStarting(date)
                 .UseNonAdjustedClose()
                 .Build();
 
@@ -101,8 +103,8 @@ namespace YahooQuotesApi.Tests
             Assert.Equal(timeZone, security.ExchangeTimezone);
 
             var ticks = security.PriceHistoryBase.Value;
-            Assert.Equal(zdt, ticks[0].Date);
-            Assert.Equal(501, ticks[0].Price);
+            Assert.Equal(date, ticks[0].Date);
+            Assert.Equal(501, ticks[0].Value);
         }
     }
 }

@@ -10,11 +10,8 @@ namespace YahooQuotesApi
         private static readonly Duration FutureLimit = Duration.FromDays(4);
         private static readonly Duration PastLimit = Duration.FromDays(4);
 
-        internal static double InterpolateClose(this IReadOnlyList<PriceTick> list, ZonedDateTime date) =>
-            InterpolateClose(list, date.ToInstant());
-
-        private static double InterpolateClose(this IReadOnlyList<PriceTick> list, Instant date) =>
-            Interpolate(list, date, x => x.Date.ToInstant(), x => x.Price);
+        internal static double InterpolateClose(this IReadOnlyList<ValueTick> list, Instant date) =>
+            Interpolate(list, date, x => x.Date, x => x.Value);
 
         private static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
         {

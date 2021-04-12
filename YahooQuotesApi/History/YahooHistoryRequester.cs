@@ -50,9 +50,12 @@ namespace YahooQuotesApi
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized && !retry)
                 {
-                    retry = true;
-                    Logger.LogError("HttpStatusCode: Unauthorized. Retrying...");
-                    reset = true;
+                    if (!reset)
+                    {
+                        reset = true;
+                        retry = true;
+                        Logger.LogError("HttpStatusCode: Unauthorized. Retrying...");
+                    }
                     continue;
                 }
                 return response;
@@ -80,7 +83,7 @@ namespace YahooQuotesApi
                 var httpClient = HttpClientFactory.CreateClient("history");
 
                 // random query to avoid cached response and set new cookie
-                var uri = new Uri($"https://finance.yahoo.com?{Utility.GetRandomString(8)}");
+                var uri = new Uri($"https://finance.yahoo.com?{Extensions.GetRandomString(8)}");
                 using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0)};
                 using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 

@@ -9,8 +9,8 @@ namespace YahooQuotesApi.Tests
     {
         public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
 
-        private readonly AsyncItemCache<string, string> Cache = 
-            new AsyncItemCache<string, string>(SystemClock.Instance, Duration.MaxValue);
+        private readonly ParallelProducerCache<string, string> Cache = 
+            new ParallelProducerCache<string, string>(SystemClock.Instance, Duration.MaxValue);
 
         private int Produces = 0;
 

@@ -6,8 +6,11 @@ using System.Runtime.Serialization;
 
 namespace YahooQuotesApi
 {
-    internal static class ExtensionMethods
+    internal static class Extensions
     {
+        internal static string GetRandomString(int length) =>
+            Guid.NewGuid().ToString().Substring(0, length);
+
         internal static string ToPascal(this string source)
         {
             if (source is null)
@@ -36,9 +39,20 @@ namespace YahooQuotesApi
             }
         }
 
+        internal static double RoundToSigFigs(this double num, int figs)
+        {
+            if (num == 0)
+                return 0;
+
+            double d = Math.Ceiling(Math.Log10(num < 0 ? -num : num));
+            int power = figs - (int)d;
+
+            double magnitude = Math.Pow(10, power);
+            double shifted = Math.Round(num * magnitude);
+            return shifted / magnitude;
+        }
+
         internal static Uri ToUri(this string url) => new Uri(url);
-
         internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new HashSet<T>(items);
-
     }
 }

@@ -18,13 +18,13 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly HttpClient HttpClient;
-        private readonly AsyncItemsCache<Symbol, Security?> Cache;
+        private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration, int snapshotDelay)
+        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration)
         {
             Logger = logger;
             HttpClient = factory.CreateClient("snapshot");
-            Cache = new AsyncItemsCache<Symbol, Security?>(clock, cacheDuration, snapshotDelay, Producer);
+            Cache = new SerialProducerCache<Symbol, Security?>(clock, cacheDuration, Producer);
         }
 
         internal async Task<Dictionary<Symbol, Security?>> GetAsync(List<Symbol> symbols, CancellationToken ct = default)

@@ -4,7 +4,7 @@
 
 namespace YahooQuotesApi
 {
-    public sealed class DividendTick
+    public sealed class DividendTick : ITick
     {
         public LocalDate Date { get; }
         public double Dividend { get; }

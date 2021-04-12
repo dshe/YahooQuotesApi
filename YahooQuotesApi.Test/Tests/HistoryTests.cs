@@ -90,10 +90,10 @@ namespace YahooQuotesApi.Tests
                 .Build();
 
             var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory) ?? throw new ArgumentException();
-            SplitTick[] splits = security.SplitHistory.Value;
+            SplitTick split = security.SplitHistory.Value[0];
 
-            Assert.Equal(1, splits[0].BeforeSplit);
-            Assert.Equal(4, splits[0].AfterSplit);
+            Assert.Equal(1, split.BeforeSplit);
+            Assert.Equal(7, split.AfterSplit);
         }
 
         [Fact]

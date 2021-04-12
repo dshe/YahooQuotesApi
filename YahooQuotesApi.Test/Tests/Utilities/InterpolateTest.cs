@@ -13,69 +13,69 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public void TestNotEnoughData()
         {
-            var list = new List<PriceTick>();
-            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new ZonedDateTime()));
-            list.Add(new PriceTick(new ZonedDateTime(), 0, 0));
+            var list = new List<ValueTick>();
+            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new Instant()));
+            list.Add(new ValueTick(new Instant(), 0, 0));
 
-            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new ZonedDateTime()));
-            list.Add(new PriceTick(new ZonedDateTime(), 0, 0));
-            Assert.Equal(0, list.InterpolateClose(new ZonedDateTime()));
-            list.Add(new PriceTick(new ZonedDateTime(), 0));
-            Assert.Equal(0, list.InterpolateClose(new ZonedDateTime()));
+            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new Instant()));
+            list.Add(new ValueTick(new Instant(), 0, 0));
+            Assert.Equal(0, list.InterpolateClose(new Instant()));
+            list.Add(new ValueTick(new Instant(), 0));
+            Assert.Equal(0, list.InterpolateClose(new Instant()));
         }
 
         [Fact]
         public void BoundaryTest()
         {
-            var list = new List<PriceTick>();
-            var zdt1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc();
-            var zdt2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc();
+            var list = new List<ValueTick>();
+            var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
+            var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
-            list.Add(new PriceTick(zdt1, 0));
-            list.Add(new PriceTick(zdt2, 0));
+            list.Add(new ValueTick(date1, 0));
+            list.Add(new ValueTick(date2, 0));
 
-            var result = list.InterpolateClose(zdt1);
+            var result = list.InterpolateClose(date1);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateClose(zdt1.PlusHours(-7 * 24));
+            result = list.InterpolateClose(date1.Plus(Duration.FromHours(-7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
 
-            result = list.InterpolateClose(zdt2);
+            result = list.InterpolateClose(date2);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateClose(zdt2.PlusHours(7 * 24));
+            result = list.InterpolateClose(date2.Plus(Duration.FromHours(7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
         }
 
         [Fact]
         public void BoundaryLimitTest()
         {
-            var list = new List<PriceTick>();
-            var zdt1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc();
-            var zdt2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc();
+            var list = new List<ValueTick>();
+            var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
+            var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
-            list.Add(new PriceTick(zdt1, 1));
-            list.Add(new PriceTick(zdt2, 2));
+            list.Add(new ValueTick(date1, 1));
+            list.Add(new ValueTick(date2, 2));
 
-            var result = list.InterpolateClose(zdt2.PlusTicks(1));
+            var result = list.InterpolateClose(date2.PlusTicks(1));
             Assert.Equal(2, result);
 
-            result = list.InterpolateClose(zdt2.PlusHours(7 * 24));
+            result = list.InterpolateClose(date2.Plus(Duration.FromHours(7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
         }
 
         [Fact]
         public void InterpolateTest1()
         {
-            var list = new List<PriceTick>();
+            var list = new List<ValueTick>();
 
-            var zdt1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc();
-            var zdt2 = new LocalDateTime(2000, 1, 5, 0, 0).InUtc();
+            var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
+            var date2 = new LocalDateTime(2000, 1, 5, 0, 0).InUtc().ToInstant();
 
-            list.Add(new PriceTick(zdt1, 1));
-            list.Add(new PriceTick(zdt2, 2));
+            list.Add(new ValueTick(date1, 1));
+            list.Add(new ValueTick(date2, 2));
 
-            var result = list.InterpolateClose(zdt1.Plus(Duration.FromDays(1)));
+            var result = list.InterpolateClose(date1.Plus(Duration.FromDays(1)));
             Assert.Equal(1.25, result);
         }
 

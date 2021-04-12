@@ -67,7 +67,7 @@ namespace YahooQuotesApi
             }
             catch (Exception e)
             {
-                return Result<T>.Fail($"{e.GetType().Name}: {e.Message}.");
+                return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
             }
         }
 
@@ -79,7 +79,7 @@ namespace YahooQuotesApi
             }
             catch (Exception e)
             {
-                return Result<T>.Fail($"{e.GetType().Name}: {e.Message}.");
+                return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
             }
         }
     }

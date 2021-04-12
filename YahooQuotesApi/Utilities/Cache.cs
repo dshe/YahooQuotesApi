@@ -8,7 +8,7 @@ namespace YahooQuotesApi
     {
         private readonly IClock Clock;
         private readonly Duration CacheDuration;
-        private readonly Dictionary<TKey, (TResult, Instant)> Items = new Dictionary<TKey, (TResult, Instant)>();
+        private readonly Dictionary<TKey, (TResult result, Instant time)> Items = new Dictionary<TKey, (TResult, Instant)>();
 
         internal Cache(IClock clock, Duration cacheDuration)
         {
@@ -16,7 +16,7 @@ namespace YahooQuotesApi
             CacheDuration = cacheDuration;
         }
 
-        internal void Store(Dictionary<TKey, TResult> dict)
+        internal void Save(Dictionary<TKey, TResult> dict)
         {
             lock (Items)
             {
@@ -47,9 +47,12 @@ namespace YahooQuotesApi
             }
         }
 
-        internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
+        internal Dictionary<TKey, TResult> Get(HashSet<TKey> keys)
         {
-            return keys.ToDictionary(k => k, k => Items[k].Item1);
+            lock (Items)
+            {
+                return keys.ToDictionary(k => k, k => Items[k].result);
+            }
         }
     }
 }

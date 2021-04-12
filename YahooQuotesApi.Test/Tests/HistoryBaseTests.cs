@@ -95,7 +95,7 @@ namespace YahooQuotesApi.Tests
                     price /= rate;
                 }
             }
-            Assert.Equal(security.PriceHistoryBase.Value.First().Price, price, 6);
+            Assert.Equal(security.PriceHistoryBase.Value.First().Value, price, 6);
         }
 
         [Theory]
@@ -135,7 +135,7 @@ namespace YahooQuotesApi.Tests
             var rate3 = baseSecurity.PriceHistoryBase.Value.InterpolateClose(date);
             price /= rate3;
 
-            Assert.Equal(security.PriceHistoryBase.Value.First().Price, price, 6);
+            Assert.Equal(security.PriceHistoryBase.Value.First().Value, price, 6);
         }
 
         [Theory] // (AAA=X BBB=X) => AAABBB=X
@@ -147,7 +147,7 @@ namespace YahooQuotesApi.Tests
             Security security = await MyYahooQuotes.GetAsync(currencySymbol, HistoryFlags.PriceHistory, baseCurrencySymbol) ?? throw new Exception($"Unknown symbol: {currencySymbol}.");
 
             var date = security.PriceHistoryBase.Value.First().Date;
-            var resultFound = security.PriceHistoryBase.Value.First().Price;
+            var resultFound = security.PriceHistoryBase.Value.First().Value;
 
             var symbol = $"{currencySymbol.Substring(0, 3)}{baseCurrencySymbol}";
             var security2 = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
@@ -187,7 +187,7 @@ namespace YahooQuotesApi.Tests
                 price *= rate;
             }
 
-            Assert.Equal(security.PriceHistoryBase.Value[0].Price, price);
+            Assert.Equal(security.PriceHistoryBase.Value[0].Value, price);
         }
     }
 }

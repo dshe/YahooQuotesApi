@@ -15,7 +15,7 @@ namespace YahooQuotesApi
         private readonly ILogger Logger;
         private readonly Instant Start;
         private readonly Frequency PriceHistoryFrequency;
-        private readonly AsyncItemCache<string, Result<object[]>> Cache;
+        private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
         private readonly YahooHistoryRequester YahooHistoryRequester;
 
         internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory httpClientFactory, Instant start, Duration cacheDuration, Frequency frequency)
@@ -24,7 +24,7 @@ namespace YahooQuotesApi
             Start = start;
             PriceHistoryFrequency = frequency;
             YahooHistoryRequester = new YahooHistoryRequester(logger, httpClientFactory);
-            Cache = new AsyncItemCache<string, Result<object[]>>(clock, cacheDuration);
+            Cache = new ParallelProducerCache<string, Result<ITick[]>>(clock, cacheDuration);
         }
 
         internal async Task<Result<CandleTick[]>> GetCandlesAsync(Symbol symbol, CancellationToken ct = default) =>
@@ -36,7 +36,7 @@ namespace YahooQuotesApi
         internal async Task<Result<SplitTick[]>> GetSplitsAsync(Symbol symbol, CancellationToken ct = default) =>
             await GetTicksAsync<SplitTick>(symbol, Frequency.Daily, ct).ConfigureAwait(false);
 
-        private async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, Frequency frequency, CancellationToken ct)
+        private async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, Frequency frequency, CancellationToken ct) where T:ITick
         {
             if (symbol.IsCurrency || symbol.IsEmpty)
                 throw new ArgumentException($"Invalid symbol: '{nameof(symbol)}'.");
@@ -44,7 +44,7 @@ namespace YahooQuotesApi
             var key = $"{symbol},{type.Name},{frequency.Name()}";
             try
             {
-                var result = await Cache.Get(key, () => Produce(symbol, type, frequency, ct)).ConfigureAwait(false);
+                var result = await Cache.Get(key, () => Produce<T>(symbol, frequency, ct)).ConfigureAwait(false);
                 if (result.HasError)
                     return Result<T[]>.Fail(result.Error);
                 return result.Value.Cast<T>().ToArray().ToResult(); // returns a mutable shallow copy
@@ -56,14 +56,14 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task<Result<object[]>> Produce(string symbol, Type type, Frequency frequency, CancellationToken ct)
+        private async Task<Result<ITick[]>> Produce<T>(string symbol, Frequency frequency, CancellationToken ct) where T: ITick
         {
-            var parm = type.Name switch
+            var parm = typeof(T).Name switch
             {
                 nameof(CandleTick) => "history",
                 nameof(DividendTick) => "div",
                 nameof(SplitTick) => "split",
-                _ => throw new Exception(type.Name)
+                _ => throw new Exception("type")
             };
 
             var uri = new StringBuilder()
@@ -81,12 +81,12 @@ namespace YahooQuotesApi
             using var response = await YahooHistoryRequester.Request(uri, ct).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
-                return Result<object[]>.Fail($"History not found.");
+                return Result<ITick[]>.Fail($"History not found.");
 
             response.EnsureSuccessStatusCode();
 
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return Result<object[]>.From(() => stream.ToTicks(type));
+            return Result<ITick[]>.From(() => stream.ToTicks<T>());
         }
     }
 }

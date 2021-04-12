@@ -1,6 +1,6 @@
 environment:
   base_version: '4.0.0'
-  version_suffix: 'beta'
+  version_suffix: ''
 version: $(base_version).{build}
 image: Visual Studio 2019
 configuration: Release

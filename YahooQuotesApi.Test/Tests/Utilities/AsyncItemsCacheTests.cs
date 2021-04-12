@@ -10,11 +10,11 @@ namespace YahooQuotesApi.Tests
 {
     public class AsyncItemsCacheTests : TestBase
     {
-        private readonly AsyncItemsCache<int, string> Cache;
+        private readonly SerialProducerCache<int, string> Cache;
         private readonly List<string> RequestHistory = new List<string>();
         public AsyncItemsCacheTests(ITestOutputHelper output) : base(output) 
         {
-            Cache = new AsyncItemsCache<int, string>(SystemClock.Instance, Duration.MaxValue, 1000, Producer);
+            Cache = new SerialProducerCache<int, string>(SystemClock.Instance, Duration.MaxValue, Producer);
         }
 
         private async Task<Dictionary<int, string>> Producer(IEnumerable<int> keys, CancellationToken ct)

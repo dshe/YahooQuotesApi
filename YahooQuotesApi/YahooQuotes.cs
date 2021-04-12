@@ -11,15 +11,17 @@ namespace YahooQuotesApi
     public sealed class YahooQuotes
     {
         private readonly ILogger Logger;
+        private readonly IClock Clock;
         private readonly YahooSnapshot Snapshot;
         private readonly YahooHistory History;
         private readonly bool UseNonAdjustedClose;
 
-        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, int snapshotDelay, bool nonAdjustedClose)
+        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, bool nonAdjustedClose)
         {
             Logger = logger;
+            Clock = clock;
             var httpFactory = new HttpClientFactoryConfigurator(logger).Produce();
-            Snapshot = new YahooSnapshot(clock, logger, httpFactory, snapshotCacheDuration, snapshotDelay);
+            Snapshot = new YahooSnapshot(clock, logger, httpFactory, snapshotCacheDuration);
             History = new YahooHistory(clock, logger, httpFactory, historyStartDate, historyCacheDuration, frequency);
             UseNonAdjustedClose = nonAdjustedClose;
         }
@@ -90,7 +92,7 @@ namespace YahooQuotesApi
             {
                 var currencySymbol = Symbol.TryCreate(security.Currency + "=X");
                 if (currencySymbol is null)
-                    security.PriceHistoryBase = Result<PriceTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
+                    security.PriceHistoryBase = Result<ValueTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
                 else
                 currencySymbols.Add(currencySymbol);
             }
@@ -135,60 +137,60 @@ namespace YahooQuotesApi
             return;
         }
 
-        private Result<PriceTick[]> GetPriceHistoryBaseAsync(Result<CandleTick[]> result, Security security)
+        private Result<ValueTick[]> GetPriceHistoryBaseAsync(Result<CandleTick[]> result, Security security)
         {
             if (result.HasError)
-                return Result<PriceTick[]>.Fail(result.Error);
-            if (security.ExchangeTimezoneName == "")
-                return Result<PriceTick[]>.Fail("ExchangeTimezone not found.");
+                return Result<ValueTick[]>.Fail(result.Error);
+            if (security.ExchangeTimezone == null)
+                return Result<ValueTick[]>.Fail("Exchange timezone not found: '{security.ExchangeTimezone}'.");
             if (security.ExchangeCloseTime == default)
-                return Result<PriceTick[]>.Fail("ExchangeCloseTime not found.");
-            return Result<PriceTick[]>.From(() => GetTicks());
+                return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 
-            PriceTick[] GetTicks()
-            {
-                var ticks = result.Value.Select(candleTick =>
-                    new PriceTick(candleTick, security.ExchangeCloseTime, security.ExchangeTimezone!, UseNonAdjustedClose)).ToList();
-                AppendToPriceHistory(ticks, security);
-                return ticks.ToArray();
-            }
+            var ticks = result.Value.Select(candleTick =>
+                new ValueTick(candleTick, security.ExchangeCloseTime, security.ExchangeTimezone!, UseNonAdjustedClose)).ToList();
+            if (!ticks.Any())
+                return Result<ValueTick[]>.Fail("No history available.");
 
-            void AppendToPriceHistory(List<PriceTick> ticks, Security security)
+            var snapTime = security.RegularMarketTime;
+            var snapPrice = security.RegularMarketPrice;
+            if (snapTime == default || snapPrice is null)
             {
-                if (!ticks.Any())
-                    return;
-                var historyDate = ticks.Last().Date;
-                var snapshotDate = security.RegularMarketTime;
-                if (snapshotDate == default)
-                {
+                if (snapTime == default)
                     Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
-                    return;
-                }
-
-                if (snapshotDate.Date < historyDate.Date)
-                {
-                    Logger.LogDebug($"RegularMarketTime precedes most recent history for symbol: {security.Symbol}.");
-                    return;
-                }
-                if (snapshotDate.Date == historyDate.Date)
-                    return;
-
-                var close = security.RegularMarketPrice;
-                if (close is null)
-                {
-                    Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
-                    return;
-                }
-
-                var volume = security.RegularMarketVolume;
-                if (volume is null )
-                {
-                    Logger.LogDebug($"RegularMarketVolume unavailable for symbol: {security.Symbol}.");
-                    volume = 0;
-                }
-
-                ticks.Add(new PriceTick(snapshotDate, Convert.ToDouble(close), volume.Value));
+                if (snapPrice == null)
+                    Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
+                Result<ValueTick[]>.Ok(ticks.ToArray());
             }
+
+            var now = Clock.GetCurrentInstant();
+            var snapTimeInstant = snapTime.ToInstant();
+
+            if (snapTimeInstant > now)
+            {
+                Logger.LogWarning($"Snapshot date: {snapTimeInstant} which follows current date: {now} adjusted for symbol: {security.Symbol}.");
+                snapTimeInstant = now;
+            }
+
+            var latestHistory = ticks.Last();
+            if (latestHistory.Date >= snapTimeInstant)
+            {   // if history already includes snapshot, or exchange closes early
+                Logger.LogTrace($"History tick with date: {latestHistory.Date} follows snapshot date: {snapTimeInstant} removed for symbol: {security.Symbol}.");
+                ticks.Remove(latestHistory); 
+                if (!ticks.Any() || ticks.Last().Date >= snapTimeInstant)
+                    return Result<ValueTick[]>.Fail($"Invalid dates.");
+            }
+
+            var volume = security.RegularMarketVolume;
+            if (volume is null)
+            {
+                Logger.LogTrace($"RegularMarketVolume unavailable for symbol: {security.Symbol}.");
+                volume = 0;
+            }
+
+            ticks.Add(new ValueTick(snapTimeInstant, Convert.ToDouble(snapPrice), volume.Value));
+
+            // hist < snap < now
+            return Result<ValueTick[]>.Ok(ticks.ToArray());
         }
     }
 }

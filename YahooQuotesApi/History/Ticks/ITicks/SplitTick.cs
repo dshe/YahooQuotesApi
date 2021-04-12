@@ -3,7 +3,7 @@ using System;
 
 namespace YahooQuotesApi
 {
-    public sealed class SplitTick
+    public sealed class SplitTick : ITick
     {
         public LocalDate Date { get; }
         public double BeforeSplit { get; }

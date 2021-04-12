@@ -11,35 +11,29 @@ namespace YahooQuotesApi
     {
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
-        internal static object[] ToTicks(this Stream stream, Type type)
+        internal static ITick[] ToTicks<T>(this Stream stream) where T: ITick
         {
-            var ticks = new List<object>();
-
+            var ticks = new HashSet<ITick>();
             using var streamReader = new StreamReader(stream);
             streamReader.ReadLine(); // read header
             while (!streamReader.EndOfStream)
             {
                 var row = streamReader.ReadLine().Split(',');
-                var tick = GetTick(row, type);
-                if (tick != null)
-                    ticks.Add(tick);
+                var tick = GetTick<T>(row);
+                if (tick == null)
+                    continue;
+                if (!ticks.Add(tick))
+                    throw new InvalidDataException("Duplicate tick date: " + tick.ToString() + ".");
             }
-            // dividend ticks are returned by Yahoo in random order!
-            if (type == typeof(DividendTick))
-            {
-                return ticks
-                    .Cast<DividendTick>()
-                    .OrderBy(tick => tick.Date)
-                    .Cast<object>()
-                    .ToArray();
-            }
-            return ticks.ToArray();
+            // sometimes ticks are returned in seemingly random order!
+            return ticks.OrderBy(x => x.Date).ToArray();
         }
 
-        private static object? GetTick(string[] row, Type type)
+        private static ITick? GetTick<T>(string[] row) where T: ITick
         {
             var result = DatePattern.Parse(row[0]);
-            var date = result.Success ? result.Value : throw new Exception($"Could not convert '{row[0]}' to LocalDate.", result.Exception);
+            var date = result.Success ? result.Value : throw new InvalidDataException($"Could not convert '{row[0]}' to LocalDate.", result.Exception);
+            var type = typeof(T);
             if (type == typeof(CandleTick))
             {
                 if (row[5] == "null")
@@ -59,10 +53,10 @@ namespace YahooQuotesApi
             if (str == "null")
                 return 0d;
 
-            if (!double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
-                throw new InvalidDataException($"Could not convert '{str}' to Double.");
+            if (double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+                return result.RoundToSigFigs(7);
 
-            return result.RoundToSigFigs(7);
+            throw new InvalidDataException($"Could not convert '{str}' to Double.");
         }
 
         internal static long ToLong(this string str)
@@ -70,10 +64,10 @@ namespace YahooQuotesApi
             if (str == "null")
                 return 0L;
 
-            if (!long.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out long result))
-                throw new InvalidDataException($"Could not convert '{str}' to Long.");
+            if (long.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out long result))
+                return result;
 
-            return result;
+            throw new InvalidDataException($"Could not convert '{str}' to Long.");
         }
     }
 }

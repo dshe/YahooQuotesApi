@@ -15,7 +15,7 @@ Yahoo Finance Adjusted price is adjusted for dividends.
  */
 namespace YahooQuotesApi
 {
-    public sealed class CandleTick
+    public sealed class CandleTick : ITick
     {
         public LocalDate Date { get; }
         public double Open { get; }
