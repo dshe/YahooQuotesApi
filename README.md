@@ -6,6 +6,11 @@
 - simple and intuitive API
 - fault-tolerant
 - tested
+## Installation
+```bash
+PM> Install-Package YahooQuotesApi
+```
+## Examples
 ```csharp
 using NodaTime;
 using YahooQuotesApi;
