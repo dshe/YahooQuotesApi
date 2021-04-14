@@ -6,16 +6,16 @@
 - simple and intuitive API
 - fault-tolerant
 - tested
-## Installation
+### Installation
 ```bash
 PM> Install-Package YahooQuotesApi
 ```
-## Examples
+### Examples
 ```csharp
 using NodaTime;
 using YahooQuotesApi;
 ```
-### snapshot
+#### snapshot
 ```csharp
 Security? security = await new YahooQuotesBuilder().Build().GetAsync("AAPL");
 
@@ -25,7 +25,7 @@ if (security == null)
 Assert.Equal("Apple Inc.", security.LongName);
 Assert.True(security.RegularMarketPrice > 0);
 ```
-### snapshots
+#### snapshots
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
@@ -38,7 +38,7 @@ Assert.Equal("GBP", security.Currency, true);
 Assert.Equal("LSE", security.Exchange);
 Assert.True(security.RegularMarketPrice > 0);
 ```
-### snapshots with history
+#### snapshots with history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
@@ -55,7 +55,7 @@ CandleTick tick = priceHistory[0];
 Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
 Assert.Equal(160.62, tick.Close);
 ```
-### snapshots with history in base currency
+#### snapshots with history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
