@@ -5,7 +5,7 @@ namespace YahooQuotesApi
     public sealed class ValueTick
     {
         public Instant Date { get; }
-        public double Value { get; } // this is adjusted close from Yahoo Finance
+        public double Value { get; }
         public long Volume { get; }
 
         public ValueTick(Instant date, double price, long volume = 0)

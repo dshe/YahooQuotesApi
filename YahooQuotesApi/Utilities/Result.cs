@@ -71,7 +71,7 @@ namespace YahooQuotesApi
             }
         }
 
-        public static async Task<Result<T>> Of(Func<Task<T>> producer)
+        public static async Task<Result<T>> From(Func<Task<T>> producer)
         {
             try
             {

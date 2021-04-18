@@ -63,7 +63,7 @@ namespace YahooQuotesApi.Tests
                 var security = kvp.Value;
                 if (security is null)
                     throw new Exception($"Unknown Symbol: {symbol}.");
-                Assert.Equal(symbol, security.Symbol);
+                Assert.Equal(symbol, security.Symbol.Name);
                 Write($"Symbol:            {symbol}");
                 Write($"TimeZone:          {security.ExchangeTimezone}");
                 Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");

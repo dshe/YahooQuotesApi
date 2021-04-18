@@ -5,14 +5,14 @@ using System.Linq;
 
 namespace YahooQuotesApi
 {
-    internal enum TickListType
+    internal static class TickListArrayIndex
     {
-        Stock = 0, Currency, BaseCurrency, BaseStock
+        internal const int Stock = 0, Currency = 1, BaseCurrency = 2, BaseStock = 3;
     }
 
     internal static class HistoryBaseComposer
     {
-        internal static void Compose(List<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
+        internal static void Compose(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
         {
             foreach (var symbol in symbols)
             {
@@ -24,7 +24,7 @@ namespace YahooQuotesApi
                     securities.Add(symbol, security);
                 }
 
-                if (security is null) // invalid snapshot symbol
+                if (security is null) // unknown symbol
                     continue;
 
                 var historyBase = ComposeSnap(symbol, baseSymbol, securities);                    
@@ -39,16 +39,14 @@ namespace YahooQuotesApi
             var currency = symbol;
             if (symbol.IsStock)
             {
-                if (!securities.TryGetValue(symbol, out var stockSecurity))
+                if (!securities.TryGetValue(symbol, out var stockSecurity) || stockSecurity is null)
                     throw new InvalidOperationException(nameof(stockSecurity));
-                if (stockSecurity is null)
-                    throw new Exception("stockSecurity");
                 var res = stockSecurity.PriceHistoryBase;
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Not enough history items({res.Value.Length}).");
-                tickLists[(int)TickListType.Stock] = res.Value;
+                tickLists[TickListArrayIndex.Stock] = res.Value;
 
                 var c = stockSecurity.Currency;
                 if (string.IsNullOrEmpty(c))
@@ -71,7 +69,7 @@ namespace YahooQuotesApi
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Currency rate not enough history items({res.Value.Length}): '{currencyRate}'.");
-                tickLists[(int)TickListType.Currency] = res.Value;
+                tickLists[TickListArrayIndex.Currency] = res.Value;
             }
 
             var baseCurrency = baseSymbol;
@@ -86,7 +84,7 @@ namespace YahooQuotesApi
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Base stock security not enough history items({res.Value.Length}): '{baseSymbol}'.");
-                tickLists[(int)TickListType.BaseStock] = res.Value;
+                tickLists[TickListArrayIndex.BaseStock] = res.Value;
 
                 var c = baseStockSecurity.Currency;
                 if (string.IsNullOrEmpty(c))
@@ -110,7 +108,7 @@ namespace YahooQuotesApi
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Base currency rate not enough history items({res.Value.Length}): '{baseSymbol}'.");
-                tickLists[(int)TickListType.BaseCurrency] = res.Value;
+                tickLists[TickListArrayIndex.BaseCurrency] = res.Value;
             }
 
             var dateTicks = tickLists.FirstOrDefault(a => a != null && a.Any());
@@ -132,25 +130,25 @@ namespace YahooQuotesApi
                 .ToList();
 
             double GetRate(Instant date) => 1d
-                .MultiplyByPrice(date, TickListType.Stock, tickLists)
-                .DivideByPrice(date, TickListType.Currency, tickLists)
-                .MultiplyByPrice(date, TickListType.BaseCurrency, tickLists)
-                .DivideByPrice(date, TickListType.BaseStock, tickLists);
+                .MultiplyByPrice(date, TickListArrayIndex.Stock, tickLists)
+                .DivideByPrice(date, TickListArrayIndex.Currency, tickLists)
+                .MultiplyByPrice(date, TickListArrayIndex.BaseCurrency, tickLists)
+                .DivideByPrice(date, TickListArrayIndex.BaseStock, tickLists);
         }
     }
 
     internal static class SnapExtensions
     {
-        internal static double MultiplyByPrice(this double value, Instant date, TickListType type, ValueTick[][] tickLists)
+        internal static double MultiplyByPrice(this double value, Instant date, int index, ValueTick[][] tickLists)
         {
-            var ticks = tickLists[(int)type];
+            var ticks = tickLists[index];
             if (ticks != null && ticks.Any())
                 value *= ticks.InterpolateClose(date);
             return value;
         }
-        internal static double DivideByPrice(this double value, Instant date, TickListType type, ValueTick[][] tickLists)
+        internal static double DivideByPrice(this double value, Instant date, int index, ValueTick[][] tickLists)
         {
-            var ticks = tickLists[(int)type];
+            var ticks = tickLists[index];
             if (ticks != null && ticks.Any())
                 value /= ticks.InterpolateClose(date);
             return value;

@@ -1,9 +1,11 @@
-﻿using NodaTime.Text;
+﻿using NodaTime;
+using NodaTime.Text;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace YahooQuotesApi
 {
@@ -11,41 +13,53 @@ namespace YahooQuotesApi
     {
         private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
-        internal static ITick[] ToTicks<T>(this Stream stream) where T: ITick
+        internal static async Task<ITick[]> ToTicks<T>(this StreamReader streamReader) where T: ITick
         {
             var ticks = new HashSet<ITick>();
-            using var streamReader = new StreamReader(stream);
-            streamReader.ReadLine(); // read header
+            // read header
+            await streamReader.ReadLineAsync().ConfigureAwait(false); 
             while (!streamReader.EndOfStream)
             {
-                var row = streamReader.ReadLine().Split(',');
-                var tick = GetTick<T>(row);
+                var row = await streamReader.ReadLineAsync().ConfigureAwait(false);
+                var tick = GetTick<T>(row.Split(','));
                 if (tick == null)
                     continue;
                 if (!ticks.Add(tick))
                     throw new InvalidDataException("Duplicate tick date: " + tick.ToString() + ".");
             }
-            // sometimes ticks are returned in seemingly random order!
+            // occasionally, ticks are returned in seemingly random order!
             return ticks.OrderBy(x => x.Date).ToArray();
         }
 
-        private static ITick? GetTick<T>(string[] row) where T: ITick
+        private static ITick? GetTick<T>(string[] row) where T : ITick
         {
-            var result = DatePattern.Parse(row[0]);
-            var date = result.Success ? result.Value : throw new InvalidDataException($"Could not convert '{row[0]}' to LocalDate.", result.Exception);
-            var type = typeof(T);
-            if (type == typeof(CandleTick))
+            var date = row[0].ToDate();
+            if (typeof(T) == typeof(CandleTick))
             {
                 if (row[5] == "null")
                     return null;
                 return new CandleTick(date, row[1].ToDouble(), row[2].ToDouble(), row[3].ToDouble(),
                     row[4].ToDouble(), row[5].ToDouble(), row[6].ToLong());
             }
-            if (type == typeof(DividendTick))
+            if (typeof(T) == typeof(DividendTick))
                 return new DividendTick(date, row[1].ToDouble());
-            if (type == typeof(SplitTick))
-                return new SplitTick(date, row[1]);
+            if (typeof(T) == typeof(SplitTick))
+            {
+                var split = row[1].Split(new[] { ':', '/' });
+                if (split.Length != 2)
+                    throw new Exception("Split separator not found.");
+                return new SplitTick(date, split[1].ToDouble(), split[0].ToDouble());
+            }
             throw new InvalidOperationException("ticktype");
+        }
+
+        internal static LocalDate ToDate(this string str)
+        {
+            var result = DatePattern.Parse(str);
+            if (result.Success)
+                return result.Value;
+
+            throw new InvalidDataException($"Could not convert '{str}' to LocalDate.", result.Exception);
         }
 
         internal static double ToDouble(this string str)

@@ -32,8 +32,7 @@ namespace YahooQuotesApi.Tests
 
             var rate = "ABCDEF=X".ToSymbol();
             Assert.True(!rate.IsEmpty && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
-            Assert.Equal("ABC", rate.Currency);
-            Assert.Equal("DEF", rate.BaseCurrency);
+            Assert.Equal("DEF", rate.Currency);
 
             Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
             Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());

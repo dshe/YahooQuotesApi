@@ -12,9 +12,9 @@ namespace YahooQuotesApi
         private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
         private readonly List<TKey> Buffer = new List<TKey>();
         private readonly Cache<TKey, TResult> Cache;
-        private readonly Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
+        private readonly Func<HashSet<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
 
-        internal SerialProducerCache(IClock clock, Duration cacheDuration, Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
+        internal SerialProducerCache(IClock clock, Duration cacheDuration, Func<HashSet<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
         {
             Cache = new Cache<TKey, TResult>(clock, cacheDuration);
             Produce = produce;
@@ -33,10 +33,10 @@ namespace YahooQuotesApi
             await Semaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                List<TKey> items;
+                HashSet<TKey> items;
                 lock (Buffer)
                 {
-                    items = new List<TKey>(Buffer);
+                    items = new HashSet<TKey>(Buffer);
                     Buffer.Clear();
                 }
                 if (items.Any())

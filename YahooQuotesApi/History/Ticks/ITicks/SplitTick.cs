@@ -1,5 +1,4 @@
 ﻿using NodaTime;
-using System;
 
 namespace YahooQuotesApi
 {
@@ -9,16 +8,13 @@ namespace YahooQuotesApi
         public double BeforeSplit { get; }
         public double AfterSplit { get; }
 
-        internal SplitTick(LocalDate date, string str)
+        internal SplitTick(LocalDate date, double before, double after)
         {
             Date = date;
-            var split = str.Split(new[] { ':', '/' });
-            if (split.Length != 2)
-                throw new Exception("Split separator not found.");
-            AfterSplit = split[0].ToDouble();
-            BeforeSplit = split[1].ToDouble();
+            BeforeSplit = before;
+            AfterSplit = after;
         }
 
-        public override string ToString() => $"{Date}, {BeforeSplit}, {AfterSplit}";
+        public override string ToString() => $"{Date} {BeforeSplit}:{AfterSplit}";
     }
 }

@@ -32,27 +32,31 @@ namespace YahooQuotesApi
         public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
         {
             var historyBaseSymbol = Symbol.TryCreate(historyBase, true) ?? throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-            var syms = symbols.ToSymbols().Distinct();
+            var syms = symbols.ToSymbols();
             var securities = await GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
             return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
         }
 
+        public async Task<Security?> GetAsync(Symbol symbol, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default) =>
+            (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
+
         public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default)
         {
-            if (symbols.Any(s => s.IsEmpty))
+            var syms = symbols.ToHashSet();
+            if (syms.Any(s => s.IsEmpty))
                 throw new ArgumentException("Empty symbol.");
             if (historyBase.IsCurrencyRate)
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-            if (!historyBase.IsEmpty && symbols.Any(s => s.IsCurrencyRate))
-                throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrencyRate)}.");
-            if (historyBase.IsEmpty && symbols.Any(s => s.IsCurrency))
-                throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrency)}.");
+            if (!historyBase.IsEmpty && syms.Any(s => s.IsCurrencyRate))
+                throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
+            if (historyBase.IsEmpty && syms.Any(s => s.IsCurrency))
+                throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
             if (!historyBase.IsEmpty && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
             try
             {
-                var securities = await GetSecuritiesyAsync(symbols, historyFlags, historyBase, ct).ConfigureAwait(false);
-                return symbols.ToDictionary(symbol => symbol, symbol => securities[symbol]);
+                var securities = await GetSecuritiesyAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
+                return syms.ToDictionary(symbol => symbol, symbol => securities[symbol]);
             }
             catch (Exception e)
             {
@@ -61,7 +65,7 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
         {
             var stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToList();
             if (historyBase.IsStock && !stockAndCurrencyRateSymbols.Contains(historyBase))
@@ -74,10 +78,10 @@ namespace YahooQuotesApi
             if (!historyBase.IsEmpty)
                 await AddCurrencies(symbols.Where(s => s.IsCurrency), historyBase, securities, ct).ConfigureAwait(false);
 
-            await AddHistoryToSecurities(securities.Values.NotNull(), historyFlags, ct).ConfigureAwait(false);
+            await AddHistoryToSecurities(securities, historyFlags, ct).ConfigureAwait(false);
 
             if (!historyBase.IsEmpty)
-                HistoryBaseComposer.Compose(symbols.ToList(), historyBase, securities);
+                HistoryBaseComposer.Compose(symbols, historyBase, securities);
 
             return securities;
         }
@@ -111,17 +115,18 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task AddHistoryToSecurities(IEnumerable<Security> securities, HistoryFlags historyFlags, CancellationToken ct)
+        private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, HistoryFlags historyFlags, CancellationToken ct)
         {
+            var secs = securities.Values.NotNull().ToList();
             var dividendTasks = new List<(Security, Task<Result<DividendTick[]>>)>();
             if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
-                dividendTasks = securities.Select(v => (v, History.GetDividendsAsync(v.Symbol, ct))).ToList();
+                dividendTasks = secs.Select(v => (v, History.GetDividendsAsync(v.Symbol, ct))).ToList();
             var splitTasks = new List<(Security, Task<Result<SplitTick[]>>)>();
             if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
-                splitTasks = securities.Select(v => (v, History.GetSplitsAsync(v.Symbol, ct))).ToList();
+                splitTasks = secs.Select(v => (v, History.GetSplitsAsync(v.Symbol, ct))).ToList();
             var candleTasks = new List<(Security, Task<Result<CandleTick[]>>)>();
             if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
-                candleTasks = securities.Select(v => (v, History.GetCandlesAsync(v.Symbol, ct))).ToList();
+                candleTasks = secs.Select(v => (v, History.GetCandlesAsync(v.Symbol, ct))).ToList();
 
             foreach (var (security, task) in dividendTasks)
                 security.DividendHistory = await task.ConfigureAwait(false);
@@ -132,17 +137,16 @@ namespace YahooQuotesApi
             {
                 var result = await task.ConfigureAwait(false);
                 security.PriceHistory = result;
-                security.PriceHistoryBase = GetPriceHistoryBaseAsync(result, security);
+                security.PriceHistoryBase = GetPriceHistoryBase(result, security);
             }
-            return;
         }
 
-        private Result<ValueTick[]> GetPriceHistoryBaseAsync(Result<CandleTick[]> result, Security security)
+        private Result<ValueTick[]> GetPriceHistoryBase(Result<CandleTick[]> result, Security security)
         {
             if (result.HasError)
                 return Result<ValueTick[]>.Fail(result.Error);
             if (security.ExchangeTimezone == null)
-                return Result<ValueTick[]>.Fail("Exchange timezone not found: '{security.ExchangeTimezone}'.");
+                return Result<ValueTick[]>.Fail("Exchange timezone not found.");
             if (security.ExchangeCloseTime == default)
                 return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 
@@ -158,7 +162,7 @@ namespace YahooQuotesApi
                 if (snapTime == default)
                     Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
                 if (snapPrice == null)
-                    Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
+                    Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
                 Result<ValueTick[]>.Ok(ticks.ToArray());
             }
 

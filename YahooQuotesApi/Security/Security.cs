@@ -74,11 +74,12 @@ namespace YahooQuotesApi
                 }
                 logger.LogTrace($"Setting security property: {propertyInfo.Name} = {value}");
                 propertyInfo.SetValue(this, value);
+                Properties.Add(jName, value);
                 return;
             }
             var val = GetJsonPropertyValue(jproperty);
             logger.LogTrace($"Setting security other property: {jName} = {val}");
-            OtherProperties.Add(jName, val);
+            Properties.Add(jName, val);
         }
         private static object? GetJsonPropertValueOfType(JsonProperty jproperty, Type propertyType)
         {
@@ -117,6 +118,8 @@ namespace YahooQuotesApi
             }
             return value.GetRawText();
         }
+
+        public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
 
         public Decimal Ask { get; private set; }
         public Int64 AskSize { get; private set; }
@@ -213,6 +216,5 @@ namespace YahooQuotesApi
         public Decimal? TwoHundredDayAverageChange { get; private set; }
         public Decimal? TwoHundredDayAverageChangePercent { get; private set; }
         public Decimal? YtdReturn { get; private set; }
-        public Dictionary<string, object?> OtherProperties { get; } = new Dictionary<string, object?>();
     }
 }

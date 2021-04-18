@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NodaTime;
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -44,7 +45,7 @@ namespace YahooQuotesApi
             var key = $"{symbol},{type.Name},{frequency.Name()}";
             try
             {
-                var result = await Cache.Get(key, () => Produce<T>(symbol, frequency, ct)).ConfigureAwait(false);
+                var result = await Cache.Get(key, () => Produce<T>(symbol.Name, frequency, ct)).ConfigureAwait(false);
                 if (result.HasError)
                     return Result<T[]>.Fail(result.Error);
                 return result.Value.Cast<T>().ToArray().ToResult(); // returns a mutable shallow copy
@@ -55,6 +56,7 @@ namespace YahooQuotesApi
                 throw;
             }
         }
+
 
         private async Task<Result<ITick[]>> Produce<T>(string symbol, Frequency frequency, CancellationToken ct) where T: ITick
         {
@@ -85,8 +87,17 @@ namespace YahooQuotesApi
 
             response.EnsureSuccessStatusCode();
 
-            using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return Result<ITick[]>.From(() => stream.ToTicks<T>());
+            try
+            {
+                using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using var streamReader = new StreamReader(stream);
+                var ticks = await streamReader.ToTicks<T>().ConfigureAwait(false);
+                return Result<ITick[]>.Ok(ticks);
+            }
+            catch (Exception e)
+            {
+                return Result<ITick[]>.Fail($"{e.GetType().Name}: {e.Message}");
+            }
         }
     }
 }

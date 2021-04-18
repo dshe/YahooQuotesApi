@@ -35,7 +35,7 @@ namespace YahooQuotesApi
 
             return await Cache.Get(symbols.ToHashSet(), ct).ConfigureAwait(false);
         }
-        private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> Producer(HashSet<Symbol> symbols, CancellationToken ct)
         {
             var dict = symbols.ToDictionary(s => s, s => (Security?)null);
             if (!symbols.Any())
@@ -46,13 +46,13 @@ namespace YahooQuotesApi
                 var security = new Security(element, Logger);
                 var symbol = security.Symbol;
                 if (!dict.ContainsKey(symbol))
-                    throw new InvalidOperationException(symbol);
+                    throw new InvalidOperationException(symbol.Name);
                 dict[symbol] = security;
             }
             return dict;
         }
 
-        private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
+        private async Task<IEnumerable<JsonElement>> GetElements(HashSet<Symbol> symbols, CancellationToken ct)
         {
             // start tasks
             var tasks = GetUris(symbols).Select(u => MakeRequest(u, ct));
@@ -60,7 +60,7 @@ namespace YahooQuotesApi
             return responses.SelectMany(x => x).ToList();
         }
 
-        private static IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols)
+        private static IEnumerable<Uri> GetUris(HashSet<Symbol> symbols)
         {
             const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote";
 
@@ -69,7 +69,7 @@ namespace YahooQuotesApi
                 .Select(s => new Uri(s));
         }
 
-        private static List<List<string>> PartitionSymbols(IEnumerable<Symbol> symbols, int maxLength = 1000, int maxItems = 10000)
+        private static List<List<string>> PartitionSymbols(HashSet<Symbol> symbols, int maxLength = 1000, int maxItems = 10000)
         {
             int len = 0;
             var lists = new List<List<string>>();

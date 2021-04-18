@@ -15,16 +15,12 @@
     <Compile Remove="SnapshotTests.cs" />
     <Compile Remove="YahooCurrencyTests.cs" />
     <Compile Remove="~\AsyncCacheTest.cs" />
-    <Compile Remove="~\CurrencyCompare.cs" />
     <Compile Remove="~\CurrencyTests.cs" />
     <Compile Remove="~\Experimental.cs" />
     <Compile Remove="~\QuoteFieldWriter.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Tests\HistoryTests.cs" />
-    <None Include="Tests\HistoryBaseTests.cs" />
-    <None Include="~\CurrencyCompare.cs" />
     <None Include="~\CurrencyTests.cs" />
     <None Include="~\Experimental.cs" />
     <None Include="~\QuoteFieldWriter.cs" />

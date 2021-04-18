@@ -8,11 +8,11 @@ So to get the original value:
 float f = float.Parse("129.869995");
 decimal dec = new decimal(f);
 double d = Convert.ToDouble(dec);
-(tHis adjustment is not performed)
+(this adjustment is not performed)
 
 Yahoo Finance prices are adjusted for splits.
-Yahoo Finance Adjusted price is adjusted for dividends.
- */
+Yahoo Finance "Adjusted" price is adjusted for dividends.
+*/
 namespace YahooQuotesApi
 {
     public sealed class CandleTick : ITick
