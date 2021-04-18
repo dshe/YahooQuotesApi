@@ -49,8 +49,8 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
-Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory) ??
-    throw new ArgumentException("Unknown symbol.");
+Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory)
+    ?? throw new ArgumentException("Unknown symbol.");
 
 Assert.Equal("NasdaqGS", security.FullExchangeName);
 
