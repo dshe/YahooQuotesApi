@@ -183,7 +183,7 @@ namespace YahooQuotesApi
         public Int64 PreMarketTimeSeconds { get; private set; }
         public Decimal? PriceEpsCurrentYear { get; private set; }
         public Int64? PriceHint { get; private set; }
-        public Result<CandleTick[]> PriceHistory { get; internal set; } = Result<CandleTick[]>.Nothing();
+        public Result<PriceTick[]> PriceHistory { get; internal set; } = Result<PriceTick[]>.Nothing();
         public Result<ValueTick[]> PriceHistoryBase { get; internal set; } = Result<ValueTick[]>.Nothing();
         public Decimal? PriceToBook { get; private set; }
         public String QuoteSourceName { get; private set; } = "";

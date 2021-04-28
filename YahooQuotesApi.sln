@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionF
 		~local\notes.txt = ~local\notes.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YahooQuotesApi.Demo", "YahooQuotesApi.Demo\YahooQuotesApi.Demo.csproj", "{BD8B089B-1DE0-4C43-BE63-0263D94431CF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YahooQuotesApi.Demo", "YahooQuotesApi.Demo\YahooQuotesApi.Demo.csproj", "{BD8B089B-1DE0-4C43-BE63-0263D94431CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -14,8 +14,9 @@ namespace YahooQuotesApi
         private Duration HistoryCacheDuration = Duration.MaxValue;
         private Duration SnapshotCacheDuration = Duration.Zero;
         private bool NonAdjustedClose = false; // used for testing
-         
-        public YahooQuotesBuilder() : this(NullLogger.Instance) { }
+        private bool UseHttpV2 = false;
+
+    public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) : this(SystemClock.Instance, logger) { }
         internal YahooQuotesBuilder(IClock clock, ILogger logger)
         {
@@ -50,6 +51,12 @@ namespace YahooQuotesApi
             return this;
         }
 
+        public YahooQuotesBuilder UseHttpVersion2()
+        {
+            UseHttpV2 = true;
+            return this;
+        }
+
         public YahooQuotes Build()
         {
             return new YahooQuotes(
@@ -59,7 +66,8 @@ namespace YahooQuotesApi
                 HistoryStartDate,
                 HistoryFrequency,
                 HistoryCacheDuration,
-                NonAdjustedClose);
+                NonAdjustedClose,
+                UseHttpV2);
         }
     }
 }

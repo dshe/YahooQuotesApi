@@ -16,11 +16,13 @@ namespace YahooQuotesApi
         private string Crumb = "";
         private HttpClient? HttpClient;
         private bool reset = true;
+        private readonly bool UseHttpV2;
 
-        internal YahooHistoryRequester(ILogger logger, IHttpClientFactory httpClientFactory)
+        internal YahooHistoryRequester(ILogger logger, IHttpClientFactory httpClientFactory, bool useHttpV2)
         {
             Logger = logger;
             HttpClientFactory = httpClientFactory;
+            UseHttpV2 = useHttpV2;
         }
 
         internal async Task<HttpResponseMessage> Request(Uri uri, CancellationToken ct)
@@ -45,7 +47,10 @@ namespace YahooQuotesApi
                 var ub = new UriBuilder(uri);
                 ub.Query += $"&crumb={Crumb}";
 
-                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, ub.Uri) { Version = new Version(2, 0) };
+                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, ub.Uri);
+                if (UseHttpV2)
+                    request.Version = new Version(2, 0);
+
                 HttpResponseMessage response = await HttpClient!.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized && !retry)

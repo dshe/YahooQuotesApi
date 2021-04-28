@@ -34,11 +34,11 @@ namespace YahooQuotesApi
         private static ITick? GetTick<T>(string[] row) where T : ITick
         {
             var date = row[0].ToDate();
-            if (typeof(T) == typeof(CandleTick))
+            if (typeof(T) == typeof(PriceTick))
             {
                 if (row[5] == "null")
                     return null;
-                return new CandleTick(date, row[1].ToDouble(), row[2].ToDouble(), row[3].ToDouble(),
+                return new PriceTick(date, row[1].ToDouble(), row[2].ToDouble(), row[3].ToDouble(),
                     row[4].ToDouble(), row[5].ToDouble(), row[6].ToLong());
             }
             if (typeof(T) == typeof(DividendTick))

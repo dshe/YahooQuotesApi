@@ -47,9 +47,9 @@ namespace YahooQuotesApi.Tests
 
             Assert.Equal("NasdaqGS", security.FullExchangeName);
 
-            CandleTick[] priceHistory = security.PriceHistory.Value;
+            PriceTick[] priceHistory = security.PriceHistory.Value;
 
-            CandleTick tick = priceHistory[0];
+            PriceTick tick = priceHistory[0];
             Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
             Assert.Equal(160.62, tick.Close);
         }
@@ -70,7 +70,7 @@ namespace YahooQuotesApi.Tests
             Assert.Equal("USD", security.Currency);
             Assert.Equal("America/New_York", security.ExchangeTimezone?.Id);
 
-            CandleTick tick = security.PriceHistory.Value[0];
+            PriceTick tick = security.PriceHistory.Value[0];
             Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
             Assert.Equal(309.202, tick.Close); // in USD
 

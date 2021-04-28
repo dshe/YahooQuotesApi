@@ -19,29 +19,21 @@ namespace YahooQuotesApi
         private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
         private readonly YahooHistoryRequester YahooHistoryRequester;
 
-        internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory httpClientFactory, Instant start, Duration cacheDuration, Frequency frequency)
+        internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory httpClientFactory, Instant start, Duration cacheDuration, Frequency frequency, bool useHttpV2)
         {
             Logger = logger;
             Start = start;
             PriceHistoryFrequency = frequency;
-            YahooHistoryRequester = new YahooHistoryRequester(logger, httpClientFactory);
+            YahooHistoryRequester = new YahooHistoryRequester(logger, httpClientFactory, useHttpV2);
             Cache = new ParallelProducerCache<string, Result<ITick[]>>(clock, cacheDuration);
         }
 
-        internal async Task<Result<CandleTick[]>> GetCandlesAsync(Symbol symbol, CancellationToken ct = default) =>
-            await GetTicksAsync<CandleTick>(symbol, PriceHistoryFrequency, ct).ConfigureAwait(false);
-
-        internal async Task<Result<DividendTick[]>> GetDividendsAsync(Symbol symbol, CancellationToken ct = default) =>
-            await GetTicksAsync<DividendTick>(symbol, Frequency.Daily, ct).ConfigureAwait(false);
-
-        internal async Task<Result<SplitTick[]>> GetSplitsAsync(Symbol symbol, CancellationToken ct = default) =>
-            await GetTicksAsync<SplitTick>(symbol, Frequency.Daily, ct).ConfigureAwait(false);
-
-        private async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, Frequency frequency, CancellationToken ct) where T:ITick
+        internal async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, CancellationToken ct) where T:ITick
         {
             if (symbol.IsCurrency || symbol.IsEmpty)
                 throw new ArgumentException($"Invalid symbol: '{nameof(symbol)}'.");
             var type = typeof(T);
+            var frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
             var key = $"{symbol},{type.Name},{frequency.Name()}";
             try
             {
@@ -57,12 +49,11 @@ namespace YahooQuotesApi
             }
         }
 
-
         private async Task<Result<ITick[]>> Produce<T>(string symbol, Frequency frequency, CancellationToken ct) where T: ITick
         {
             var parm = typeof(T).Name switch
             {
-                nameof(CandleTick) => "history",
+                nameof(PriceTick) => "history",
                 nameof(DividendTick) => "div",
                 nameof(SplitTick) => "split",
                 _ => throw new Exception("type")
@@ -81,10 +72,8 @@ namespace YahooQuotesApi
             Logger.LogInformation(uri.ToString());
 
             using var response = await YahooHistoryRequester.Request(uri, ct).ConfigureAwait(false);
-
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return Result<ITick[]>.Fail($"History not found.");
-
             response.EnsureSuccessStatusCode();
 
             try

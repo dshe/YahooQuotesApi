@@ -15,7 +15,7 @@ Yahoo Finance "Adjusted" price is adjusted for dividends.
 */
 namespace YahooQuotesApi
 {
-    public sealed class CandleTick : ITick
+    public sealed class PriceTick : ITick
     {
         public LocalDate Date { get; }
         public double Open { get; }
@@ -25,7 +25,7 @@ namespace YahooQuotesApi
         public double AdjustedClose { get; }
         public long Volume { get; }
 
-        internal CandleTick(LocalDate date, double open, double high, double low, double close, double adjustedClose, long volume)
+        internal PriceTick(LocalDate date, double open, double high, double low, double close, double adjustedClose, long volume)
         {
             Date = date;
             Open = open;

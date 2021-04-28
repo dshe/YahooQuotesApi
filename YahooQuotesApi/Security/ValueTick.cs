@@ -11,7 +11,7 @@ namespace YahooQuotesApi
         public ValueTick(Instant date, double price, long volume = 0)
             => (Date, Value, Volume) = (date, price, volume);
 
-        public ValueTick(CandleTick tick, LocalTime close, DateTimeZone tz, bool useNonAdjustedClose)
+        public ValueTick(PriceTick tick, LocalTime close, DateTimeZone tz, bool useNonAdjustedClose)
         {
             Date = tick.Date.At(close).InZoneLeniently(tz).ToInstant();
             Value = useNonAdjustedClose ? tick.Close : tick.AdjustedClose;

@@ -7,6 +7,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
 // The pooled HttpMessageHandler instances results in CookieContainer objects being shared. 
@@ -17,7 +18,7 @@ namespace YahooQuotesApi
     {
         private readonly ServiceProvider ServiceProvider;
 
-        internal IHttpClientFactory Produce() =>
+        internal IHttpClientFactory Configure() =>
             ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
         internal HttpClientFactoryConfigurator(ILogger logger)
@@ -39,7 +40,7 @@ namespace YahooQuotesApi
                         logger.LogError($"Retry[{n}]: ({r.Result.StatusCode}) {r.Result.ReasonPhrase}");
                 });
 
-            var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(10); // Timeout for an individual try
+            var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(20); // Timeout for an individual try
 
             var circuitBreakerPolicy = HttpPolicyExtensions
                 .HandleTransientHttpError()
@@ -55,7 +56,7 @@ namespace YahooQuotesApi
                     },
                     onReset: ctx =>
                     {
-                        logger.LogError($"Circuit Resetting...");
+                        logger.LogWarning($"Circuit Resetting...");
                     });
 
 
@@ -63,20 +64,25 @@ namespace YahooQuotesApi
 
             .AddHttpClient("snapshot", client =>
             {
+                //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                //client.DefaultRequestVersion = new Version(2, 0);
             })
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                AllowAutoRedirect = false
+                AllowAutoRedirect = false,
+                //MaxConnectionsPerServer = 1 // The default: int.MaxValue
             })
+            //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
             .AddPolicyHandler(retryPolicy)
-            //.AddPolicyHandler(timeoutPolicy)
+            .AddPolicyHandler(timeoutPolicy)
             .AddPolicyHandler(circuitBreakerPolicy)
             .Services
 
             .AddHttpClient("history", client =>
             {
+                //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
             })
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
@@ -84,10 +90,11 @@ namespace YahooQuotesApi
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = false,
                 CookieContainer = new CookieContainer(),
-                //MaxConnectionsPerServer = 16 // The default is int.MaxValue
+                //MaxConnectionsPerServer = 1 // The default: int.MaxValue
             })
+            //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
             .AddPolicyHandler(retryPolicy)
-            //.AddPolicyHandler(timeoutPolicy)
+            .AddPolicyHandler(timeoutPolicy)
             .AddPolicyHandler(circuitBreakerPolicy)
             .Services
 

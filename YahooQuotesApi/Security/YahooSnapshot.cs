@@ -19,21 +19,23 @@ namespace YahooQuotesApi
         private readonly ILogger Logger;
         private readonly HttpClient HttpClient;
         private readonly SerialProducerCache<Symbol, Security?> Cache;
+        private readonly bool UseHttpV2;
 
-        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration)
+        internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration, bool useHttpV2)
         {
             Logger = logger;
             HttpClient = factory.CreateClient("snapshot");
             Cache = new SerialProducerCache<Symbol, Security?>(clock, cacheDuration, Producer);
+            UseHttpV2 = useHttpV2;
         }
 
-        internal async Task<Dictionary<Symbol, Security?>> GetAsync(List<Symbol> symbols, CancellationToken ct = default)
+        internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct = default)
         {
             var currency = symbols.FirstOrDefault(s => s.IsCurrency);
             if (currency != default)
                 throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
-            return await Cache.Get(symbols.ToHashSet(), ct).ConfigureAwait(false);
+            return await Cache.Get(symbols, ct).ConfigureAwait(false);
         }
         private async Task<Dictionary<Symbol, Security?>> Producer(HashSet<Symbol> symbols, CancellationToken ct)
         {
@@ -95,7 +97,10 @@ namespace YahooQuotesApi
         {
             Logger.LogInformation(uri.ToString());
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) };
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (UseHttpV2)
+                request.Version = new Version(2, 0);
+
             using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
