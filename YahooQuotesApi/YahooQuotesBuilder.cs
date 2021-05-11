@@ -16,7 +16,7 @@ namespace YahooQuotesApi
         private bool NonAdjustedClose = false; // used for testing
         private bool UseHttpV2 = false;
 
-    public YahooQuotesBuilder() : this(NullLogger.Instance) { }
+        public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) : this(SystemClock.Instance, logger) { }
         internal YahooQuotesBuilder(IClock clock, ILogger logger)
         {

@@ -53,8 +53,6 @@ namespace YahooQuotesApi
         public static Result<T> Fail(string error) => new Result<T>(error: error);
         public static Result<T> Nothing() => new Result<T>();
 
-        public static implicit operator bool(Result<T> result) => result.HasValue;
-
         public void Deconstruct(out T value, out string error) => (value, error) = (Value, Error);
 
         public override string ToString() => HasValue ? $"Value: {Value}" : $"Error: {Error}";

@@ -72,10 +72,11 @@ namespace YahooQuotesApi.Tests
                 .Build();
 
             var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory) ?? throw new ArgumentException();
-            var div = security.DividendHistory.Value.Single();
+            var dividends = security.DividendHistory.Value.ToList();
+            var dividend = dividends.First();
 
-            Assert.Equal(0.205, div.Dividend);
-            Assert.Equal(zdt.LocalDateTime.Date, div.Date);
+            Assert.Equal(0.205, dividend.Dividend);
+            Assert.Equal(zdt.LocalDateTime.Date, dividend.Date);
         }
 
         [Fact]

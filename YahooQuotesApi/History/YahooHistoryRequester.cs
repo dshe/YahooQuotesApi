@@ -67,7 +67,7 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task<(HttpClient,string)> Reset(CancellationToken ct)
+        private async Task<(HttpClient httpClient,string crumb)> Reset(CancellationToken ct)
         {
             Logger.LogInformation($"YahooHistory: obtaining crumb.");
             var httpClient = await CreateHttpClient(ct).ConfigureAwait(false);
