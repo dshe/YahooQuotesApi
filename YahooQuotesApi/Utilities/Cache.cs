@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace YahooQuotesApi
 {
-    internal class Cache<TKey, TResult>
+    internal class Cache<TKey, TResult> where TKey:notnull
     {
         private readonly IClock Clock;
         private readonly Duration CacheDuration;
-        private readonly Dictionary<TKey, (TResult result, Instant time)> Items = new Dictionary<TKey, (TResult, Instant)>();
+        private readonly Dictionary<TKey, (TResult result, Instant time)> Items = new();
 
         internal Cache(IClock clock, Duration cacheDuration)
         {

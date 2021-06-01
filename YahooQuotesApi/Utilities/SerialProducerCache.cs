@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi
 {
-    internal class SerialProducerCache<TKey, TResult>
+    internal class SerialProducerCache<TKey, TResult> where TKey:notnull
     {
-        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
-        private readonly List<TKey> Buffer = new List<TKey>();
+        private readonly SemaphoreSlim Semaphore = new(1, 1);
+        private readonly List<TKey> Buffer = new();
         private readonly Cache<TKey, TResult> Cache;
         private readonly Func<HashSet<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
 

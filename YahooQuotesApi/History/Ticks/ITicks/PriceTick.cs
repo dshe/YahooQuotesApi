@@ -17,24 +17,13 @@ namespace YahooQuotesApi
 {
     public sealed class PriceTick : ITick
     {
-        public LocalDate Date { get; }
-        public double Open { get; }
-        public double High { get; }
-        public double Low { get; }
-        public double Close { get; }
-        public double AdjustedClose { get; }
-        public long Volume { get; }
-
-        internal PriceTick(LocalDate date, double open, double high, double low, double close, double adjustedClose, long volume)
-        {
-            Date = date;
-            Open = open;
-            High = high;
-            Low  = low;
-            Close = close;
-            AdjustedClose = adjustedClose;
-            Volume = volume;
-        }
+        public LocalDate Date { get; init; }
+        public double Open { get; init; }
+        public double High { get; init; }
+        public double Low { get; init; }
+        public double Close { get; init; }
+        public double AdjustedClose { get; init; }
+        public long Volume { get; init; }
 
         public override string ToString() => $"{Date}, {Open}, {High}, {Low}, {Close}, {AdjustedClose}, {Volume}";
     }

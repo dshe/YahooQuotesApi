@@ -16,14 +16,14 @@ namespace YahooQuotesApi
         private readonly YahooHistory History;
         private readonly bool UseNonAdjustedClose;
 
-        internal YahooQuotes(IClock clock, ILogger logger, Duration snapshotCacheDuration, Instant historyStartDate, Frequency frequency, Duration historyCacheDuration, bool nonAdjustedClose, bool useHttpV2)
+        internal YahooQuotes(YahooQuotesBuilder builder)
         {
-            Logger = logger;
-            Clock = clock;
-            var httpFactory = new HttpClientFactoryConfigurator(logger).Configure();
-            Snapshot = new YahooSnapshot(clock, logger, httpFactory, snapshotCacheDuration, useHttpV2);
-            History = new YahooHistory(clock, logger, httpFactory, historyStartDate, historyCacheDuration, frequency, useHttpV2);
-            UseNonAdjustedClose = nonAdjustedClose;
+            Logger = builder.Logger;
+            Clock = builder.Clock;
+            var httpFactory = new HttpClientFactoryConfigurator(Logger).Configure();
+            Snapshot = new YahooSnapshot(Clock, Logger, httpFactory, builder.SnapshotCacheDuration, builder.UseHttpV2);
+            History = new YahooHistory(Clock, Logger, httpFactory, builder.HistoryStartDate, builder.HistoryCacheDuration, builder.HistoryFrequency, builder.UseHttpV2);
+            UseNonAdjustedClose = builder.NonAdjustedClose;
         }
 
         public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
@@ -146,8 +146,13 @@ namespace YahooQuotesApi
             if (security.ExchangeCloseTime == default)
                 return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 
-            var ticks = result.Value.Select(priceTick =>
-                new ValueTick(priceTick, security.ExchangeCloseTime, security.ExchangeTimezone!, UseNonAdjustedClose)).ToList();
+            var ticks = result.Value.Select(priceTick => new ValueTick
+            {
+                Date = priceTick.Date.At(security.ExchangeCloseTime).InZoneLeniently(security.ExchangeTimezone!).ToInstant(),
+                Value = UseNonAdjustedClose ? priceTick.Close : priceTick.AdjustedClose,
+                Volume = priceTick.Volume
+            }).ToList();
+
             if (!ticks.Any())
                 return Result<ValueTick[]>.Fail("No history available.");
 
@@ -187,7 +192,7 @@ namespace YahooQuotesApi
                 volume = 0;
             }
 
-            ticks.Add(new ValueTick(snapTimeInstant, Convert.ToDouble(snapPrice), volume.Value));
+            ticks.Add(new ValueTick { Date = snapTimeInstant, Value = Convert.ToDouble(snapPrice), Volume = volume.Value });
 
             // hist < snap < now
             return Result<ValueTick[]>.Ok(ticks.ToArray());

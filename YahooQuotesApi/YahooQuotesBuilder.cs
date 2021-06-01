@@ -7,14 +7,14 @@ namespace YahooQuotesApi
 {
     public sealed class YahooQuotesBuilder
     {
-        private readonly IClock Clock;
-        private readonly ILogger Logger;
-        private Instant HistoryStartDate = Instant.FromUtc(2020, 1, 1, 0, 0);
-        private Frequency HistoryFrequency = Frequency.Daily;
-        private Duration HistoryCacheDuration = Duration.MaxValue;
-        private Duration SnapshotCacheDuration = Duration.Zero;
-        private bool NonAdjustedClose = false; // used for testing
-        private bool UseHttpV2 = false;
+        internal readonly IClock Clock;
+        internal readonly ILogger Logger;
+        internal Instant HistoryStartDate = Instant.FromUtc(2020, 1, 1, 0, 0);
+        internal Frequency HistoryFrequency = Frequency.Daily;
+        internal Duration HistoryCacheDuration = Duration.MaxValue;
+        internal Duration SnapshotCacheDuration = Duration.Zero;
+        internal bool NonAdjustedClose = false; // used for testing
+        internal bool UseHttpV2 = false;
 
         public YahooQuotesBuilder() : this(NullLogger.Instance) { }
         public YahooQuotesBuilder(ILogger logger) : this(SystemClock.Instance, logger) { }
@@ -57,17 +57,6 @@ namespace YahooQuotesApi
             return this;
         }
 
-        public YahooQuotes Build()
-        {
-            return new YahooQuotes(
-                Clock,
-                Logger,
-                SnapshotCacheDuration,
-                HistoryStartDate,
-                HistoryFrequency,
-                HistoryCacheDuration,
-                NonAdjustedClose,
-                UseHttpV2);
-        }
+        public YahooQuotes Build() => new(this);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using MXLogger;
 using System;
 using Xunit.Abstractions;
 

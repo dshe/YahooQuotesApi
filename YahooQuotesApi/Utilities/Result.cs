@@ -5,9 +5,7 @@ namespace YahooQuotesApi
 {
     public sealed class Result<T>
     {
-#pragma warning disable CS8601 // Possible null reference assignment.
-        private readonly T value = default; // note that the default value of 'string' is null, not ""
-#pragma warning restore CS8601 // Possible null reference assignment.
+        private readonly T? value = default;
 
         private readonly string error = "";
         public bool HasValue { get; }
@@ -18,7 +16,7 @@ namespace YahooQuotesApi
         {
             get
             {
-                if (HasValue)
+                if (HasValue && value != null)
                     return value;
                 throw new InvalidOperationException("Result has no value.");
             }
@@ -38,6 +36,8 @@ namespace YahooQuotesApi
 
         private Result(T value)
         {
+            if (value == null)
+                return;
             this.value = value;
             HasValue = true;
         }
@@ -45,13 +45,13 @@ namespace YahooQuotesApi
         private Result(string error)
         {
             if (string.IsNullOrEmpty(error))
-                throw new ArgumentException(nameof(error));
+                throw new ArgumentException("invalid value", nameof(error));
             this.error = error;
         }
 
-        public static Result<T> Ok(T value) => new Result<T>(value: value);
-        public static Result<T> Fail(string error) => new Result<T>(error: error);
-        public static Result<T> Nothing() => new Result<T>();
+        public static Result<T> Ok(T value) => new(value: value);
+        public static Result<T> Fail(string error) => new(error: error);
+        public static Result<T> Nothing() => new();
 
         public void Deconstruct(out T value, out string error) => (value, error) = (Value, Error);
 

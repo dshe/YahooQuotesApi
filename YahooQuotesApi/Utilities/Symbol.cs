@@ -48,7 +48,7 @@ namespace YahooQuotesApi
                 int pos = Name.IndexOf('.');
                 if (pos == -1 || name.EndsWith("."))
                     return "";
-                return name.Substring(pos + 1);
+                return name[(pos + 1)..];
             }
         }
 
@@ -66,11 +66,11 @@ namespace YahooQuotesApi
                 throw new InvalidOperationException("Symbol is neither currency nor currency rate.");
             }
         }
-        public override bool Equals(object obj) => obj is Symbol symbol && string.Equals(name, symbol.name);
-        public bool Equals(Symbol other) => string.Equals(name, other.name);
+        public override bool Equals(object? obj) => obj is Symbol symbol && string.Equals(name, symbol.name);
+        public bool Equals(Symbol? other) => string.Equals(name, other?.name);
         public static bool operator ==(Symbol? left, Symbol? right) => Equals(left?.name, right?.name);
         public static bool operator !=(Symbol? left, Symbol? right) => !Equals(left?.name, right?.name);
-        public int CompareTo(Symbol other) => name.CompareTo(other.name);
+        public int CompareTo(Symbol? other) => name.CompareTo(other?.name);
         public override int GetHashCode() => 539060726 + EqualityComparer<string?>.Default.GetHashCode(name);
         public override string ToString() => name;
     }

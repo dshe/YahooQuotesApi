@@ -4,19 +4,9 @@ namespace YahooQuotesApi
 {
     public sealed class ValueTick
     {
-        public Instant Date { get; }
-        public double Value { get; }
-        public long Volume { get; }
-
-        public ValueTick(Instant date, double price, long volume = 0)
-            => (Date, Value, Volume) = (date, price, volume);
-
-        public ValueTick(PriceTick tick, LocalTime close, DateTimeZone tz, bool useNonAdjustedClose)
-        {
-            Date = tick.Date.At(close).InZoneLeniently(tz).ToInstant();
-            Value = useNonAdjustedClose ? tick.Close : tick.AdjustedClose;
-            Volume = tick.Volume;
-        }
+        public Instant Date { get; init; }
+        public double Value { get; init; }
+        public long Volume { get; init; } = 0;
 
         public override string ToString() => $"{Date}, {Value}, {Volume}";
     }

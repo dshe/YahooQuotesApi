@@ -6,14 +6,8 @@ namespace YahooQuotesApi
 {
     public sealed class DividendTick : ITick
     {
-        public LocalDate Date { get; }
-        public double Dividend { get; }
-
-        internal DividendTick(LocalDate date, double dividend)
-        {
-            Date = date;
-            Dividend = dividend;
-        }
+        public LocalDate Date { get; init; }
+        public double Dividend { get; init; }
 
         public override string ToString() => $"{Date}, {Dividend}";
     }

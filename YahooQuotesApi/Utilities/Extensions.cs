@@ -25,7 +25,8 @@ namespace YahooQuotesApi
         internal static string Name<T>(this T source) where T : Enum
         {
             string name = source.ToString();
-            if (typeof(T).GetMember(name).First().GetCustomAttribute(typeof(EnumMemberAttribute)) is EnumMemberAttribute attr && attr.IsValueSetExplicitly)
+            if (typeof(T).GetMember(name).First().GetCustomAttribute(typeof(EnumMemberAttribute)) is EnumMemberAttribute attr
+                && attr.IsValueSetExplicitly && attr.Value != null)
                 name = attr.Value;
             return name;
         }

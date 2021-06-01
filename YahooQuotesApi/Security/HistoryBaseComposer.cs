@@ -126,7 +126,7 @@ namespace YahooQuotesApi
                 .Select(tick => tick.Date)
                 .Select(date => (date, rate: GetRate(date)))
                 .Where(x => !double.IsNaN(x.rate))
-                .Select(x => new ValueTick(x.date, x.rate))
+                .Select(x => new ValueTick { Date = x.date, Value = x.rate })
                 .ToList();
 
             double GetRate(Instant date) => 1d
