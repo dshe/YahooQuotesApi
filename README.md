@@ -3,7 +3,7 @@
 **Yahoo Finance API to retrieve quote snapshots and historical quotes, dividends and splits**
 - supports **.NET 5.0**
 - supports HTTP/1.1 and HTTP/2
-- dependencies: System.Extensions.Http.Polly, System.Text.Json, NodaTime
+- dependencies: Polly, NodaTime
 - simple and intuitive API
 - fault-tolerant
 - tested
