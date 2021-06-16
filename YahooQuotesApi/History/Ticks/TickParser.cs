@@ -15,7 +15,7 @@ namespace YahooQuotesApi
 
         internal static async Task<ITick[]> ToTicks<T>(this StreamReader streamReader) where T: ITick
         {
-            var ticks = new HashSet<ITick>();
+            HashSet<ITick> ticks = new();
             // read header
             await streamReader.ReadLineAsync().ConfigureAwait(false); 
             while (!streamReader.EndOfStream)
@@ -35,7 +35,7 @@ namespace YahooQuotesApi
 
         private static ITick? GetTick<T>(string[] row) where T : ITick
         {
-            var date = row[0].ToDate();
+            LocalDate date = row[0].ToDate();
             if (typeof(T) == typeof(PriceTick))
             {
                 if (row[5] == "null")
@@ -55,7 +55,7 @@ namespace YahooQuotesApi
                 return new DividendTick { Date = date, Dividend = row[1].ToDouble() };
             if (typeof(T) == typeof(SplitTick))
             {
-                var split = row[1].Split(new[] { ':', '/' });
+                string[] split = row[1].Split(new[] { ':', '/' });
                 if (split.Length != 2)
                     throw new Exception("Split separator not found.");
                 return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
@@ -66,7 +66,7 @@ namespace YahooQuotesApi
 
         internal static LocalDate ToDate(this string str)
         {
-            var result = DatePattern.Parse(str);
+            ParseResult<LocalDate> result = DatePattern.Parse(str);
             if (result.Success)
                 return result.Value;
 

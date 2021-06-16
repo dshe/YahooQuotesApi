@@ -32,12 +32,12 @@ namespace YahooQuotesApi
         {
             if (symbol.IsCurrency || symbol.IsEmpty)
                 throw new ArgumentException($"Invalid symbol: '{nameof(symbol)}'.");
-            var type = typeof(T);
-            var frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
-            var key = $"{symbol},{type.Name},{frequency.Name()}";
+            Type type = typeof(T);
+            Frequency frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
+            string key = $"{symbol},{type.Name},{frequency.Name()}";
             try
             {
-                var result = await Cache.Get(key, () => Produce<T>(symbol.Name, frequency, ct)).ConfigureAwait(false);
+                Result<ITick[]> result = await Cache.Get(key, () => Produce<T>(symbol.Name, frequency, ct)).ConfigureAwait(false);
                 if (result.HasError)
                     return Result<T[]>.Fail(result.Error);
                 return result.Value.Cast<T>().ToArray().ToResult(); // returns a mutable shallow copy
@@ -51,7 +51,7 @@ namespace YahooQuotesApi
 
         private async Task<Result<ITick[]>> Produce<T>(string symbol, Frequency frequency, CancellationToken ct) where T: ITick
         {
-            var parm = typeof(T).Name switch
+            string parm = typeof(T).Name switch
             {
                 nameof(PriceTick) => "history",
                 nameof(DividendTick) => "div",
@@ -59,7 +59,7 @@ namespace YahooQuotesApi
                 _ => throw new Exception("type")
             };
 
-            var uri = new StringBuilder()
+            Uri uri = new StringBuilder()
                 .Append("https://query2.finance.yahoo.com/v7/finance/download/")
                 .Append(symbol)
                 .Append($"?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}")
@@ -71,16 +71,16 @@ namespace YahooQuotesApi
 
             Logger.LogInformation(uri.ToString());
 
-            using var response = await YahooHistoryRequester.Request(uri, ct).ConfigureAwait(false);
+            using HttpResponseMessage response = await YahooHistoryRequester.Request(uri, ct).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return Result<ITick[]>.Fail($"History not found.");
             response.EnsureSuccessStatusCode();
 
             try
             {
-                using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                using var streamReader = new StreamReader(stream);
-                var ticks = await streamReader.ToTicks<T>().ConfigureAwait(false);
+                using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using StreamReader streamReader = new(stream);
+                ITick[] ticks = await streamReader.ToTicks<T>().ConfigureAwait(false);
                 return Result<ITick[]>.Ok(ticks);
             }
             catch (Exception e)

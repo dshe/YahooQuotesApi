@@ -58,7 +58,7 @@ namespace YahooQuotesApi
         {
             // start tasks
             var tasks = GetUris(symbols).Select(u => MakeRequest(u, ct));
-            var responses = await Task.WhenAll(tasks).ConfigureAwait(false);
+            var responses = await TaskEx.WhenAll(tasks).ConfigureAwait(false);
             return responses.SelectMany(x => x).ToList();
         }
 

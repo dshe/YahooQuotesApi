@@ -12,7 +12,7 @@ namespace YahooQuotesApi
             if (symbol.IsCurrencyRate)
                 return new LocalTime(16, 0, 0);
 
-            var suffix = symbol.Suffix;
+            string suffix = symbol.Suffix;
 
             (int hour, int minute) = suffix switch
             {

@@ -12,7 +12,7 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly IHttpClientFactory HttpClientFactory;
-        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim Semaphore = new(1, 1);
         private string Crumb = "";
         private HttpClient? HttpClient;
         private bool reset = true;
@@ -44,10 +44,10 @@ namespace YahooQuotesApi
                     Semaphore.Release();
                 }
 
-                var ub = new UriBuilder(uri);
+                UriBuilder ub = new(uri);
                 ub.Query += $"&crumb={Crumb}";
 
-                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, ub.Uri);
+                using HttpRequestMessage request = new(HttpMethod.Get, ub.Uri);
                 if (UseHttpV2)
                     request.Version = new Version(2, 0);
 
@@ -70,12 +70,12 @@ namespace YahooQuotesApi
         private async Task<(HttpClient httpClient,string crumb)> Reset(CancellationToken ct)
         {
             Logger.LogInformation($"YahooHistory: obtaining crumb.");
-            var httpClient = await CreateHttpClient(ct).ConfigureAwait(false);
-            var uri = new Uri("https://query1.finance.yahoo.com/v1/test/getcrumb");
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0) };
+            HttpClient httpClient = await CreateHttpClient(ct).ConfigureAwait(false);
+            Uri uri = new("https://query1.finance.yahoo.com/v1/test/getcrumb");
+            using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = new Version(2, 0) };
             using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            var crumb = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             return (httpClient, crumb);
         }
 
@@ -85,11 +85,11 @@ namespace YahooQuotesApi
             for (int retryCount = 0; retryCount < MaxRetryCount; retryCount++)
             {
                 // HttpClientFactoryProducer is configured so that a new CookieContainer() is created for each new HttpClient created
-                var httpClient = HttpClientFactory.CreateClient("history");
+                HttpClient httpClient = HttpClientFactory.CreateClient("history");
 
                 // random query to avoid cached response and set new cookie
-                var uri = new Uri($"https://finance.yahoo.com?{Extensions.GetRandomString(8)}");
-                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = new Version(2, 0)};
+                Uri uri = new($"https://finance.yahoo.com?{Extensions.GetRandomString(8)}");
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = new Version(2, 0)};
                 using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode 

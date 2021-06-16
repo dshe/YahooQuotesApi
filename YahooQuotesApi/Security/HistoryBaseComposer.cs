@@ -27,7 +27,7 @@ namespace YahooQuotesApi
                 if (security is null) // unknown symbol
                     continue;
 
-                var historyBase = ComposeSnap(symbol, baseSymbol, securities);                    
+                Result<ValueTick[]> historyBase = ComposeSnap(symbol, baseSymbol, securities);                    
                 security.PriceHistoryBase = historyBase;
             }
         }
@@ -36,7 +36,7 @@ namespace YahooQuotesApi
         {
             var tickLists = new ValueTick[4][];
 
-            var currency = symbol;
+            Symbol? currency = symbol;
             if (symbol.IsStock)
             {
                 if (!securities.TryGetValue(symbol, out var stockSecurity) || stockSecurity is null)
