@@ -131,7 +131,7 @@ namespace YahooQuotesApi
             tasks.AddRange(splitJobs.Select(t => t.Item2));
             tasks.AddRange(priceJobs.Select(t => t.Item2));
 
-            await TaskEx.WhenAll(tasks).ConfigureAwait(false);
+            await TaskExt.WhenAll(tasks).ConfigureAwait(false);
 
             foreach (var (security, task) in dividendJobs)
                 security.DividendHistory = task.Result;

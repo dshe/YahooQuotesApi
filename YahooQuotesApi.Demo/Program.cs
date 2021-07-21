@@ -11,8 +11,6 @@ namespace YahooQuotesApi.Demo
     {
         static async Task Main()
         {
-            //ServicePointManager.DefaultConnectionLimit = Int32.MaxValue;
-
             var MyHost = new HostBuilder()
                 .ConfigureLogging((ctx, logging) => {
                     logging.SetMinimumLevel(LogLevel.Warning);

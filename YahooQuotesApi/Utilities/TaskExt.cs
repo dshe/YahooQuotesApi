@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi
 {
-    internal static class TaskEx
+    internal static class TaskExt
     {
         internal static async Task WhenAll(IEnumerable<Task> tasks)
         {
-            var allTasks = Task.WhenAll(tasks);
+
+            Task allTasks = Task.WhenAll(tasks);
 
             try
             {
@@ -26,7 +27,7 @@ namespace YahooQuotesApi
 
         internal static async Task<IEnumerable<T>> WhenAll<T>(IEnumerable<Task<T>> tasks)
         {
-            var allTasks = Task.WhenAll(tasks);
+            Task<T[]> allTasks = Task.WhenAll(tasks);
 
             try
             {

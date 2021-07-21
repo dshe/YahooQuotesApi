@@ -31,7 +31,7 @@ namespace YahooQuotesApi
 
         internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct = default)
         {
-            var currency = symbols.FirstOrDefault(s => s.IsCurrency);
+            Symbol? currency = symbols.FirstOrDefault(s => s.IsCurrency);
             if (currency != default)
                 throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
@@ -42,11 +42,11 @@ namespace YahooQuotesApi
             var dict = symbols.ToDictionary(s => s, s => (Security?)null);
             if (!symbols.Any())
                 return dict;
-            var elements = await GetElements(symbols, ct).ConfigureAwait(false);
-            foreach (var element in elements)
+            IEnumerable<JsonElement> elements = await GetElements(symbols, ct).ConfigureAwait(false);
+            foreach (JsonElement element in elements)
             {
-                var security = new Security(element, Logger);
-                var symbol = security.Symbol;
+                Security security = new(element, Logger);
+                Symbol symbol = security.Symbol;
                 if (!dict.ContainsKey(symbol))
                     throw new InvalidOperationException(symbol.Name);
                 dict[symbol] = security;
@@ -58,7 +58,7 @@ namespace YahooQuotesApi
         {
             // start tasks
             var tasks = GetUris(symbols).Select(u => MakeRequest(u, ct));
-            var responses = await TaskEx.WhenAll(tasks).ConfigureAwait(false);
+            var responses = await TaskExt.WhenAll(tasks).ConfigureAwait(false);
             return responses.SelectMany(x => x).ToList();
         }
 
@@ -74,13 +74,13 @@ namespace YahooQuotesApi
         private static List<List<string>> PartitionSymbols(HashSet<Symbol> symbols, int maxLength = 1000, int maxItems = 10000)
         {
             int len = 0;
-            var lists = new List<List<string>>();
-            var list = new List<string>();
+            List<List<string>> lists = new();
+            List<string> list = new();
             lists.Add(list);
 
-            foreach (var symbol in symbols)
+            foreach (Symbol symbol in symbols)
             {
-                var str = WebUtility.UrlEncode(symbol.Name); // just encode the symbols
+                string str = WebUtility.UrlEncode(symbol.Name); // just encode the symbols
                 if (len + str.Length > maxLength || list.Count == maxItems)
                 {
                     list = new List<string>();
@@ -104,15 +104,15 @@ namespace YahooQuotesApi
             using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 
-            var jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+            JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
             if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out var quoteResponse))
                 throw new InvalidDataException("quoteResponse");
             if (!quoteResponse.TryGetProperty("error", out var error))
                 throw new InvalidDataException("error");
-            var errorMessage = error.GetString();
-            if (errorMessage != default)
+            string? errorMessage = error.GetString();
+            if (errorMessage != null)
                 throw new InvalidDataException($"Error requesting YahooSnapshot: {errorMessage}.");
             if (!quoteResponse.TryGetProperty("result", out var result))
                 throw new InvalidDataException("result");

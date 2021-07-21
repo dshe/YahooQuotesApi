@@ -50,7 +50,7 @@ namespace YahooQuotesApi
 
         private void SetProperty(JsonProperty jproperty, ILogger logger)
         {
-            var jName = jproperty.Name switch
+            string jName = jproperty.Name switch
             {
                 "regularMarketTime" => "RegularMarketTimeSeconds",
                 "preMarketTime" => "PreMarketTimeSeconds",
@@ -62,7 +62,7 @@ namespace YahooQuotesApi
             PropertyInfo? propertyInfo = GetType().GetProperty(jName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
             if (propertyInfo != null)
             {
-                var value = GetJsonPropertValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new Exception();
+                object value = GetJsonPropertValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new Exception();
                 if (propertyInfo.Name == "Symbol")
                 {
                     var symbol = (string)value;
@@ -77,14 +77,14 @@ namespace YahooQuotesApi
                 Properties.Add(jName, value);
                 return;
             }
-            var val = GetJsonPropertyValue(jproperty);
+            object? val = GetJsonPropertyValue(jproperty);
             logger.LogTrace($"Setting security other property: {jName} = {val}");
             Properties.Add(jName, val);
         }
         private static object? GetJsonPropertValueOfType(JsonProperty jproperty, Type propertyType)
         {
-            var value = jproperty.Value;
-            var kind = value.ValueKind;
+            JsonElement value = jproperty.Value;
+            JsonValueKind kind = value.ValueKind;
             if (kind == JsonValueKind.String)
                 return value.GetString();
             if (kind == JsonValueKind.True || kind == JsonValueKind.False)
@@ -103,13 +103,13 @@ namespace YahooQuotesApi
 
         private static object? GetJsonPropertyValue(JsonProperty jproperty)
         {
-            var value = jproperty.Value;
-            var type = value.ValueKind;
-            if (type == JsonValueKind.String)
+            JsonElement value = jproperty.Value;
+            JsonValueKind kind = value.ValueKind;
+            if (kind == JsonValueKind.String)
                 return value.GetString();
-            if (type == JsonValueKind.True || type == JsonValueKind.False)
+            if (kind == JsonValueKind.True || kind == JsonValueKind.False)
                 return value.GetBoolean();
-            if (type == JsonValueKind.Number)
+            if (kind == JsonValueKind.Number)
             {
                 if (value.TryGetInt64(out var l))
                     return l;

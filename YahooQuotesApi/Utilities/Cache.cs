@@ -20,7 +20,7 @@ namespace YahooQuotesApi
         {
             lock (Items)
             {
-                var now = Clock.GetCurrentInstant();
+                Instant now = Clock.GetCurrentInstant();
                 foreach (var kvp in dict)
                     Items[kvp.Key] = (kvp.Value, now);
             }
@@ -31,7 +31,7 @@ namespace YahooQuotesApi
             results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
             lock (Items)
             {
-                var now = Clock.GetCurrentInstant();
+                Instant now = Clock.GetCurrentInstant();
                 foreach (var key in keys)
                 {
                     if (Items.TryGetValue(key, out (TResult value, Instant time) item)

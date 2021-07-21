@@ -61,7 +61,7 @@ namespace YahooQuotesApi
                 return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
 
             }
-            throw new InvalidOperationException("ticktype");
+            throw new InvalidOperationException("Tick type.");
         }
 
         internal static LocalDate ToDate(this string str)

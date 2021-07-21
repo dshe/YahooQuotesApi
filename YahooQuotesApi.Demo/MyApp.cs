@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using YahooQuotesApi;
 
 namespace YahooQuotesApi.Demo
 {
@@ -18,7 +17,8 @@ namespace YahooQuotesApi.Demo
         public MyApp(ILogger logger)
         {
             Logger = logger;
-            var start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(10));
+
+            Instant start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(10));
 
             YahooQuotes = new YahooQuotesBuilder(Logger)
                 .HistoryStarting(start)
@@ -29,7 +29,7 @@ namespace YahooQuotesApi.Demo
         {
             const string path = @"..\..\..\symbols.txt";
 
-            var symbols = File
+            List<Symbol> symbols = File
                 .ReadAllLines(path)
                 .Where(line => !line.StartsWith("#"))
                 .Take(number)
@@ -45,8 +45,9 @@ namespace YahooQuotesApi.Demo
             Logger.LogWarning($"Symbols total: {dict.Count}.");
             Logger.LogWarning($"Symbols not found: {dict.Where(x => x.Value is null).Count()}.");
 
-            var kvp = dict.Where(kv => kv.Value != null).Cast<KeyValuePair<string, Security>>();
-            var securities = kvp.Select(kv => kv.Value).ToList();
+            IEnumerable<KeyValuePair<string, Security>> kvp = dict.Where(kv => kv.Value != null).Cast<KeyValuePair<string, Security>>();
+            List<Security> securities = kvp.Select(kv => kv.Value).ToList();
+
             Logger.LogWarning($"Symbols found: {securities.Count}.");
 
             Logger.LogWarning($"Symbols no currency: {securities.Where(x => x.Currency == "").Count()}.");
@@ -71,7 +72,7 @@ namespace YahooQuotesApi.Demo
 
         private void LogUnique(IEnumerable<string> errors)
         {
-            var list = errors
+            List<string> list = errors
                 .OrderBy(x => x)
                 .Distinct()
                 .ToList();
@@ -82,16 +83,16 @@ namespace YahooQuotesApi.Demo
 
         public async Task Run(int number, HistoryFlags flags, string baseCurrency)
         {
-            var symbols = GetSymbols(number);
+            List<Symbol> symbols = GetSymbols(number);
 
-            var watch = new Stopwatch();
+            Stopwatch watch = new();
             watch.Start();
-            var securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
+            Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
             watch.Stop();
 
-            var n = securities.Values.Select(x => x).NotNull().Count();
-            var s = watch.Elapsed.TotalSeconds;
-            var rate = n / s;
+            int n = securities.Values.Select(x => x).NotNull().Count();
+            double s = watch.Elapsed.TotalSeconds;
+            double rate = n / s;
             Logger.LogWarning($"Rate = {n}/{s} = {rate}Hz");
 
             Analyze(securities);

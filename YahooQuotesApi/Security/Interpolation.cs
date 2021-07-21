@@ -18,30 +18,30 @@ namespace YahooQuotesApi
             if (list.Count < 2)
                 throw new ArgumentException(nameof(list));
 
-            var firstItem = list[0];
-            var firstDate = getDate(firstItem);
+            T firstItem = list[0];
+            Instant firstDate = getDate(firstItem);
             if (date <= firstDate) // not enough data
                 return firstDate - date <= PastLimit ? getValue(firstItem) : double.NaN;
 
-            var lastItem = list[list.Count - 1];
-            var lastDate = getDate(lastItem);
+            T lastItem = list[list.Count - 1];
+            Instant lastDate = getDate(lastItem);
             if (date >= lastDate)
                 return date - lastDate <= FutureLimit ? getValue(lastItem) : double.NaN;
 
-            var p = list.BinarySearch(date, x => getDate(x));
+            int p = list.BinarySearch(date, x => getDate(x));
 
             if (p >= 0) // found
                 return getValue(list[p]);
 
             // not found, use linear interpolation
             p = ~p; // ~p is next highest position in list
-            var next = list[p];
-            var prev = list[p - 1];
-            var t1 = getDate(prev);
-            var t2 = getDate(next);
-            var v1 = getValue(prev);
-            var v2 = getValue(next);
-            var rate = v1 + (date - t1) / (t2 - t1) * (v2 - v1);
+            T next = list[p];
+            T prev = list[p - 1];
+            Instant t1 = getDate(prev);
+            Instant t2 = getDate(next);
+            double v1 = getValue(prev);
+            double v2 = getValue(next);
+            double rate = v1 + (date - t1) / (t2 - t1) * (v2 - v1);
             return rate;
         }
 
@@ -49,12 +49,12 @@ namespace YahooQuotesApi
         {
             if (!list.Any())
                 throw new ArgumentException(nameof(list));
-            var low = 0;
-            var high = list.Count - 1;
+            int low = 0;
+            int high = list.Count - 1;
             while (low <= high)
             {
-                var mid = (high + low) >> 1;
-                var result = getComparable(list[mid]).CompareTo(searchValue);
+                int mid = (high + low) >> 1;
+                int result = getComparable(list[mid]).CompareTo(searchValue);
                 if (result == 0)
                     return mid;
                 if (result < 0)

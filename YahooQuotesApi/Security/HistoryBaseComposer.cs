@@ -14,7 +14,7 @@ namespace YahooQuotesApi
     {
         internal static void Compose(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
         {
-            foreach (var symbol in symbols)
+            foreach (Symbol symbol in symbols)
             {
                 if (!securities.TryGetValue(symbol, out var security))
                 {
@@ -34,21 +34,21 @@ namespace YahooQuotesApi
 
         private static Result<ValueTick[]> ComposeSnap(Symbol symbol, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
         {
-            var tickLists = new ValueTick[4][];
+            ValueTick[][] tickLists = new ValueTick[4][];
 
             Symbol? currency = symbol;
             if (symbol.IsStock)
             {
                 if (!securities.TryGetValue(symbol, out var stockSecurity) || stockSecurity is null)
                     throw new InvalidOperationException(nameof(stockSecurity));
-                var res = stockSecurity.PriceHistoryBase;
+                Result<ValueTick[]> res = stockSecurity.PriceHistoryBase;
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Not enough history items({res.Value.Length}).");
                 tickLists[TickListArrayIndex.Stock] = res.Value;
 
-                var c = stockSecurity.Currency;
+                string c = stockSecurity.Currency;
                 if (string.IsNullOrEmpty(c))
                     return Result<ValueTick[]>.Fail($"Security currency symbol not available.");
                 currency = Symbol.TryCreate(c + "=X");
@@ -57,14 +57,14 @@ namespace YahooQuotesApi
             }
             if (currency.Currency != "USD")
             {
-                var currencyRate = Symbol.TryCreate("USD" + currency);
+                Symbol? currencyRate = Symbol.TryCreate("USD" + currency);
                 if (currencyRate is null || !currencyRate.IsCurrencyRate)
                     return Result<ValueTick[]>.Fail($"Invalid security currency rate symbol format: '{currencyRate}'.");
                 if (!securities.TryGetValue(currencyRate, out var currencySecurity))
                     throw new InvalidOperationException(nameof(currencySecurity));
                 if (currencySecurity is null)
                     return Result<ValueTick[]>.Fail($"Currency rate not available: '{currencyRate}'.");
-                var res = currencySecurity.PriceHistoryBase;
+                Result<ValueTick[]> res = currencySecurity.PriceHistoryBase;
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
@@ -79,14 +79,14 @@ namespace YahooQuotesApi
                     throw new InvalidOperationException(nameof(baseStockSecurity));
                 if (baseStockSecurity is null)
                     return Result<ValueTick[]>.Fail($"Base stock security not available: '{baseSymbol}'.");
-                var res = baseStockSecurity.PriceHistoryBase;
+                Result<ValueTick[]> res = baseStockSecurity.PriceHistoryBase;
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
                     return Result<ValueTick[]>.Fail($"Base stock security not enough history items({res.Value.Length}): '{baseSymbol}'.");
                 tickLists[TickListArrayIndex.BaseStock] = res.Value;
 
-                var c = baseStockSecurity.Currency;
+                string c = baseStockSecurity.Currency;
                 if (string.IsNullOrEmpty(c))
                     return Result<ValueTick[]>.Fail($"Base security currency symbol not available.");
                 baseCurrency = Symbol.TryCreate(c + "=X");
@@ -95,7 +95,7 @@ namespace YahooQuotesApi
             }
             if (baseCurrency.Currency != "USD")
             {
-                var currencyRate = Symbol.TryCreate("USD" + baseCurrency);
+                Symbol? currencyRate = Symbol.TryCreate("USD" + baseCurrency);
                 if (currencyRate is null || !currencyRate.IsCurrencyRate)
                     return Result<ValueTick[]>.Fail($"Invalid base currency rate symbol: '{currencyRate}'.");
 
@@ -103,7 +103,7 @@ namespace YahooQuotesApi
                     throw new InvalidOperationException(nameof(baseCurrencySecurity));
                 if (baseCurrencySecurity is null)
                     return Result<ValueTick[]>.Fail($"Base currency rate not available: '{currencyRate}'.");
-                var res = baseCurrencySecurity.PriceHistoryBase;
+                Result<ValueTick[]> res = baseCurrencySecurity.PriceHistoryBase;
                 if (res.HasError)
                     return res;
                 if (res.Value.Length < 2)
@@ -111,7 +111,7 @@ namespace YahooQuotesApi
                 tickLists[TickListArrayIndex.BaseCurrency] = res.Value;
             }
 
-            var dateTicks = tickLists.FirstOrDefault(a => a != null && a.Any());
+            ValueTick[]? dateTicks = tickLists.FirstOrDefault(a => a != null && a.Any());
             if (dateTicks is null)
                 return Result<ValueTick[]>.Fail("No history ticks found.");
 
