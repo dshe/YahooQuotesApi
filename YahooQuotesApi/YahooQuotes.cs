@@ -93,7 +93,7 @@ namespace YahooQuotesApi
             HashSet<Symbol> currencySymbols = symbols.Where(s => s.IsCurrency).ToHashSet();
             if (historyBase.IsCurrency)
                 currencySymbols.Add(historyBase);
-            foreach (var security in securities.Values.NotNull())
+            foreach (Security security in securities.Values.NotNull())
             {
                 Symbol? currencySymbol = Symbol.TryCreate(security.Currency + "=X");
                 if (currencySymbol is null)
@@ -148,12 +148,14 @@ namespace YahooQuotesApi
         {
             if (result.HasError)
                 return Result<ValueTick[]>.Fail(result.Error);
+            if (!result.Value.Any())
+                return Result<ValueTick[]>.Fail("No history available.");
             if (security.ExchangeTimezone == null)
                 return Result<ValueTick[]>.Fail("Exchange timezone not found.");
             if (security.ExchangeCloseTime == default)
                 return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 
-            var ticks = result.Value.Select(priceTick => new ValueTick
+			List<ValueTick> ticks = result.Value.Select(priceTick => new ValueTick
             {
                 Date = priceTick.Date.At(security.ExchangeCloseTime).InZoneLeniently(security.ExchangeTimezone!).ToInstant(),
                 Value = UseNonAdjustedClose ? priceTick.Close : priceTick.AdjustedClose,
@@ -161,22 +163,29 @@ namespace YahooQuotesApi
             }).ToList();
 
             if (!ticks.Any())
-                return Result<ValueTick[]>.Fail("No history available.");
+                return Result<ValueTick[]>.Fail("No history available."); // ????????
 
+            return AddLatest(ticks, security);
+        }
+
+        private Result<ValueTick[]> AddLatest(List<ValueTick> ticks, Security security)
+        {
             ZonedDateTime snapTime = security.RegularMarketTime;
-            decimal? snapPrice = security.RegularMarketPrice;
-            if (snapTime == default || snapPrice is null)
+            if (snapTime == default)
             {
-                if (snapTime == default)
-                    Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
-                if (snapPrice == null)
-                    Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
-                Result<ValueTick[]>.Ok(ticks.ToArray());
+                Logger.LogDebug($"RegularMarketTime unavailable for symbol: {security.Symbol}.");
+                return Result<ValueTick[]>.Ok(ticks.ToArray());
+            }
+
+            decimal? snapPrice = security.RegularMarketPrice;
+            if (snapPrice is null)
+            {
+                Logger.LogDebug($"RegularMarketPrice unavailable for symbol: {security.Symbol}.");
+                return Result<ValueTick[]>.Ok(ticks.ToArray());
             }
 
             Instant now = Clock.GetCurrentInstant();
             Instant snapTimeInstant = snapTime.ToInstant();
-
             if (snapTimeInstant > now)
             {
                 Logger.LogWarning($"Snapshot date: {snapTimeInstant} which follows current date: {now} adjusted for symbol: {security.Symbol}.");
@@ -187,7 +196,7 @@ namespace YahooQuotesApi
             if (latestHistory.Date >= snapTimeInstant)
             {   // if history already includes snapshot, or exchange closes early
                 Logger.LogTrace($"History tick with date: {latestHistory.Date} follows snapshot date: {snapTimeInstant} removed for symbol: {security.Symbol}.");
-                ticks.Remove(latestHistory); 
+                ticks.Remove(latestHistory);
                 if (!ticks.Any() || ticks.Last().Date >= snapTimeInstant)
                     return Result<ValueTick[]>.Fail($"Invalid dates.");
             }
@@ -199,10 +208,12 @@ namespace YahooQuotesApi
                 volume = 0;
             }
 
-            ticks.Add(new ValueTick { Date = snapTimeInstant, Value = Convert.ToDouble(snapPrice), Volume = volume.Value });
-
-            // hist < snap < now
+            ticks.Add(new ValueTick { 
+                Date = snapTimeInstant,
+                Value = Convert.ToDouble(snapPrice),
+                Volume = volume.Value }); // hist < snap < now
             return Result<ValueTick[]>.Ok(ticks.ToArray());
         }
+
     }
 }

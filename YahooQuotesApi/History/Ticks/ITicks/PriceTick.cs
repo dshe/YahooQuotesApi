@@ -1,7 +1,7 @@
 ﻿using NodaTime;
 
 /* AAPL: Nasdaq Official Closing Price (NOCP)
-02/19/2021 $129.87 (official) => 129.869995 (text from Yahoo)
+02/19/2021 $129.87 (official) => 129.869995 (text from Yahoo Finance)
 It seems like the text values were floats converted to double.
 So to get the original value:
 
@@ -18,10 +18,14 @@ namespace YahooQuotesApi
     public sealed class PriceTick : ITick
     {
         public LocalDate Date { get; init; }
+
+        // All prices are adjusted for splits.
         public double Open { get; init; }
         public double High { get; init; }
         public double Low { get; init; }
         public double Close { get; init; }
+
+        // AdjustedClose is also adjusted for dividends.
         public double AdjustedClose { get; init; }
         public long Volume { get; init; }
 

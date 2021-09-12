@@ -32,7 +32,7 @@ namespace YahooQuotesApi
             lock (Items)
             {
                 Instant now = Clock.GetCurrentInstant();
-                foreach (var key in keys)
+                foreach (TKey key in keys)
                 {
                     if (Items.TryGetValue(key, out (TResult value, Instant time) item)
                         && (now - item.time <= CacheDuration || item.value is null))

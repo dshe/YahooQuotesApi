@@ -23,7 +23,7 @@ namespace YahooQuotesApi
                 string? row = await streamReader.ReadLineAsync().ConfigureAwait(false);
                 if (row == null)
                     continue;
-                var tick = GetTick<T>(row.Split(','));
+				ITick? tick = GetTick<T>(row.Split(','));
                 if (tick == null)
                     continue;
                 if (!ticks.Add(tick))
@@ -78,7 +78,7 @@ namespace YahooQuotesApi
             if (str == "null")
                 return 0d;
 
-            if (double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            if (double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
                 return result.RoundToSigFigs(7);
 
             throw new InvalidDataException($"Could not convert '{str}' to Double.");

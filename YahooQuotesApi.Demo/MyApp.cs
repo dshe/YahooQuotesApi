@@ -85,6 +85,9 @@ namespace YahooQuotesApi.Demo
         {
             List<Symbol> symbols = GetSymbols(number);
 
+            Console.WriteLine($"Loaded {symbols.Count} symbols.");
+            Console.WriteLine($"Retrieving values...");
+
             Stopwatch watch = new();
             watch.Start();
             Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);

@@ -16,7 +16,7 @@ namespace YahooQuotesApi
 
         internal Security(JsonElement jsonElement, ILogger logger)
         {
-            foreach (var jproperty in jsonElement.EnumerateObject())
+            foreach (JsonProperty jproperty in jsonElement.EnumerateObject())
                 SetProperty(jproperty, logger);
 
             if (Symbol.IsEmpty)
@@ -65,7 +65,7 @@ namespace YahooQuotesApi
                 object value = GetJsonPropertValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new Exception();
                 if (propertyInfo.Name == "Symbol")
                 {
-                    var symbol = (string)value;
+					string symbol = (string)value;
                     if (symbol.EndsWith("=X") && symbol.Length == 5)
                         symbol = "USD" + symbol;
                     logger.LogTrace($"Setting security property: Symbol = {symbol}");
@@ -111,9 +111,9 @@ namespace YahooQuotesApi
                 return value.GetBoolean();
             if (kind == JsonValueKind.Number)
             {
-                if (value.TryGetInt64(out var l))
+                if (value.TryGetInt64(out long l))
                     return l;
-                if (value.TryGetDouble(out var dbl))
+                if (value.TryGetDouble(out double dbl))
                     return dbl;
             }
             return value.GetRawText();

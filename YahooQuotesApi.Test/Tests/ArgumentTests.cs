@@ -21,7 +21,7 @@ namespace YahooQuotesApi.Tests
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
             _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync((string)null));
             _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(""));
-            _ = await YahooQuotes.GetAsync(new string[] { });
+            _ = await YahooQuotes.GetAsync(Array.Empty<string>());
             _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync((string[])null));
             _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync(new string[] { null }));
             _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(new string[] { "" }));

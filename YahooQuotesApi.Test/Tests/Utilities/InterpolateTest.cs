@@ -14,14 +14,14 @@ namespace YahooQuotesApi.Tests
         public void TestNotEnoughData()
         {
             var list = new List<ValueTick>();
-            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new Instant()));
+            Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
             list.Add(new ValueTick { Date = new Instant(), Value = 0 });
 
-            Assert.Throws<ArgumentException>(() => list.InterpolateClose(new Instant()));
+            Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
             list.Add(new ValueTick { Date = new Instant(), Value = 0 });
-            Assert.Equal(0, list.InterpolateClose(new Instant()));
+            Assert.Equal(0, list.InterpolateValue(new Instant()));
             list.Add(new ValueTick { Date = new Instant(), Value = 0 });
-            Assert.Equal(0, list.InterpolateClose(new Instant()));
+            Assert.Equal(0, list.InterpolateValue(new Instant()));
         }
 
         [Fact]
@@ -34,16 +34,16 @@ namespace YahooQuotesApi.Tests
             list.Add(new ValueTick { Date = date1, Value = 0 });
             list.Add(new ValueTick { Date = date2, Value = 0 });
 
-            var result = list.InterpolateClose(date1);
+            var result = list.InterpolateValue(date1);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateClose(date1.Plus(Duration.FromHours(-7 * 24)));
+            result = list.InterpolateValue(date1.Plus(Duration.FromHours(-7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
 
-            result = list.InterpolateClose(date2);
+            result = list.InterpolateValue(date2);
             Assert.False(double.IsNaN(result)); // enough data
 
-            result = list.InterpolateClose(date2.Plus(Duration.FromHours(7 * 24)));
+            result = list.InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
         }
 
@@ -57,10 +57,10 @@ namespace YahooQuotesApi.Tests
             list.Add(new ValueTick { Date = date1, Value = 1 });
             list.Add(new ValueTick { Date = date2, Value = 2 });
 
-            var result = list.InterpolateClose(date2.PlusTicks(1));
+            var result = list.InterpolateValue(date2.PlusTicks(1));
             Assert.Equal(2, result);
 
-            result = list.InterpolateClose(date2.Plus(Duration.FromHours(7 * 24)));
+            result = list.InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
             Assert.True(double.IsNaN(result)); // not enough data
         }
 
@@ -75,7 +75,7 @@ namespace YahooQuotesApi.Tests
             list.Add(new ValueTick { Date = date1, Value = 1 });
             list.Add(new ValueTick { Date = date2, Value = 2 });
 
-            var result = list.InterpolateClose(date1.Plus(Duration.FromDays(1)));
+            var result = list.InterpolateValue(date1.Plus(Duration.FromDays(1)));
             Assert.Equal(1.25, result);
         }
 

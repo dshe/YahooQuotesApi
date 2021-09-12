@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -93,7 +94,7 @@ namespace YahooQuotesApi
                 using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode 
-                    && response.Headers.TryGetValues("Set-Cookie", out var setCookies)
+                    && response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? setCookies)
                     && setCookies.Any())
                         return httpClient;
 

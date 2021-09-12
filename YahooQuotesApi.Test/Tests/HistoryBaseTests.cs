@@ -84,14 +84,14 @@ namespace YahooQuotesApi.Tests
                 {
                     var rateSymbol = "USD" + baseCurrency;
                     var sec = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
-                    var rate = sec.PriceHistoryBase.Value.InterpolateClose(date);
+                    var rate = sec.PriceHistoryBase.Value.InterpolateValue(date);
                     price *= rate;
                 }
                 if (currency != "USD=X")
                 {
                     var rateSymbol = "USD" + currency;
                     var sec = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
-                    var rate = sec.PriceHistoryBase.Value.InterpolateClose(date);
+                    var rate = sec.PriceHistoryBase.Value.InterpolateValue(date);
                     price /= rate;
                 }
             }
@@ -120,19 +120,19 @@ namespace YahooQuotesApi.Tests
                 {
                     var rateSymbol = "USD" + baseSecurityCurrency;
                     var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
-                    var rate = secCurrency.PriceHistoryBase.Value.InterpolateClose(date);
+                    var rate = secCurrency.PriceHistoryBase.Value.InterpolateValue(date);
                     price *= rate;
                 }
                 if (currency != "USD=X")
                 {
                     var rateSymbol = "USD" + currency;
                     var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
-                    var rate = secCurrency.PriceHistoryBase.Value.InterpolateClose(date);
+                    var rate = secCurrency.PriceHistoryBase.Value.InterpolateValue(date);
                     price /= rate;
                 }
             }
 
-            var rate3 = baseSecurity.PriceHistoryBase.Value.InterpolateClose(date);
+            var rate3 = baseSecurity.PriceHistoryBase.Value.InterpolateValue(date);
             price /= rate3;
 
             Assert.Equal(security.PriceHistoryBase.Value.First().Value, price, 6);
@@ -152,7 +152,7 @@ namespace YahooQuotesApi.Tests
             var symbol = $"{currencySymbol.Substring(0, 3)}{baseCurrencySymbol}";
             var security2 = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
             var priceHistory = security2.PriceHistoryBase.Value;
-            var rate = priceHistory.InterpolateClose(date);
+            var rate = priceHistory.InterpolateValue(date);
             Assert.Equal(rate, resultFound, 2);
         }
 
@@ -171,19 +171,19 @@ namespace YahooQuotesApi.Tests
             {
                 var rateSymbol = "USD" + symbol;
                 var sec1 = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
-                var rate = sec1.PriceHistoryBase.Value.InterpolateClose(date);
+                var rate = sec1.PriceHistoryBase.Value.InterpolateValue(date);
                 price /= rate;
             }
 
             var sec2 = await MyYahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
-            var value = sec2.PriceHistoryBase.Value.InterpolateClose(date);
+            var value = sec2.PriceHistoryBase.Value.InterpolateValue(date);
             price /= value;
 
             if (sec2.Currency != "USD")
             {
                 var rateSymbol = $"USD{sec2.Currency}=X";
                 var sec3 = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
-                var rate = sec3.PriceHistoryBase.Value.InterpolateClose(date);
+                var rate = sec3.PriceHistoryBase.Value.InterpolateValue(date);
                 price *= rate;
             }
 

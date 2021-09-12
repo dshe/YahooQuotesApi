@@ -26,10 +26,10 @@ namespace YahooQuotesApi
             (Task<TResult> task, Instant time) item;
             lock (TaskCache)
             {
-                var now = Clock.GetCurrentInstant();
+				Instant now = Clock.GetCurrentInstant();
                 if (!TaskCache.TryGetValue(key, out item) || now - item.time > Duration)
                 {
-                    var task = producer(); // start task
+					Task<TResult> task = producer(); // start task
                     item = (task, now);
                     TaskCache[key] = item;
                 }

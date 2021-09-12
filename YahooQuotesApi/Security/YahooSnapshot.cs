@@ -39,7 +39,7 @@ namespace YahooQuotesApi
         }
         private async Task<Dictionary<Symbol, Security?>> Producer(HashSet<Symbol> symbols, CancellationToken ct)
         {
-            var dict = symbols.ToDictionary(s => s, s => (Security?)null);
+			Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
             if (!symbols.Any())
                 return dict;
             IEnumerable<JsonElement> elements = await GetElements(symbols, ct).ConfigureAwait(false);
@@ -97,7 +97,7 @@ namespace YahooQuotesApi
         {
             Logger.LogInformation(uri.ToString());
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
+            using HttpRequestMessage request = new(HttpMethod.Get, uri);
             if (UseHttpV2)
                 request.Version = new Version(2, 0);
 
@@ -107,14 +107,14 @@ namespace YahooQuotesApi
             using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
-            if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out var quoteResponse))
+            if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))
                 throw new InvalidDataException("quoteResponse");
-            if (!quoteResponse.TryGetProperty("error", out var error))
+            if (!quoteResponse.TryGetProperty("error", out JsonElement error))
                 throw new InvalidDataException("error");
             string? errorMessage = error.GetString();
             if (errorMessage != null)
                 throw new InvalidDataException($"Error requesting YahooSnapshot: {errorMessage}.");
-            if (!quoteResponse.TryGetProperty("result", out var result))
+            if (!quoteResponse.TryGetProperty("result", out JsonElement result))
                 throw new InvalidDataException("result");
             return result.EnumerateArray().ToList();
         }

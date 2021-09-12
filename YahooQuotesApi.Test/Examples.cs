@@ -79,7 +79,7 @@ namespace YahooQuotesApi.Tests
 
             ValueTick tickBase = security.PriceHistoryBase.Value[0];
             Assert.Equal(instant, tickBase.Date);
-            Assert.Equal(33139, tickBase.Value, 0); // in JPY
-        }
+			Assert.Equal(33139, tickBase.Value, 0); // in JPY
+		}
     }
 }
