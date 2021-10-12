@@ -32,7 +32,7 @@ namespace YahooQuotesApi
         internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct = default)
         {
             Symbol? currency = symbols.FirstOrDefault(s => s.IsCurrency);
-            if (currency != default)
+            if (currency is not null)
                 throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
             return await Cache.Get(symbols, ct).ConfigureAwait(false);
@@ -58,7 +58,8 @@ namespace YahooQuotesApi
         {
             // start tasks
             var tasks = GetUris(symbols).Select(u => MakeRequest(u, ct));
-            var responses = await TaskExt.WhenAll(tasks).ConfigureAwait(false);
+            //var responses = await TaskExt.WhenAll(tasks).ConfigureAwait(false);
+            var responses = await Task.WhenAll(tasks).ConfigureAwait(false);
             return responses.SelectMany(x => x).ToList();
         }
 

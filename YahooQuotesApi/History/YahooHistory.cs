@@ -30,7 +30,7 @@ namespace YahooQuotesApi
 
         internal async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, CancellationToken ct) where T:ITick
         {
-            if (symbol.IsCurrency || symbol.IsEmpty)
+            if (symbol.IsCurrency)
                 throw new ArgumentException($"Invalid symbol: '{nameof(symbol)}'.");
             Type type = typeof(T);
             Frequency frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
@@ -78,7 +78,7 @@ namespace YahooQuotesApi
 
             try
             {
-                using Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
                 using StreamReader streamReader = new(stream);
                 ITick[] ticks = await streamReader.ToTicks<T>().ConfigureAwait(false);
                 return Result<ITick[]>.Ok(ticks);

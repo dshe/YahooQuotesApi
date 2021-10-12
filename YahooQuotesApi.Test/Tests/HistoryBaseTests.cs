@@ -20,7 +20,7 @@ namespace YahooQuotesApi.Tests
         }
 
         [Theory]
-        [InlineData("C", "", 0)]
+        [InlineData("C", null, 0)]
         [InlineData("C", "JPY=X", 0)]
         [InlineData("C", "X", 0)]
         /*

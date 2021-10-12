@@ -25,15 +25,27 @@ namespace YahooQuotesApi.Demo
                 .Build();
         }
 
-        private static List<Symbol> GetSymbols(int number)
+        private List<Symbol> GetSymbols(int number)
         {
             const string path = @"..\..\..\symbols.txt";
+
+            List<string> errors = File
+                .ReadAllLines(path)
+                .Where(line => !line.StartsWith("#"))
+                .Take(number)
+                .Where(t => Symbol.TryCreate(t) is null)
+                .ToList();
+
+            if (errors.Any())
+                Logger.LogWarning($"Invalid symbol names: {string.Join(", ", errors)}.");
 
             List<Symbol> symbols = File
                 .ReadAllLines(path)
                 .Where(line => !line.StartsWith("#"))
                 .Take(number)
-                .ToSymbols()
+                .Select(t => Symbol.TryCreate(t))
+                .Where(s => s is not null)
+                .Select(s => s!)
                 .OrderBy(x => x)
                 .ToList();
 

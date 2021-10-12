@@ -51,6 +51,7 @@ namespace YahooQuotesApi
                 string c = stockSecurity.Currency;
                 if (string.IsNullOrEmpty(c))
                     return Result<ValueTick[]>.Fail($"Security currency symbol not available.");
+
                 currency = Symbol.TryCreate(c + "=X");
                 if (currency is null)
                     return Result<ValueTick[]>.Fail($"Invalid security currency symbol format: '{c}'.");
@@ -72,7 +73,7 @@ namespace YahooQuotesApi
                 currencyTicks = res.Value;
             }
 
-            var baseCurrency = baseSymbol;
+			Symbol? baseCurrency = baseSymbol;
             if (baseSymbol.IsStock)
             {
                 if (!securities.TryGetValue(baseSymbol, out Security? baseStockSecurity))

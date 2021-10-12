@@ -19,8 +19,6 @@ namespace YahooQuotesApi
             foreach (JsonProperty jproperty in jsonElement.EnumerateObject())
                 SetProperty(jproperty, logger);
 
-            if (Symbol.IsEmpty)
-                throw new InvalidDataException("Security: no symbol.");
             if (Currency != "")
             {
                 if (Symbol.TryCreate(Currency) is null)
@@ -62,7 +60,7 @@ namespace YahooQuotesApi
             PropertyInfo? propertyInfo = GetType().GetProperty(jName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
             if (propertyInfo != null)
             {
-                object value = GetJsonPropertValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new Exception();
+                object value = GetJsonPropertyValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new Exception("GetJsonPropertyValueOfType");
                 if (propertyInfo.Name == "Symbol")
                 {
 					string symbol = (string)value;
@@ -81,7 +79,7 @@ namespace YahooQuotesApi
             logger.LogTrace($"Setting security other property: {jName} = {val}");
             Properties.Add(jName, val);
         }
-        private static object? GetJsonPropertValueOfType(JsonProperty jproperty, Type propertyType)
+        private static object? GetJsonPropertyValueOfType(JsonProperty jproperty, Type propertyType)
         {
             JsonElement value = jproperty.Value;
             JsonValueKind kind = value.ValueKind;
@@ -123,6 +121,7 @@ namespace YahooQuotesApi
 
         public Decimal Ask { get; private set; }
         public Int64 AskSize { get; private set; }
+        public String AverageAnalystRating { get; private set; } = "";
         public Int64 AverageDailyVolume10Day { get; private set; }
         public Int64 AverageDailyVolume3Month { get; private set; }
         public Decimal Bid { get; internal set; }
@@ -204,7 +203,7 @@ namespace YahooQuotesApi
         public String ShortName { get; private set; } = "";
         public Int64? SourceInterval { get; private set; }
         public Result<SplitTick[]> SplitHistory { get; internal set; } = Result<SplitTick[]>.Nothing();
-        public Symbol Symbol { get; private set; } = Symbol.Empty;
+        public Symbol Symbol { get; private set; } = Symbol.Uninitialized;
         public Boolean? Tradeable { get; private set; }
         public Decimal? TrailingAnnualDividendRate { get; private set; }
         public Decimal? TrailingAnnualDividendYield { get; private set; }

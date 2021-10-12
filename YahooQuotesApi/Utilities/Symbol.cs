@@ -4,13 +4,13 @@ using System.Linq;
 
 namespace YahooQuotesApi
 {
-    public sealed class Symbol : IComparable<Symbol>, IEquatable<Symbol>
+    public class Symbol : IComparable<Symbol>, IEquatable<Symbol>
     {
-        public static Symbol? TryCreate(string name, bool allowEmpty = false)
+        public static Symbol? TryCreate(string name)
         {
             if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (name == "" && !allowEmpty || name.Any(char.IsWhiteSpace))
+            if (name == "" || name.Any(char.IsWhiteSpace))
                 return null;
             if (name.Count(c => c == '.') > 1 || name.Count(c => c == '=') > 1)
                 return null;
@@ -25,10 +25,9 @@ namespace YahooQuotesApi
             return new Symbol(name);
         }
 
-        public static Symbol Empty { get; } = new Symbol("");
+        public static Symbol Uninitialized = new("");
 
         private Symbol(string name) => this.name = name;
-
         private readonly string name;
 
         public string Name
@@ -36,7 +35,7 @@ namespace YahooQuotesApi
             get
             {
                 if (name == "")
-                    throw new InvalidOperationException("Symbol is empty.");
+                    throw new InvalidOperationException("Uninitialized symbol.");
                 return name;
             }
         }
@@ -52,10 +51,9 @@ namespace YahooQuotesApi
             }
         }
 
-        public bool IsEmpty => name == "";
-        public bool IsCurrency => name != "" && name.Length == 5 && name.EndsWith("=X");
-        public bool IsCurrencyRate => name != "" && name.Length == 8 && name.EndsWith("=X");
-        public bool IsStock => name != "" && !name.EndsWith("=X");
+        public bool IsCurrency => name.Length == 5 && name.EndsWith("=X");
+        public bool IsCurrencyRate => name.Length == 8 && name.EndsWith("=X");
+        public bool IsStock => name.Length > 0 && !name.EndsWith("=X");
         public string Currency {
             get
             {
@@ -68,26 +66,20 @@ namespace YahooQuotesApi
         }
         public override bool Equals(object? obj) => obj is Symbol symbol && string.Equals(name, symbol.name);
         public bool Equals(Symbol? other) => string.Equals(name, other?.name);
-        public static bool operator ==(Symbol? left, Symbol? right) => Equals(left?.name, right?.name);
-        public static bool operator !=(Symbol? left, Symbol? right) => !Equals(left?.name, right?.name);
+        public static bool operator ==(Symbol left, Symbol right) => Equals(left.name, right.name);
+        public static bool operator !=(Symbol left, Symbol right) => !Equals(left.name, right.name);
         public int CompareTo(Symbol? other) => name.CompareTo(other?.name);
         public override int GetHashCode() => 539060726 + EqualityComparer<string?>.Default.GetHashCode(name);
         public override string ToString() => name;
-    }
+		public static bool operator <(Symbol left, Symbol right) => left.CompareTo(right) < 0;
+		public static bool operator <=(Symbol left, Symbol right) => left.CompareTo(right) <= 0;
+		public static bool operator >(Symbol left, Symbol right) => left.CompareTo(right) > 0;
+		public static bool operator >=(Symbol left, Symbol right) => left.CompareTo(right) >= 0;
+	}
 
     public static class SymbolExtensions
     {
-        public static Symbol ToSymbol(this string name, bool allowEmpty = false) =>
-            Symbol.TryCreate(name, allowEmpty) ?? throw new ArgumentException($"Invalid symbol format: '{name}'.");
-
-        public static List<Symbol> ToSymbols(this IEnumerable<string> names, bool allowEmpty = false)
-        {
-            if (names is null)
-                throw new ArgumentNullException(nameof(names));
-            return names
-                .Select(name => name.ToSymbol(allowEmpty))
-                .Distinct()
-                .ToList();
-        }
+        public static Symbol ToSymbol(this string name) => Symbol.TryCreate(name) ??
+            throw new ArgumentException($"Could not convert '{name}' to Symbol.");
     }
 }

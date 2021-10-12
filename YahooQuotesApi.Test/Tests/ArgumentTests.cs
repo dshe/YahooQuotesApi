@@ -22,7 +22,7 @@ namespace YahooQuotesApi.Tests
             _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync((string)null));
             _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(""));
             _ = await YahooQuotes.GetAsync(Array.Empty<string>());
-            _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync((string[])null));
+            //_ = await Assert.ThrowsAsync<NullReferenceException>(async () => await YahooQuotes.GetAsync((string[])null));
             _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync(new string[] { null }));
             _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(new string[] { "" }));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -63,7 +63,7 @@ namespace YahooQuotesApi.Tests
         public async Task IgnoreDuplicateTest()
         {
             var symbols = new[] { "C", "X", "MSFT", "C" }; ;
-            var ysecurities = await YahooQuotes.GetAsync(symbols) ?? throw new ArgumentException();
+            var ysecurities = await YahooQuotes.GetAsync(symbols);
             Assert.Equal(3, ysecurities.Count);
         }
 

@@ -13,11 +13,11 @@ namespace YahooQuotesApi
     {
         private readonly ILogger Logger;
         private readonly IHttpClientFactory HttpClientFactory;
+        private readonly bool UseHttpV2;
         private readonly SemaphoreSlim Semaphore = new(1, 1);
         private string Crumb = "";
         private HttpClient? HttpClient;
         private bool reset = true;
-        private readonly bool UseHttpV2;
 
         internal YahooHistoryRequester(ILogger logger, IHttpClientFactory httpClientFactory, bool useHttpV2)
         {

@@ -20,19 +20,17 @@ namespace YahooQuotesApi.Tests
             Assert.Throws<ArgumentException>(() => "with space".ToSymbol());
 
             Assert.Throws<ArgumentException>(() => "".ToSymbol());
-            var empty = Symbol.Empty;
-            Assert.True(empty.IsEmpty && !empty.IsStock && !empty.IsCurrency && !empty.IsCurrencyRate);
 
             var stock = "ABC".ToSymbol();
-            Assert.True(!stock.IsEmpty && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
+            Assert.True(stock is not null && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
 
             var currency = "ABC=X".ToSymbol();
-            Assert.True(!currency.IsEmpty && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
-            Assert.Equal("ABC", currency.Currency);
+            Assert.True(currency is not null && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
+            Assert.Equal("ABC", currency?.Currency);
 
             var rate = "ABCDEF=X".ToSymbol();
-            Assert.True(!rate.IsEmpty && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
-            Assert.Equal("DEF", rate.Currency);
+            Assert.True(rate is not null && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
+            Assert.Equal("DEF", rate?.Currency);
 
             Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
             Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
@@ -57,7 +55,7 @@ namespace YahooQuotesApi.Tests
             list.Sort();
             Assert.Equal("c1".ToSymbol(), list.First());
 
-            var dict = list.ToDictionary(x => x, x => x.Name);
+            var dict = list.ToDictionary(x => x, x => x?.Name);
             var result = dict["c2".ToSymbol()];
             Assert.Equal("C2", result);
         }
@@ -65,9 +63,9 @@ namespace YahooQuotesApi.Tests
         [Fact]
         public void TestDefaultEquality()
         {
-            var defaultSymbol = Symbol.TryCreate("", true);
-            Assert.True(defaultSymbol?.IsEmpty);
-            Assert.Equal(Symbol.Empty, defaultSymbol);
+            var defaultSymbol = Symbol.TryCreate("");
+            Assert.True(defaultSymbol is null);
+            //Assert.Equal(Symbol.Undefined, defaultSymbol);
         }
 
 
@@ -80,8 +78,8 @@ namespace YahooQuotesApi.Tests
         [InlineData("ABC.DEF", "DEF")]
         public void TestSuffix(string symbolName, string suffix)
         {
-            var symbol = Symbol.TryCreate(symbolName) ?? throw new Exception(symbolName);
-            Assert.Equal(suffix, symbol.Suffix);
+            var symbol = Symbol.TryCreate(symbolName);
+            Assert.Equal(suffix, symbol?.Suffix);
         }
     }
 }

@@ -27,32 +27,40 @@ namespace YahooQuotesApi
             UseNonAdjustedClose = builder.NonAdjustedClose;
         }
 
-        public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
+        public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string? historyBase = null, CancellationToken ct = default) =>
             (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
+        public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string? historyBase = null, CancellationToken ct = default)
         {
-            Symbol historyBaseSymbol = Symbol.TryCreate(historyBase, true) ?? throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-            List<Symbol> syms = symbols.ToSymbols();
+            List<Symbol> syms = symbols
+                .Select(s => Symbol.TryCreate(s) ?? throw new ArgumentException($"Could not convert symbol '{s}' to Symbol."))
+                .Distinct()
+                .ToList();
+
+            Symbol? historyBaseSymbol = null;
+            if (historyBase != null)
+            {
+                historyBaseSymbol = Symbol.TryCreate(historyBase);
+                if (historyBaseSymbol is null)
+                    throw new ArgumentException($"Invalid base symbol: {historyBase}.");
+            }
             Dictionary<Symbol,Security?> securities = await GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
             return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
         }
 
-        public async Task<Security?> GetAsync(Symbol symbol, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default) =>
+        public async Task<Security?> GetAsync(Symbol symbol, HistoryFlags historyFlags = HistoryFlags.None, Symbol? historyBase = null, CancellationToken ct = default) =>
             (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-        public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct = default)
+        public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags = HistoryFlags.None, Symbol? historyBase = null, CancellationToken ct = default)
         {
             HashSet<Symbol> syms = symbols.ToHashSet();
-            if (syms.Any(s => s.IsEmpty))
-                throw new ArgumentException("Empty symbol.");
-            if (historyBase.IsCurrencyRate)
+            if (historyBase is not null && historyBase.IsCurrencyRate)
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-            if (!historyBase.IsEmpty && syms.Any(s => s.IsCurrencyRate))
+            if (historyBase is not null && syms.Any(s => s.IsCurrencyRate))
                 throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
-            if (historyBase.IsEmpty && syms.Any(s => s.IsCurrency))
+            if (historyBase is null && syms.Any(s => s.IsCurrency))
                 throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
-            if (!historyBase.IsEmpty && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
+            if (historyBase is not null && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
             try
             {
@@ -66,22 +74,22 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol historyBase, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol? historyBase, CancellationToken ct)
         {
             HashSet<Symbol> stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToHashSet();
-            if (historyBase.IsStock)
+            if (historyBase is not null && historyBase.IsStock)
                 stockAndCurrencyRateSymbols.Add(historyBase);
             Dictionary<Symbol, Security?> securities = await Snapshot.GetAsync(stockAndCurrencyRateSymbols, ct).ConfigureAwait(false);
 
             if (historyFlags == HistoryFlags.None)
                 return securities;
 
-            if (!historyBase.IsEmpty)
+            if (historyBase is not null)
                 await AddCurrencies(symbols, historyBase, securities, ct).ConfigureAwait(false);
 
             await AddHistoryToSecurities(securities, historyFlags, ct).ConfigureAwait(false);
 
-            if (!historyBase.IsEmpty)
+            if (historyBase is not null)
                 HistoryBaseComposer.Compose(symbols, historyBase, securities);
 
             return securities;
@@ -95,11 +103,10 @@ namespace YahooQuotesApi
                 currencySymbols.Add(historyBase);
             foreach (Security security in securities.Values.NotNull())
             {
-                Symbol? currencySymbol = Symbol.TryCreate(security.Currency + "=X");
-                if (currencySymbol is null)
-                    security.PriceHistoryBase = Result<ValueTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
-                else
+                if (Symbol.TryCreate(security.Currency + "=X") is Symbol currencySymbol)
                     currencySymbols.Add(currencySymbol);
+                else
+                    security.PriceHistoryBase = Result<ValueTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
             }
 
             HashSet<Symbol> rateSymbols = currencySymbols
@@ -131,7 +138,7 @@ namespace YahooQuotesApi
             tasks.AddRange(splitJobs.Select(t => t.Item2));
             tasks.AddRange(priceJobs.Select(t => t.Item2));
 
-            await TaskExt.WhenAll(tasks).ConfigureAwait(false);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
 
             foreach (var (security, task) in dividendJobs)
                 security.DividendHistory = task.Result;
@@ -188,7 +195,8 @@ namespace YahooQuotesApi
             Instant snapTimeInstant = snapTime.ToInstant();
             if (snapTimeInstant > now)
             {
-                Logger.LogWarning($"Snapshot date: {snapTimeInstant} which follows current date: {now} adjusted for symbol: {security.Symbol}.");
+                if ((snapTimeInstant - now) > Duration.FromSeconds(10))
+                    Logger.LogWarning($"Snapshot date: {snapTimeInstant} which follows current date: {now} adjusted for symbol: {security.Symbol}.");
                 snapTimeInstant = now;
             }
 
@@ -214,6 +222,5 @@ namespace YahooQuotesApi
                 Volume = volume.Value }); // hist < snap < now
             return Result<ValueTick[]>.Ok(ticks.ToArray());
         }
-
     }
 }
