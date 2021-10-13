@@ -21,14 +21,14 @@ namespace YahooQuotesApi.Tests
 
             Assert.Throws<ArgumentException>(() => "".ToSymbol());
 
-            var stock = "ABC".ToSymbol();
+			Symbol stock = "ABC".ToSymbol();
             Assert.True(stock is not null && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
 
-            var currency = "ABC=X".ToSymbol();
+            Symbol currency = "ABC=X".ToSymbol();
             Assert.True(currency is not null && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
             Assert.Equal("ABC", currency?.Currency);
 
-            var rate = "ABCDEF=X".ToSymbol();
+            Symbol rate = "ABCDEF=X".ToSymbol();
             Assert.True(rate is not null && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
             Assert.Equal("DEF", rate?.Currency);
 

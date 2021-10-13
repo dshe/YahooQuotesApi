@@ -203,7 +203,7 @@ namespace YahooQuotesApi
         public String ShortName { get; private set; } = "";
         public Int64? SourceInterval { get; private set; }
         public Result<SplitTick[]> SplitHistory { get; internal set; } = Result<SplitTick[]>.Nothing();
-        public Symbol Symbol { get; private set; } = Symbol.Uninitialized;
+        public Symbol Symbol { get; private set; } = Symbol.Undefined; // will be set in constructor
         public Boolean? Tradeable { get; private set; }
         public Decimal? TrailingAnnualDividendRate { get; private set; }
         public Decimal? TrailingAnnualDividendYield { get; private set; }

@@ -115,12 +115,12 @@ namespace YahooQuotesApi
                 .Cast<Symbol>()
                 .ToHashSet();
 
-            if (rateSymbols.Any())
-            {
-                Dictionary<Symbol, Security?> currencyRateSecurities = await Snapshot.GetAsync(rateSymbols, ct).ConfigureAwait(false);
-                foreach (var security in currencyRateSecurities)
-                    securities[security.Key] = security.Value; // long symbol
-            }
+            if (!rateSymbols.Any())
+                return;
+
+            Dictionary<Symbol, Security?> currencyRateSecurities = await Snapshot.GetAsync(rateSymbols, ct).ConfigureAwait(false);
+            foreach (var security in currencyRateSecurities)
+                securities[security.Key] = security.Value; // long symbol
         }
 
         private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, HistoryFlags historyFlags, CancellationToken ct)

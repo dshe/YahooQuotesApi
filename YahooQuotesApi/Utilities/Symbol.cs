@@ -25,7 +25,7 @@ namespace YahooQuotesApi
             return new Symbol(name);
         }
 
-        public static Symbol Uninitialized = new("");
+        public static readonly Symbol Undefined = new("");
 
         private Symbol(string name) => this.name = name;
         private readonly string name;
@@ -35,7 +35,7 @@ namespace YahooQuotesApi
             get
             {
                 if (name == "")
-                    throw new InvalidOperationException("Uninitialized symbol.");
+                    throw new InvalidOperationException("Undefined symbol.");
                 return name;
             }
         }
