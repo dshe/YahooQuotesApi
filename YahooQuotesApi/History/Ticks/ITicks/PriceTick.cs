@@ -25,7 +25,7 @@ namespace YahooQuotesApi
         public double Low { get; init; }
         public double Close { get; init; }
 
-        // AdjustedClose is also adjusted for dividends.
+        // AdjustedClose is adjusted for splits and dividends.
         public double AdjustedClose { get; init; }
         public long Volume { get; init; }
 

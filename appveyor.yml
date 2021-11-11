@@ -1,8 +1,8 @@
 environment:
-  base_version: '4.1.2'
+  base_version: '5.0.0'
   version_suffix: ''
 version: $(base_version).{build}
-image: Visual Studio 2019
+image: Visual Studio 2022
 configuration: Release
 dotnet_csproj:
   patch: true

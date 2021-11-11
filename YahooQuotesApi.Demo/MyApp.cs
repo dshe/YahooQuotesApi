@@ -18,11 +18,31 @@ namespace YahooQuotesApi.Demo
         {
             Logger = logger;
 
-            Instant start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(10));
+            Instant start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(30));
 
             YahooQuotes = new YahooQuotesBuilder(Logger)
                 .HistoryStarting(start)
                 .Build();
+        }
+
+        public async Task Run(int number, HistoryFlags flags, string baseCurrency)
+        {
+            List<Symbol> symbols = GetSymbols(number);
+
+            Console.WriteLine($"Loaded {symbols.Count} symbols.");
+            Console.WriteLine($"Retrieving values...");
+
+            Stopwatch watch = new();
+            watch.Start();
+            Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
+            watch.Stop();
+
+            int n = securities.Values.Select(x => x).NotNull().Count();
+            double s = watch.Elapsed.TotalSeconds;
+            double rate = n / s;
+            Logger.LogWarning($"Rate = {n}/{s} = {rate}Hz");
+
+            Analyze(securities);
         }
 
         private List<Symbol> GetSymbols(int number)
@@ -93,24 +113,5 @@ namespace YahooQuotesApi.Demo
                 Logger.LogError($"Unique error: {error}");
         }
 
-        public async Task Run(int number, HistoryFlags flags, string baseCurrency)
-        {
-            List<Symbol> symbols = GetSymbols(number);
-
-            Console.WriteLine($"Loaded {symbols.Count} symbols.");
-            Console.WriteLine($"Retrieving values...");
-
-            Stopwatch watch = new();
-            watch.Start();
-            Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
-            watch.Stop();
-
-            int n = securities.Values.Select(x => x).NotNull().Count();
-            double s = watch.Elapsed.TotalSeconds;
-            double rate = n / s;
-            Logger.LogWarning($"Rate = {n}/{s} = {rate}Hz");
-
-            Analyze(securities);
-        }
     }
 }

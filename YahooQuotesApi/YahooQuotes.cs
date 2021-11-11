@@ -38,7 +38,7 @@ namespace YahooQuotesApi
                 .ToList();
 
             Symbol? historyBaseSymbol = null;
-            if (historyBase != null)
+            if (!string.IsNullOrEmpty(historyBase))
             {
                 historyBaseSymbol = Symbol.TryCreate(historyBase);
                 if (historyBaseSymbol is null)
@@ -64,7 +64,7 @@ namespace YahooQuotesApi
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
             try
             {
-                Dictionary<Symbol, Security?> securities = await GetSecuritiesyAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
+                Dictionary<Symbol, Security?> securities = await GetSecuritiesAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
                 return syms.ToDictionary(symbol => symbol, symbol => securities[symbol]);
             }
             catch (Exception e)
@@ -74,7 +74,7 @@ namespace YahooQuotesApi
             }
         }
 
-        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesyAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol? historyBase, CancellationToken ct)
+        private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol? historyBase, CancellationToken ct)
         {
             HashSet<Symbol> stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToHashSet();
             if (historyBase is not null && historyBase.IsStock)
@@ -126,29 +126,35 @@ namespace YahooQuotesApi
         private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, HistoryFlags historyFlags, CancellationToken ct)
         {
             List<Security> secs = securities.Values.NotNull().ToList();
-            var dividendJobs = secs.Where(_ => historyFlags.HasFlag(HistoryFlags.DividendHistory))
-                .Select(sec => (sec, History.GetTicksAsync<DividendTick>(sec.Symbol, ct))).ToList();
-            var splitJobs = secs.Where(_ => historyFlags.HasFlag(HistoryFlags.SplitHistory))
-                .Select(sec => (sec, History.GetTicksAsync<SplitTick>(sec.Symbol, ct))).ToList();
-            var priceJobs = secs.Where(_ => historyFlags.HasFlag(HistoryFlags.PriceHistory))
-                .Select(sec => (sec, History.GetTicksAsync<PriceTick>(sec.Symbol, ct))).ToList();
 
             List<Task> tasks = new();
-            tasks.AddRange(dividendJobs.Select(t => t.Item2));
-            tasks.AddRange(splitJobs.Select(t => t.Item2));
-            tasks.AddRange(priceJobs.Select(t => t.Item2));
+
+            ParallelOptions parallelOptions = new()
+            {
+                MaxDegreeOfParallelism = 16,
+                CancellationToken = ct
+            };
+
+            if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
+            {
+                tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
+                {
+                    sec.PriceHistory = await History.GetTicksAsync<PriceTick>(sec.Symbol, ct).ConfigureAwait(false);
+                    sec.PriceHistoryBase = GetPriceHistoryBase(sec.PriceHistory, sec);
+                }));
+            }
+            if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
+            {
+                tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
+                     sec.DividendHistory = await History.GetTicksAsync<DividendTick>(sec.Symbol, ct).ConfigureAwait(false)));
+            }
+            if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
+            {
+                tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
+                     sec.SplitHistory = await History.GetTicksAsync<SplitTick>(sec.Symbol, ct).ConfigureAwait(false)));
+            }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
-
-            foreach (var (security, task) in dividendJobs)
-                security.DividendHistory = task.Result;
-            foreach (var (security, task) in splitJobs)
-                security.SplitHistory = task.Result;
-            foreach (var (security, task) in priceJobs)
-            {
-                security.PriceHistory = task.Result;
-                security.PriceHistoryBase = GetPriceHistoryBase(task.Result, security);
-            }
         }
 
         private Result<ValueTick[]> GetPriceHistoryBase(Result<PriceTick[]> result, Security security)

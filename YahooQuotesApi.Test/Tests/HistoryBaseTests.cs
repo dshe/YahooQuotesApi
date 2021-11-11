@@ -149,7 +149,7 @@ namespace YahooQuotesApi.Tests
             var date = security.PriceHistoryBase.Value.First().Date;
             var resultFound = security.PriceHistoryBase.Value.First().Value;
 
-            var symbol = $"{currencySymbol.Substring(0, 3)}{baseCurrencySymbol}";
+            var symbol = $"{currencySymbol[..3]}{baseCurrencySymbol}";
             var security2 = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
             var priceHistory = security2.PriceHistoryBase.Value;
             var rate = priceHistory.InterpolateValue(date);

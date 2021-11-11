@@ -1,9 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace YahooQuotesApi.Demo
@@ -22,8 +18,6 @@ namespace YahooQuotesApi.Demo
 
             var myApp = new MyApp(logger);
 
-            //await myApp.Run(1, HistoryFlags.None, "");
-            //await myApp.Run(2, HistoryFlags.All, "");
             await myApp.Run(100, HistoryFlags.All, "JPY=X");
             //await myApp.Run(1000, HistoryFlags.None, "");
 

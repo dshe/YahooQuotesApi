@@ -16,7 +16,7 @@ namespace YahooQuotesApi
         private static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
         {
             if (list.Count < 2)
-                throw new ArgumentException(nameof(list));
+                throw new ArgumentException("Not enough items.", nameof(list));
 
             T firstItem = list[0];
             Instant firstDate = getDate(firstItem);
@@ -48,7 +48,7 @@ namespace YahooQuotesApi
         internal static int BinarySearch<T>(this IReadOnlyList<T> list, IComparable searchValue, Func<T, IComparable> getComparable)
         {
             if (!list.Any())
-                throw new ArgumentException(nameof(list));
+                throw new ArgumentException("No items.", nameof(list));
             int low = 0;
             int high = list.Count - 1;
             while (low <= high)

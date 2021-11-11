@@ -9,7 +9,7 @@ namespace YahooQuotesApi
     internal static class Extensions
     {
         internal static string GetRandomString(int length) =>
-            Guid.NewGuid().ToString().Substring(0, length);
+            Guid.NewGuid().ToString()[..length];
 
         internal static string ToPascal(this string source)
         {

@@ -22,7 +22,7 @@ namespace YahooQuotesApi
             if (Currency != "")
             {
                 if (Symbol.TryCreate(Currency) is null)
-                    logger.LogWarning($"Invalid currency value: '{Currency}'.");
+                    logger.LogWarning("Invalid currency value: '{Currency}'.", Currency);
             }
 
             if (DividendDateSeconds > 0)
@@ -66,17 +66,17 @@ namespace YahooQuotesApi
 					string symbol = (string)value;
                     if (symbol.EndsWith("=X") && symbol.Length == 5)
                         symbol = "USD" + symbol;
-                    logger.LogTrace($"Setting security property: Symbol = {symbol}");
+                    logger.LogTrace("Setting security property: Symbol = {Symbol}", symbol);
                     Symbol = symbol.ToSymbol();
                     return;
                 }
-                logger.LogTrace($"Setting security property: {propertyInfo.Name} = {value}");
+                logger.LogTrace("Setting security property: {Name} = {Value}", propertyInfo.Name, value);
                 propertyInfo.SetValue(this, value);
                 Properties.Add(jName, value);
                 return;
             }
             object? val = GetJsonPropertyValue(jproperty);
-            logger.LogTrace($"Setting security other property: {jName} = {val}");
+            logger.LogTrace("Setting security other property: {Name} = {Value}", jName, val);
             Properties.Add(jName, val);
         }
         private static object? GetJsonPropertyValueOfType(JsonProperty jproperty, Type propertyType)

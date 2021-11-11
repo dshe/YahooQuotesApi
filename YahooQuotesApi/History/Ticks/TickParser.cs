@@ -23,7 +23,7 @@ namespace YahooQuotesApi
                 string? row = await streamReader.ReadLineAsync().ConfigureAwait(false);
                 if (row == null)
                     continue;
-				ITick? tick = GetTick<T>(row.Split(','));
+				ITick? tick = GetTick<T>(row);
                 if (tick == null)
                     continue;
                 if (!ticks.Add(tick))
@@ -33,8 +33,14 @@ namespace YahooQuotesApi
             return ticks.OrderBy(x => x.Date).ToArray();
         }
 
-        private static ITick? GetTick<T>(string[] row) where T : ITick
+        private static ITick? GetTick<T>(string rows) where T : ITick
         {
+            //ReadOnlySpan<char> all = rows;
+            //int i = all.IndexOf(',');
+            //ReadOnlySpan<char> theDate = all[..i];
+            //If you care about allocations, then you want a different API. And if you don't care about allocations, well, then you can just use String.Split.
+            string[] row = rows.Split(',');
+
             LocalDate date = row[0].ToDate();
             if (typeof(T) == typeof(PriceTick))
             {

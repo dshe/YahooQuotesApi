@@ -19,7 +19,7 @@ namespace YahooQuotesApi
             {
                 if (!name.EndsWith("=X")
                     || (name.Length != 5 && name.Length != 8)
-                    || (name.Length == 8 && name.Substring(0, 3) == name.Substring(3, 3)))
+                    || (name.Length == 8 && name[0..3] == name[3..6]))
                     return null;
             }
             return new Symbol(name);
@@ -58,9 +58,9 @@ namespace YahooQuotesApi
             get
             {
                 if (IsCurrency)
-                    return name.Substring(0, 3);
+                    return name[..3];
                 if (IsCurrencyRate)
-                    return name.Substring(3, 3);
+                    return name[3..6];
                 throw new InvalidOperationException("Symbol is neither currency nor currency rate.");
             }
         }

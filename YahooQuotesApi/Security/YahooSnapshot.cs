@@ -54,44 +54,34 @@ namespace YahooQuotesApi
             return dict;
         }
 
-        private async Task<IEnumerable<JsonElement>> GetElements(HashSet<Symbol> symbols, CancellationToken ct)
+        private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
         {
-            // start tasks
-            var tasks = GetUris(symbols).Select(u => MakeRequest(u, ct));
-            //var responses = await TaskExt.WhenAll(tasks).ConfigureAwait(false);
-            var responses = await Task.WhenAll(tasks).ConfigureAwait(false);
-            return responses.SelectMany(x => x).ToList();
-        }
+            List<(Uri uri, List<JsonElement> elements)> datas =
+                GetUris(symbols)
+                    .Select(uri => (uri, elements: new List<JsonElement>()))
+                    .ToList();
 
-        private static IEnumerable<Uri> GetUris(HashSet<Symbol> symbols)
-        {
-            const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote";
-
-            return PartitionSymbols(symbols)
-                .Select(s => $"{baseUrl}?symbols={string.Join(",", s)}")
-                .Select(s => new Uri(s));
-        }
-
-        private static List<List<string>> PartitionSymbols(HashSet<Symbol> symbols, int maxLength = 1000, int maxItems = 10000)
-        {
-            int len = 0;
-            List<List<string>> lists = new();
-            List<string> list = new();
-            lists.Add(list);
-
-            foreach (Symbol symbol in symbols)
+            ParallelOptions parallelOptions = new()
             {
-                string str = WebUtility.UrlEncode(symbol.Name); // just encode the symbols
-                if (len + str.Length > maxLength || list.Count == maxItems)
-                {
-                    list = new List<string>();
-                    lists.Add(list);
-                    len = 0;
-                }
-                list.Add(str);
-                len += str.Length;
-            }
-            return lists;
+                MaxDegreeOfParallelism = 16,
+                CancellationToken = ct
+            };
+
+            await Parallel.ForEachAsync(datas, parallelOptions, async (data, ct) =>
+                data.elements.AddRange(await MakeRequest(data.uri, ct).ConfigureAwait(false)));
+
+            return datas.Select(x => x.elements).SelectMany(x => x);
+        }
+
+        private static IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols)
+        {
+            const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote?symbols=";
+
+            return symbols
+                .Select(symbol => WebUtility.UrlEncode(symbol.Name))
+                .Chunk(100)
+                .Select(s => $"{baseUrl}{string.Join(",", s)}")
+                .Select(s => new Uri(s));
         }
 
         private async Task<List<JsonElement>> MakeRequest(Uri uri, CancellationToken ct)
