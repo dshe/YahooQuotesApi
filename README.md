@@ -3,10 +3,10 @@
 **Retrieves snapshot quotes and historical quotes, dividends and splits from Yahoo Finance**
 - supports **.NET 6.0**
 - intellisense support for properties
-- dependencies: Polly, NodaTime
 - simple and intuitive API
 - fault-tolerant
 - tested
+- dependencies: Polly, NodaTime
 
 ### Installation
 ```bash
