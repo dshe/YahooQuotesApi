@@ -2,8 +2,7 @@
 
 **Retrieves snapshot quotes and historical quotes, dividends and splits from Yahoo Finance**
 - supports **.NET 6.0**
-- supports HTTP/1.1 and HTTP/2
-- properties intellisense support
+- intellisense support for properties
 - dependencies: Polly, NodaTime
 - simple and intuitive API
 - fault-tolerant
