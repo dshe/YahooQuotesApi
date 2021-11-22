@@ -5,35 +5,34 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+namespace YahooQuotesApi.Tests;
 
-namespace YahooQuotesApi.Tests
+public class SnapshotTests : TestBase
 {
-    public class SnapshotTests : TestBase
+    private readonly YahooQuotes YahooQuotes;
+    public SnapshotTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
+        YahooQuotes = new YahooQuotesBuilder(Logger).Build();
+
+    [Fact]
+    public async Task TestTimeZone()
     {
-        private readonly YahooQuotes YahooQuotes;
-        public SnapshotTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
-            YahooQuotes = new YahooQuotesBuilder(Logger).Build();
+        Security security = await YahooQuotes.GetAsync("C") ?? throw new ArgumentException();
 
-        [Fact]
-        public async Task TestTimeZone()
+        string exchangeTimezoneName = security.ExchangeTimezoneName!;
+        var tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(exchangeTimezoneName);
+        Assert.Equal(tz, security.ExchangeTimezone);
+
+        long? seconds = security.RegularMarketTimeSeconds;
+        var instant = Instant.FromUnixTimeSeconds(seconds.GetValueOrDefault());
+        var zdt = instant.InZone(tz!);
+        Assert.Equal(zdt, security.RegularMarketTime);
+    }
+
+    [Fact]
+    public async Task TestInternationalStocks()
+    {
+        var symbols = new[]
         {
-            Security security = await YahooQuotes.GetAsync("C") ?? throw new ArgumentException();
-
-            string exchangeTimezoneName = security.ExchangeTimezoneName!;
-            var tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(exchangeTimezoneName);
-            Assert.Equal(tz, security.ExchangeTimezone);
-
-            long? seconds = security.RegularMarketTimeSeconds;
-            var instant = Instant.FromUnixTimeSeconds(seconds.GetValueOrDefault());
-            var zdt = instant.InZone(tz!);
-            Assert.Equal(zdt, security.RegularMarketTime);
-        }
-
-        [Fact]
-        public async Task TestInternationalStocks()
-        {
-            var symbols = new []
-            {
                 "GMEXICOB.MX", // Mexico City - 6
                 "TD.TO",  // Canada -5
                 "SPY",    // USA -5
@@ -55,56 +54,55 @@ namespace YahooQuotesApi.Tests
                 */
             };
 
-            var securities = await YahooQuotes.GetAsync(symbols);
+        var securities = await YahooQuotes.GetAsync(symbols);
 
-            foreach (var kvp in securities)
-            {
-                var symbol = kvp.Key;
-                var security = kvp.Value;
-                if (security is null)
-                    throw new Exception($"Unknown Symbol: {symbol}.");
-                Assert.Equal(symbol, security.Symbol.Name);
-                Write($"Symbol:            {symbol}");
-                Write($"TimeZone:          {security.ExchangeTimezone}");
-                Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
-                Write($"RegularMarketTime: {security.RegularMarketTime}");
-
-                var date = new LocalDate(2020, 7, 17)
-                    .At(security?.ExchangeCloseTime ?? throw new ArgumentException())
-                    .InZoneStrictly(security.ExchangeTimezone ?? throw new ArgumentException())
-                    .ToInstant();
-
-
-                var securityWithHistory = await new YahooQuotesBuilder(Logger)
-                    .HistoryStarting(date)
-                    .Build()
-                    .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
-
-                var ticks = securityWithHistory.PriceHistoryBase.Value;
-                Assert.Equal(date, ticks.First().Date);
-            }
-        }
-
-        [Fact]
-        public async Task TestDates()
+        foreach (var kvp in securities)
         {
-            var symbol = "BA.L";
-            var timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London") 
-                ?? throw new TimeZoneNotFoundException();
-            var date = new LocalDateTime(2021, 3, 17, 16, 30).InZoneStrictly(timeZone).ToInstant();
+            var symbol = kvp.Key;
+            var security = kvp.Value;
+            if (security is null)
+                throw new Exception($"Unknown Symbol: {symbol}.");
+            Assert.Equal(symbol, security.Symbol.Name);
+            Write($"Symbol:            {symbol}");
+            Write($"TimeZone:          {security.ExchangeTimezone}");
+            Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
+            Write($"RegularMarketTime: {security.RegularMarketTime}");
 
-            var yahooQuotes = new YahooQuotesBuilder(Logger)
+            var date = new LocalDate(2020, 7, 17)
+                .At(security?.ExchangeCloseTime ?? throw new ArgumentException())
+                .InZoneStrictly(security.ExchangeTimezone ?? throw new ArgumentException())
+                .ToInstant();
+
+
+            var securityWithHistory = await new YahooQuotesBuilder(Logger)
                 .HistoryStarting(date)
-                .UseNonAdjustedClose()
-                .Build();
+                .Build()
+                .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
-            var security = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory)
-                ?? throw new ArgumentException();
-            Assert.Equal(timeZone, security.ExchangeTimezone);
-
-            var ticks = security.PriceHistoryBase.Value;
-            Assert.Equal(date, ticks[0].Date);
-            Assert.Equal(501, ticks[0].Value);
+            var ticks = securityWithHistory.PriceHistoryBase.Value;
+            Assert.Equal(date, ticks.First().Date);
         }
+    }
+
+    [Fact]
+    public async Task TestDates()
+    {
+        var symbol = "BA.L";
+        var timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/London")
+            ?? throw new TimeZoneNotFoundException();
+        var date = new LocalDateTime(2021, 3, 17, 16, 30).InZoneStrictly(timeZone).ToInstant();
+
+        var yahooQuotes = new YahooQuotesBuilder(Logger)
+            .HistoryStarting(date)
+            .UseNonAdjustedClose()
+            .Build();
+
+        var security = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory)
+            ?? throw new ArgumentException();
+        Assert.Equal(timeZone, security.ExchangeTimezone);
+
+        var ticks = security.PriceHistoryBase.Value;
+        Assert.Equal(date, ticks[0].Date);
+        Assert.Equal(501, ticks[0].Value);
     }
 }

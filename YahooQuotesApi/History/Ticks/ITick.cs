@@ -1,10 +1,7 @@
-﻿using NodaTime;
+﻿namespace YahooQuotesApi;
 
-namespace YahooQuotesApi
+interface ITick
 {
-    interface ITick
-    {
-        public LocalDate Date { get; }
-    }
+    public LocalDate Date { get; }
 }
 

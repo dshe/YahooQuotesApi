@@ -3,48 +3,47 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
+namespace YahooQuotesApi.Tests;
 
-namespace YahooQuotesApi.Tests
+public class SymbolTest : TestBase
 {
-    public class SymbolTest : TestBase
-    {
-        public SymbolTest(ITestOutputHelper output) : base(output) { }
+    public SymbolTest(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public void TestArgs()
-        {
+    [Fact]
+    public void TestArgs()
+    {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-            Assert.Throws<ArgumentNullException>(() => ((string?)null).ToSymbol());
+        Assert.Throws<ArgumentNullException>(() => ((string?)null).ToSymbol());
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
-            Assert.Throws<ArgumentException>(() => "with space".ToSymbol());
+        Assert.Throws<ArgumentException>(() => "with space".ToSymbol());
 
-            Assert.Throws<ArgumentException>(() => "".ToSymbol());
+        Assert.Throws<ArgumentException>(() => "".ToSymbol());
 
-			Symbol stock = "ABC".ToSymbol();
-            Assert.True(stock is not null && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
+        Symbol stock = "ABC".ToSymbol();
+        Assert.True(stock is not null && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
 
-            Symbol currency = "ABC=X".ToSymbol();
-            Assert.True(currency is not null && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
-            Assert.Equal("ABC", currency?.Currency);
+        Symbol currency = "ABC=X".ToSymbol();
+        Assert.True(currency is not null && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
+        Assert.Equal("ABC", currency?.Currency);
 
-            Symbol rate = "ABCDEF=X".ToSymbol();
-            Assert.True(rate is not null && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
-            Assert.Equal("DEF", rate?.Currency);
+        Symbol rate = "ABCDEF=X".ToSymbol();
+        Assert.True(rate is not null && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
+        Assert.Equal("DEF", rate?.Currency);
 
-            Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
-            Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
-            Assert.Throws<ArgumentException>(() => "=XABC".ToSymbol());
-        }
+        Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
+        Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
+        Assert.Throws<ArgumentException>(() => "=XABC".ToSymbol());
+    }
 
-        [Fact]
-        public void TestOperators()
-        {
-            Assert.True("abc".ToSymbol() == "abc".ToSymbol());
-            Assert.Equal("abc".ToSymbol(), "abc".ToSymbol());
-            Assert.NotEqual("abc".ToSymbol(), "def".ToSymbol());
+    [Fact]
+    public void TestOperators()
+    {
+        Assert.True("abc".ToSymbol() == "abc".ToSymbol());
+        Assert.Equal("abc".ToSymbol(), "abc".ToSymbol());
+        Assert.NotEqual("abc".ToSymbol(), "def".ToSymbol());
 
-            var list = new List<Symbol>
+        var list = new List<Symbol>
             {
                 "c5".ToSymbol(),
                 "c2".ToSymbol(),
@@ -52,34 +51,33 @@ namespace YahooQuotesApi.Tests
                 "c4".ToSymbol()
             };
 
-            list.Sort();
-            Assert.Equal("c1".ToSymbol(), list.First());
+        list.Sort();
+        Assert.Equal("c1".ToSymbol(), list.First());
 
-            var dict = list.ToDictionary(x => x, x => x?.Name);
-            var result = dict["c2".ToSymbol()];
-            Assert.Equal("C2", result);
-        }
+        var dict = list.ToDictionary(x => x, x => x?.Name);
+        var result = dict["c2".ToSymbol()];
+        Assert.Equal("C2", result);
+    }
 
-        [Fact]
-        public void TestDefaultEquality()
-        {
-            var defaultSymbol = Symbol.TryCreate("");
-            Assert.True(defaultSymbol is null);
-            //Assert.Equal(Symbol.Undefined, defaultSymbol);
-        }
+    [Fact]
+    public void TestDefaultEquality()
+    {
+        var defaultSymbol = Symbol.TryCreate("");
+        Assert.True(defaultSymbol is null);
+        //Assert.Equal(Symbol.Undefined, defaultSymbol);
+    }
 
 
-        [Theory]
-        [InlineData("A", "")]
-        [InlineData(".", "")]
-        [InlineData("A.", "")]
-        [InlineData(".A", "A")]
-        [InlineData("A.B", "B")]
-        [InlineData("ABC.DEF", "DEF")]
-        public void TestSuffix(string symbolName, string suffix)
-        {
-            var symbol = Symbol.TryCreate(symbolName);
-            Assert.Equal(suffix, symbol?.Suffix);
-        }
+    [Theory]
+    [InlineData("A", "")]
+    [InlineData(".", "")]
+    [InlineData("A.", "")]
+    [InlineData(".A", "A")]
+    [InlineData("A.B", "B")]
+    [InlineData("ABC.DEF", "DEF")]
+    public void TestSuffix(string symbolName, string suffix)
+    {
+        var symbol = Symbol.TryCreate(symbolName);
+        Assert.Equal(suffix, symbol?.Suffix);
     }
 }

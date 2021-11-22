@@ -1,13 +1,10 @@
-﻿using NodaTime;
+﻿namespace YahooQuotesApi;
 
-namespace YahooQuotesApi
+public sealed class SplitTick : ITick
 {
-    public sealed class SplitTick : ITick
-    {
-        public LocalDate Date { get; init; }
-        public double BeforeSplit { get; init; }
-        public double AfterSplit { get; init; }
+    public LocalDate Date { get; init; }
+    public double BeforeSplit { get; init; }
+    public double AfterSplit { get; init; }
 
-        public override string ToString() => $"{Date} {BeforeSplit}:{AfterSplit}";
-    }
+    public override string ToString() => $"{Date} {BeforeSplit}:{AfterSplit}";
 }

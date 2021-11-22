@@ -1,58 +1,56 @@
-﻿using NodaTime;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace YahooQuotesApi
+namespace YahooQuotesApi;
+
+internal class Cache<TKey, TResult> where TKey : notnull
 {
-    internal class Cache<TKey, TResult> where TKey:notnull
+    private readonly IClock Clock;
+    private readonly Duration CacheDuration;
+    private readonly Dictionary<TKey, (TResult result, Instant time)> Items = new();
+
+    internal Cache(IClock clock, Duration cacheDuration)
     {
-        private readonly IClock Clock;
-        private readonly Duration CacheDuration;
-        private readonly Dictionary<TKey, (TResult result, Instant time)> Items = new();
+        Clock = clock;
+        CacheDuration = cacheDuration;
+    }
 
-        internal Cache(IClock clock, Duration cacheDuration)
+    internal void Save(Dictionary<TKey, TResult> dict)
+    {
+        lock (Items)
         {
-            Clock = clock;
-            CacheDuration = cacheDuration;
+            Instant now = Clock.GetCurrentInstant();
+            foreach (var kvp in dict)
+                Items[kvp.Key] = (kvp.Value, now);
         }
+    }
 
-        internal void Save(Dictionary<TKey, TResult> dict)
+    internal bool TryGetAll(HashSet<TKey> keys, out Dictionary<TKey, TResult> results)
+    {
+        results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
+        lock (Items)
         {
-            lock (Items)
+            Instant now = Clock.GetCurrentInstant();
+            foreach (TKey key in keys)
             {
-                Instant now = Clock.GetCurrentInstant();
-                foreach (var kvp in dict)
-                    Items[kvp.Key] = (kvp.Value, now);
-            }
-        }
-
-        internal bool TryGetAll(HashSet<TKey> keys, out Dictionary<TKey, TResult> results)
-        {
-            results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
-            lock (Items)
-            {
-                Instant now = Clock.GetCurrentInstant();
-                foreach (TKey key in keys)
+                if (Items.TryGetValue(key, out (TResult value, Instant time) item)
+                    && (now - item.time <= CacheDuration || item.value is null))
+                    results.Add(key, item.value);
+                else
                 {
-                    if (Items.TryGetValue(key, out (TResult value, Instant time) item)
-                        && (now - item.time <= CacheDuration || item.value is null))
-                        results.Add(key, item.value);
-                    else
-                    {
-                        results.Clear();
-                        return false;
-                    }
+                    results.Clear();
+                    return false;
                 }
-                return true;
             }
+            return true;
         }
+    }
 
-        internal Dictionary<TKey, TResult> Get(HashSet<TKey> keys)
+    internal Dictionary<TKey, TResult> Get(HashSet<TKey> keys)
+    {
+        lock (Items)
         {
-            lock (Items)
-            {
-                return keys.ToDictionary(k => k, k => Items[k].result);
-            }
+            return keys.ToDictionary(k => k, k => Items[k].result);
         }
     }
 }

@@ -1,16 +1,14 @@
 ﻿using System.Runtime.Serialization;
+namespace YahooQuotesApi;
 
-namespace YahooQuotesApi
+public enum Frequency
 {
-    public enum Frequency
-    {
-        [EnumMember(Value = "d")]
-        Daily,
+    [EnumMember(Value = "d")]
+    Daily,
 
-        [EnumMember(Value = "wk")]
-        Weekly,
+    [EnumMember(Value = "wk")]
+    Weekly,
 
-        [EnumMember(Value = "mo")]
-        Monthly
-    }
+    [EnumMember(Value = "mo")]
+    Monthly
 }
