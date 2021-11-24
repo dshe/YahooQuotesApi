@@ -14,13 +14,10 @@ PM> Install-Package YahooQuotesApi
 ```
 
 ### Examples
-```csharp
-using NodaTime;
-using YahooQuotesApi;
-```
-
 #### snapshot
 ```csharp
+using YahooQuotesApi;
+
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
 Security? security = await yahooQuotes.GetAsync("AAPL");
@@ -48,6 +45,8 @@ Assert.True(security.RegularMarketPrice > 0);
 
 #### snapshots with history
 ```csharp
+using NodaTime;
+
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
