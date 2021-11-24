@@ -10,8 +10,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{FCAC3461-0568-4EDC-B343-B0410437738D}"
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
-		~local\notes.txt = ~local\notes.txt
-		~local\update.ps1 = ~local\update.ps1
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YahooQuotesApi.Demo", "YahooQuotesApi.Demo\YahooQuotesApi.Demo.csproj", "{BD8B089B-1DE0-4C43-BE63-0263D94431CF}"

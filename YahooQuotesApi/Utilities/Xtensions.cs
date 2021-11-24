@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-
 namespace YahooQuotesApi;
 
 internal static partial class Xtensions

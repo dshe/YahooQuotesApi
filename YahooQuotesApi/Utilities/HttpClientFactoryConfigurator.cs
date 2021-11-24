@@ -6,11 +6,10 @@ using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+namespace YahooQuotesApi;
 
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
-// The pooled HttpMessageHandler instances results in CookieContainer objects being shared. 
-
-namespace YahooQuotesApi;
+//The pooled HttpMessageHandler instances results in CookieContainer objects being shared. 
 
 internal class HttpClientFactoryConfigurator
 {
@@ -60,45 +59,49 @@ internal class HttpClientFactoryConfigurator
 
         ServiceProvider = new ServiceCollection()
 
-        .AddHttpClient("snapshot", client =>
-        {
+            .AddHttpClient("snapshot", client =>
+            {
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestVersion = new Version(2, 0);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-            AllowAutoRedirect = false,
-                //MaxConnectionsPerServer = 1 // The default: int.MaxValue
+                client.DefaultRequestVersion = new Version(2, 0);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
             })
-        //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
-        .AddPolicyHandler(retryPolicy)
-        .AddPolicyHandler(timeoutPolicy)
-        .AddPolicyHandler(circuitBreakerPolicy)
-        .Services
+        
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = false,
+                    //MaxConnectionsPerServer = 1 // The default: int.MaxValue
+                })
+        
+            //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy)
+            .AddPolicyHandler(circuitBreakerPolicy)
+            .Services
 
-        .AddHttpClient("history", client =>
-        {
+            .AddHttpClient("history", client =>
+            {
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
-            client.DefaultRequestVersion = new Version(2, 0);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-            AllowAutoRedirect = false,
-            CookieContainer = new CookieContainer(),
+                client.DefaultRequestVersion = new Version(2, 0);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+            })
+        
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = false,
+                CookieContainer = new CookieContainer(),
                 //MaxConnectionsPerServer = 1 // The default: int.MaxValue
             })
-        //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
-        .AddPolicyHandler(retryPolicy)
-        .AddPolicyHandler(timeoutPolicy)
-        .AddPolicyHandler(circuitBreakerPolicy)
-        .Services
+        
+            //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(timeoutPolicy)
+            .AddPolicyHandler(circuitBreakerPolicy)
+            .Services
 
-        .BuildServiceProvider();
+            .BuildServiceProvider();
     }
 }

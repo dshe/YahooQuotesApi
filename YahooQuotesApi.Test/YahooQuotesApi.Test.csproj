@@ -16,6 +16,7 @@
     <Compile Remove="~\AsyncCacheTest.cs" />
     <Compile Remove="~\CurrencyTests.cs" />
     <Compile Remove="~\Experimental.cs" />
+    <Compile Remove="~\QuoteFieldWriter.cs" />
     <None Include="~\CurrencyTests.cs" />
     <None Include="~\Experimental.cs" />
     <None Include="~\QuoteFieldWriter.cs" />

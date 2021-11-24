@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
 namespace YahooQuotesApi;
 
 internal class SerialProducerCache<TKey, TResult> where TKey : notnull
