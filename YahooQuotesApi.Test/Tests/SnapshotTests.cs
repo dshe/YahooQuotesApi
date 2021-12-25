@@ -11,7 +11,7 @@ public class SnapshotTests : TestBase
 {
     private readonly YahooQuotes YahooQuotes;
     public SnapshotTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
-        YahooQuotes = new YahooQuotesBuilder(Logger).Build();
+        YahooQuotes = new YahooQuotesBuilder().WithLogger(Logger).Build();
 
     [Fact]
     public async Task TestTimeZone()
@@ -74,8 +74,9 @@ public class SnapshotTests : TestBase
                 .ToInstant();
 
 
-            var securityWithHistory = await new YahooQuotesBuilder(Logger)
-                .HistoryStarting(date)
+            var securityWithHistory = await new YahooQuotesBuilder()
+                .WithLogger(Logger)
+                .WithHistoryStarting(date)
                 .Build()
                 .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
@@ -92,9 +93,10 @@ public class SnapshotTests : TestBase
             ?? throw new TimeZoneNotFoundException();
         var date = new LocalDateTime(2021, 3, 17, 16, 30).InZoneStrictly(timeZone).ToInstant();
 
-        var yahooQuotes = new YahooQuotesBuilder(Logger)
-            .HistoryStarting(date)
-            .UseNonAdjustedClose()
+        var yahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(Logger)
+            .WithHistoryStarting(date)
+            .UsingNonAdjustedClose()
             .Build();
 
         var security = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory)

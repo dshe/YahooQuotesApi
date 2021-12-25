@@ -12,9 +12,10 @@ public class HistoryBaseTests : TestBase
     private readonly YahooQuotes MyYahooQuotes;
     public HistoryBaseTests(ITestOutputHelper output) : base(output, LogLevel.Debug)
     {
-        MyYahooQuotes = new YahooQuotesBuilder(Logger)
-            .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
-            .UseNonAdjustedClose() // for testing
+        MyYahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(Logger)
+            .WithHistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .UsingNonAdjustedClose() // for testing
             .Build();
     }
 

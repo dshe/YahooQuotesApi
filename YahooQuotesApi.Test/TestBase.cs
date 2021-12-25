@@ -11,8 +11,8 @@ public abstract class TestBase
     protected TestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Debug)
     {
         Write = output.WriteLine;
-        Logger = LoggerFactory.Create(cfg => cfg.SetMinimumLevel(logLevel))
-            .AddMXLogger(Write)
+        Logger = new LoggerFactory()
+            .AddMXLogger(Write, LogLevel.Debug)
             .CreateLogger("Test");
     }
 }

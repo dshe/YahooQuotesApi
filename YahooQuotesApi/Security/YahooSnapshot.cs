@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Http.Json;
 namespace YahooQuotesApi;
 // Invalid symbols are ignored by Yahoo.
 
@@ -87,6 +88,9 @@ internal class YahooSnapshot
         response.EnsureSuccessStatusCode();
 
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+
+        //var options = new JsonSerializerOptions() { }
+        //var xx = await HttpClient.GetFromJsonAsync<object>(uri, options, ct).ConfigureAwait(false);
 
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))

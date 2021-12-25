@@ -28,7 +28,7 @@ public class DividendCheck : TestBase
     private readonly YahooQuotes YahooQuotes;
 
     public DividendCheck(ITestOutputHelper output) : base(output, LogLevel.Debug) =>
-        YahooQuotes = new YahooQuotesBuilder(Logger).Build();
+        YahooQuotes = new YahooQuotesBuilder().WithLogger(Logger).Build();
 
     [Fact]
     public async Task Test()

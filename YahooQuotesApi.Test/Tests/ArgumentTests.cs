@@ -11,7 +11,7 @@ public class ArgumentTests : TestBase
     private readonly YahooQuotes YahooQuotes;
 
     public ArgumentTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
-        YahooQuotes = new YahooQuotesBuilder(Logger).Build();
+        YahooQuotes = new YahooQuotesBuilder().WithLogger(Logger).Build();
 
     [Fact]
     public async Task NullAndEmptySymbolTest()

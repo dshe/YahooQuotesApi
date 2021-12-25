@@ -19,8 +19,9 @@ public class MyApp
 
         Instant start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(30));
 
-        YahooQuotes = new YahooQuotesBuilder(Logger)
-            .HistoryStarting(start)
+        YahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(Logger)
+            .WithHistoryStarting(start)
             .Build();
     }
 

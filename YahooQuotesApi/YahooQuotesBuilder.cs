@@ -4,29 +4,33 @@ namespace YahooQuotesApi;
 
 public sealed class YahooQuotesBuilder
 {
-    internal readonly IClock Clock;
-    internal readonly ILogger Logger;
-    internal Instant HistoryStartDate = Instant.FromUtc(2020, 1, 1, 0, 0);
-    internal Frequency HistoryFrequency = Frequency.Daily;
-    internal Duration HistoryCacheDuration = Duration.MaxValue;
-    internal Duration SnapshotCacheDuration = Duration.Zero;
-    internal bool NonAdjustedClose; // used for testing
+    internal IClock Clock { get; private set; } =  SystemClock.Instance;
+    internal ILogger Logger { get; private set; } = NullLogger.Instance;
+    internal Instant HistoryStartDate { get; private set; } = Instant.FromUtc(2020, 1, 1, 0, 0);
+    internal Frequency HistoryFrequency { get; private set; } = Frequency.Daily;
+    internal Duration HistoryCacheDuration { get; private set; } = Duration.MaxValue;
+    internal Duration SnapshotCacheDuration { get; private set; } = Duration.Zero;
+    internal bool NonAdjustedClose { get; private set; } // for testing
 
-    public YahooQuotesBuilder() : this(NullLogger.Instance) { }
-    public YahooQuotesBuilder(ILogger logger) : this(SystemClock.Instance, logger) { }
-    internal YahooQuotesBuilder(IClock clock, ILogger logger)
+    internal YahooQuotesBuilder WithClock(IClock clock) // for testing
     {
         Clock = clock;
-        Logger = logger;
+        return this;
     }
 
-    public YahooQuotesBuilder HistoryStarting(Instant start)
+    public YahooQuotesBuilder WithLogger(ILogger logger)
+    {
+        Logger = logger;
+        return this;
+    }
+
+    public YahooQuotesBuilder WithHistoryStarting(Instant start)
     {
         HistoryStartDate = start;
         return this;
     }
 
-    public YahooQuotesBuilder SetPriceHistoryFrequency(Frequency frequency)
+    public YahooQuotesBuilder WithPriceHistoryFrequency(Frequency frequency)
     {
         HistoryFrequency = frequency;
         return this;
@@ -41,7 +45,7 @@ public sealed class YahooQuotesBuilder
         return this;
     }
 
-    public YahooQuotesBuilder UseNonAdjustedClose() // useful for testing
+    internal YahooQuotesBuilder UsingNonAdjustedClose() // for testing
     {
         NonAdjustedClose = true;
         return this;
