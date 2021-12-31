@@ -12,8 +12,6 @@ internal static partial class Xtensions
 
     internal static string ToPascal(this string source)
     {
-        ArgumentNullException.ThrowIfNull(source);
-        
         if (source.Length == 0)
             return source;
         char[] chars = source.ToCharArray();
@@ -52,5 +50,5 @@ internal static partial class Xtensions
         return shifted / magnitude;
     }
 
-    internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new HashSet<T>(items);
+    internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new(items);
 }

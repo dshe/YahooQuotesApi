@@ -5,47 +5,46 @@ namespace YahooQuotesApi;
 public sealed class YahooQuotesBuilder
 {
     internal IClock Clock { get; private set; } =  SystemClock.Instance;
-    internal ILogger Logger { get; private set; } = NullLogger.Instance;
-    internal Instant HistoryStartDate { get; private set; } = Instant.FromUtc(2020, 1, 1, 0, 0);
-    internal Frequency HistoryFrequency { get; private set; } = Frequency.Daily;
-    internal Duration HistoryCacheDuration { get; private set; } = Duration.MaxValue;
-    internal Duration SnapshotCacheDuration { get; private set; } = Duration.Zero;
-    internal bool NonAdjustedClose { get; private set; } // for testing
-
     internal YahooQuotesBuilder WithClock(IClock clock) // for testing
     {
         Clock = clock;
         return this;
     }
 
+    internal ILogger Logger { get; private set; } = NullLogger.Instance;
     public YahooQuotesBuilder WithLogger(ILogger logger)
     {
         Logger = logger;
         return this;
     }
 
-    public YahooQuotesBuilder WithHistoryStarting(Instant start)
+    public Instant HistoryStartDate { get; private set; } = Instant.MinValue;
+    public YahooQuotesBuilder WithHistoryStartDate(Instant start)
     {
         HistoryStartDate = start;
         return this;
     }
 
+    public Frequency PriceHistoryFrequency { get; private set; } = Frequency.Daily;
     public YahooQuotesBuilder WithPriceHistoryFrequency(Frequency frequency)
     {
-        HistoryFrequency = frequency;
+        PriceHistoryFrequency = frequency;
         return this;
     }
 
-    public YahooQuotesBuilder WithCaching(Duration snapshotDuration, Duration historyDuration)
+    internal Duration SnapshotCacheDuration { get; private set; } = Duration.Zero;
+    internal Duration HistoryCacheDuration { get; private set; } = Duration.MaxValue;
+    public YahooQuotesBuilder WithCacheDuration(Duration snapshotCacheDuration, Duration historyCacheDuration)
     {
-        if (snapshotDuration > historyDuration)
+        if (snapshotCacheDuration > historyCacheDuration)
             throw new ArgumentException("snapshotCacheDuration > historyCacheDuration.");
-        SnapshotCacheDuration = snapshotDuration;
-        HistoryCacheDuration = historyDuration;
+        SnapshotCacheDuration = snapshotCacheDuration;
+        HistoryCacheDuration = historyCacheDuration;
         return this;
     }
 
-    internal YahooQuotesBuilder UsingNonAdjustedClose() // for testing
+    internal bool NonAdjustedClose { get; private set; }
+    internal YahooQuotesBuilder WithNonAdjustedClose() // for testing
     {
         NonAdjustedClose = true;
         return this;

@@ -43,26 +43,18 @@ internal static class TickParser
         {
             if (row[5] == "null")
                 return null;
-            return new PriceTick
-            {
-                Date = date,
-                Open = row[1].ToDouble(),
-                High = row[2].ToDouble(),
-                Low = row[3].ToDouble(),
-                Close = row[4].ToDouble(),
-                AdjustedClose = row[5].ToDouble(),
-                Volume = row[6].ToLong()
-            };
+            return new PriceTick(date, row[1].ToDouble(), row[2].ToDouble(), row[3].ToDouble(), row[4].ToDouble(), row[5].ToDouble(), row[6].ToLong());
         }
         if (typeof(T) == typeof(DividendTick))
-            return new DividendTick { Date = date, Dividend = row[1].ToDouble() };
+            //return new DividendTick { Date = date, Dividend = row[1].ToDouble() };
+            return new DividendTick(date, row[1].ToDouble());
         if (typeof(T) == typeof(SplitTick))
         {
             string[] split = row[1].Split(new[] { ':', '/' });
             if (split.Length != 2)
                 throw new InvalidOperationException("Split separator not found.");
-            return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
-
+            //return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
+            return new SplitTick(date, split[1].ToDouble(), split[0].ToDouble());
         }
         throw new InvalidOperationException("Tick type.");
     }

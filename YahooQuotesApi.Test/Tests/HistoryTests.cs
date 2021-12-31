@@ -9,14 +9,14 @@ namespace YahooQuotesApi.Tests;
 
 public class HistoryTests : TestBase
 {
-    public HistoryTests(ITestOutputHelper output) : base(output, LogLevel.Debug) { }
+    public HistoryTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
     public async Task SingleSecurityTest()
     {
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
             .Build();
         var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory) ?? throw new ArgumentNullException();
         Assert.NotEmpty(security.PriceHistory.Value);
@@ -33,7 +33,7 @@ public class HistoryTests : TestBase
 
         var security = await new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(instant)
+            .WithHistoryStartDate(instant)
             .Build()
             .GetAsync("AAPL", HistoryFlags.PriceHistory) ?? throw new ArgumentException();
 
@@ -52,7 +52,7 @@ public class HistoryTests : TestBase
 
         var security = await new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(instant)
+            .WithHistoryStartDate(instant)
             .Build()
             .GetAsync("2618.TW", HistoryFlags.PriceHistory);
 
@@ -71,7 +71,7 @@ public class HistoryTests : TestBase
 
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(zdt.ToInstant())
+            .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
         var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory) ?? throw new ArgumentException();
@@ -91,7 +91,7 @@ public class HistoryTests : TestBase
 
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(instant)
+            .WithHistoryStartDate(instant)
             .Build();
 
         var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory) ?? throw new ArgumentException();
@@ -111,7 +111,7 @@ public class HistoryTests : TestBase
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
             .WithPriceHistoryFrequency(Frequency.Daily)
-            .WithHistoryStarting(zdt.ToInstant())
+            .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
         var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
@@ -131,7 +131,7 @@ public class HistoryTests : TestBase
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
             .WithPriceHistoryFrequency(Frequency.Weekly)
-            .WithHistoryStarting(zdt.ToInstant())
+            .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
         var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
@@ -151,7 +151,7 @@ public class HistoryTests : TestBase
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
             .WithPriceHistoryFrequency(Frequency.Monthly)
-            .WithHistoryStarting(zdt.ToInstant())
+            .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
         var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);

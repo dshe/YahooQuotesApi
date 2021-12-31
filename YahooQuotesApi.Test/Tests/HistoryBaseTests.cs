@@ -14,8 +14,8 @@ public class HistoryBaseTests : TestBase
     {
         MyYahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
-            .UsingNonAdjustedClose() // for testing
+            .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .WithNonAdjustedClose() // for testing
             .Build();
     }
 

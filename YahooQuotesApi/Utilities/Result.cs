@@ -1,12 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 namespace YahooQuotesApi;
 
-public sealed class Result<T>
+public struct Result<T> : IEquatable<Result<T>>
 {
     private readonly T? value;
-
     private readonly string error = "";
-    public bool HasValue { get; }
+    public bool HasValue => error.Length == 0;
     public bool HasError => error.Length != 0;
     public bool HasNothing => error.Length == 0 && !HasValue;
 
@@ -26,30 +26,26 @@ public sealed class Result<T>
         }
     }
 
-    private Result() { }
-
     private Result(T value)
     {
-        if (value is null)
-            return;
+        ArgumentNullException.ThrowIfNull(value);
         this.value = value;
-        HasValue = true;
     }
 
     private Result(string error)
     {
+        value = default;
         if (string.IsNullOrEmpty(error))
-            throw new ArgumentException("invalid value", nameof(error));
+            throw new ArgumentException("Invalid error.", nameof(error));
         this.error = error;
     }
 
-    public static Result<T> Ok(T value) => new(value: value);
-    public static Result<T> Fail(string error) => new(error: error);
+    public static Result<T> Ok(T value) => new(value);
+    public static Result<T> Fail(string error) => new(error);
     public static Result<T> Nothing() => new();
 
-    public void Deconstruct(out T value, out string error) => (value, error) = (Value, Error);
-
     public override string ToString() => HasValue ? $"Value: {Value}" : $"Error: {Error}";
+    public void Deconstruct(out T value, out string error) => (value, error) = (Value, Error);
 
     public static Result<T> From(Func<T> producer)
     {
@@ -64,7 +60,7 @@ public sealed class Result<T>
         }
     }
 
-    public static async Task<Result<T>> From(Func<Task<T>> producer)
+    public static async Task<Result<T>> FromAsync(Func<Task<T>> producer)
     {
         ArgumentNullException.ThrowIfNull(producer);
         try
@@ -76,9 +72,33 @@ public sealed class Result<T>
             return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
         }
     }
+
+    public override int GetHashCode()
+    {
+        if (value == null)
+            return -1521134295 + EqualityComparer<string>.Default.GetHashCode(error);
+        return EqualityComparer<T>.Default.GetHashCode(value) * -1521134295 + EqualityComparer<string>.Default.GetHashCode(error);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is Result<T> result)
+            return Equals(result);
+        return false;
+    }
+
+    public bool Equals(Result<T> other)
+    {
+        if (EqualityComparer<T>.Default.Equals(value, other.value))
+            return EqualityComparer<string>.Default.Equals(error, other.error);
+        return false;
+    }
+
+    public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
+    public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 }
 
-internal static partial class ResultExtensions
+public static partial class ResultExtensions
 {
     public static Result<T> ToResult<T>(this T value) => Result<T>.Ok(value);
 }

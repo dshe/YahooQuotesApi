@@ -28,7 +28,7 @@ internal static class HistoryBaseComposer
     {
         ValueTick[]? stockTicks = null, currencyTicks = null, baseStockTicks = null, baseCurrencyTicks = null;
 
-        Symbol? currency = symbol;
+        Symbol currency = symbol;
         if (symbol.IsStock)
         {
             if (!securities.TryGetValue(symbol, out Security? stockSecurity) || stockSecurity is null)
@@ -45,13 +45,13 @@ internal static class HistoryBaseComposer
                 return Result<ValueTick[]>.Fail($"Security currency symbol not available.");
 
             currency = Symbol.TryCreate(c + "=X");
-            if (currency is null)
+            if (!currency.IsValid)
                 return Result<ValueTick[]>.Fail($"Invalid security currency symbol format: '{c}'.");
         }
         if (currency.Currency != "USD")
         {
-            Symbol? currencyRate = Symbol.TryCreate("USD" + currency);
-            if (currencyRate is null || !currencyRate.IsCurrencyRate)
+            Symbol currencyRate = Symbol.TryCreate("USD" + currency);
+            if (!currencyRate.IsValid || !currencyRate.IsCurrencyRate)
                 return Result<ValueTick[]>.Fail($"Invalid security currency rate symbol format: '{currencyRate}'.");
             if (!securities.TryGetValue(currencyRate, out Security? currencySecurity))
                 throw new InvalidOperationException(nameof(currencySecurity));
@@ -65,7 +65,7 @@ internal static class HistoryBaseComposer
             currencyTicks = res.Value;
         }
 
-        Symbol? baseCurrency = baseSymbol;
+        Symbol baseCurrency = baseSymbol;
         if (baseSymbol.IsStock)
         {
             if (!securities.TryGetValue(baseSymbol, out Security? baseStockSecurity))
@@ -83,13 +83,13 @@ internal static class HistoryBaseComposer
             if (string.IsNullOrEmpty(c))
                 return Result<ValueTick[]>.Fail($"Base security currency symbol not available.");
             baseCurrency = Symbol.TryCreate(c + "=X");
-            if (baseCurrency is null)
+            if (!baseCurrency.IsValid)
                 return Result<ValueTick[]>.Fail($"Invalid base security currency symbol: '{c}'.");
         }
         if (baseCurrency.Currency != "USD")
         {
-            Symbol? currencyRate = Symbol.TryCreate("USD" + baseCurrency);
-            if (currencyRate is null || !currencyRate.IsCurrencyRate)
+            Symbol currencyRate = Symbol.TryCreate("USD" + baseCurrency);
+            if (!currencyRate.IsValid || !currencyRate.IsCurrencyRate)
                 return Result<ValueTick[]>.Fail($"Invalid base currency rate symbol: '{currencyRate}'.");
 
             if (!securities.TryGetValue(currencyRate, out Security? baseCurrencySecurity))
@@ -112,7 +112,7 @@ internal static class HistoryBaseComposer
             .Select(tick => tick.Date)
             .Select(date => (date, rate: GetRate(date)))
             .Where(x => !double.IsNaN(x.rate))
-            .Select(x => new ValueTick { Date = x.date, Value = x.rate })
+            .Select(x => new ValueTick(x.date, x.rate, 0))
             .ToArray()
             .ToResult();
 

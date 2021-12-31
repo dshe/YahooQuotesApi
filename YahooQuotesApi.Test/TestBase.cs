@@ -12,7 +12,7 @@ public abstract class TestBase
     {
         Write = output.WriteLine;
         Logger = new LoggerFactory()
-            .AddMXLogger(Write, LogLevel.Debug)
+            .AddMXLogger(Write, logLevel)
             .CreateLogger("Test");
     }
 }

@@ -7,27 +7,25 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http.Json;
 namespace YahooQuotesApi;
-// Invalid symbols are ignored by Yahoo.
 
 internal class YahooSnapshot
 {
     private readonly ILogger Logger;
-    private readonly HttpClient HttpClient;
+    private readonly IHttpClientFactory HttpClientFactory;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
     internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration)
     {
         Logger = logger;
-        HttpClient = factory.CreateClient("snapshot");
+        HttpClientFactory = factory;
         Cache = new SerialProducerCache<Symbol, Security?>(clock, cacheDuration, Producer);
     }
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct = default)
     {
-        Symbol? currency = symbols.FirstOrDefault(s => s.IsCurrency);
-        if (currency is not null)
+        Symbol currency = symbols.FirstOrDefault(s => s.IsCurrency, Symbol.Undefined);
+        if (currency.IsValid)
             throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
         return await Cache.Get(symbols, ct).ConfigureAwait(false);
@@ -83,8 +81,10 @@ internal class YahooSnapshot
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 
+        HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
         using HttpRequestMessage request = new(HttpMethod.Get, uri);
-        using HttpResponseMessage response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+
         response.EnsureSuccessStatusCode();
 
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

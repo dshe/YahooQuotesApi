@@ -18,7 +18,7 @@ public class Security
 
         if (Currency.Length > 0)
         {
-            if (Symbol.TryCreate(Currency) is null)
+            if (!Symbol.TryCreate(Currency).IsValid)
                 logger.LogWarning("Invalid currency value: '{Currency}'.", Currency);
         }
 

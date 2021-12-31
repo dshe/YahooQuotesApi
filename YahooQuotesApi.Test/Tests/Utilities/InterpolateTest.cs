@@ -14,12 +14,12 @@ public class InterpolateTest : TestBase
     {
         var list = new List<ValueTick>();
         Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
-        list.Add(new ValueTick { Date = new Instant(), Value = 0 });
+        list.Add(new ValueTick(new Instant(), 0, 0));
 
         Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
-        list.Add(new ValueTick { Date = new Instant(), Value = 0 });
+        list.Add(new ValueTick(new Instant(), 0, 0));
         Assert.Equal(0, list.InterpolateValue(new Instant()));
-        list.Add(new ValueTick { Date = new Instant(), Value = 0 });
+        list.Add(new ValueTick(new Instant(), 0, 0));
         Assert.Equal(0, list.InterpolateValue(new Instant()));
     }
 
@@ -30,8 +30,8 @@ public class InterpolateTest : TestBase
         var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
         var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
-        list.Add(new ValueTick { Date = date1, Value = 0 });
-        list.Add(new ValueTick { Date = date2, Value = 0 });
+        list.Add(new ValueTick(date1, 0, 0));
+        list.Add(new ValueTick(date2, 0, 0));
 
         var result = list.InterpolateValue(date1);
         Assert.False(double.IsNaN(result)); // enough data
@@ -53,8 +53,8 @@ public class InterpolateTest : TestBase
         var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
         var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
-        list.Add(new ValueTick { Date = date1, Value = 1 });
-        list.Add(new ValueTick { Date = date2, Value = 2 });
+        list.Add(new ValueTick(date1, 1, 0));
+        list.Add(new ValueTick(date2, 2, 0));
 
         var result = list.InterpolateValue(date2.PlusTicks(1));
         Assert.Equal(2, result);
@@ -71,8 +71,8 @@ public class InterpolateTest : TestBase
         var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
         var date2 = new LocalDateTime(2000, 1, 5, 0, 0).InUtc().ToInstant();
 
-        list.Add(new ValueTick { Date = date1, Value = 1 });
-        list.Add(new ValueTick { Date = date2, Value = 2 });
+        list.Add(new ValueTick(date1, 1, 0));
+        list.Add(new ValueTick(date2, 2, 0));
 
         var result = list.InterpolateValue(date1.Plus(Duration.FromDays(1)));
         Assert.Equal(1.25, result);

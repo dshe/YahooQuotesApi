@@ -12,14 +12,11 @@ class Program
         ILogger logger = LoggerFactory
             .Create(x => x
                 .AddSimpleConsole(x => x.SingleLine = true)
-                .SetMinimumLevel(LogLevel.Debug))
+                .SetMinimumLevel(LogLevel.Warning))
             .CreateLogger("Logger");
 
-        var myApp = new MyApp(logger);
-
-        await myApp.Run(300, HistoryFlags.All, "JPY=X");
-        //await myApp.Run(1000, HistoryFlags.None, "");
-
+        //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
+        await new MyApp(logger).Run(300, HistoryFlags.All, "JPY=X");
         Console.ReadLine();
     }
 }

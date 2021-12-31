@@ -19,9 +19,9 @@ public sealed class YahooQuotes
     {
         Logger = builder.Logger;
         Clock = builder.Clock;
-        IHttpClientFactory httpFactory = new HttpClientFactoryConfigurator(Logger).Configure();
+        IHttpClientFactory httpFactory = new HttpClientFactoryCreator(Logger).Create();
         Snapshot = new YahooSnapshot(Clock, Logger, httpFactory, builder.SnapshotCacheDuration);
-        History = new YahooHistory(Clock, Logger, httpFactory, builder.HistoryStartDate, builder.HistoryCacheDuration, builder.HistoryFrequency);
+        History = new YahooHistory(Clock, Logger, httpFactory, builder.HistoryStartDate, builder.HistoryCacheDuration, builder.PriceHistoryFrequency);
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
@@ -31,7 +31,7 @@ public sealed class YahooQuotes
     public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
     {
         List<Symbol> syms = symbols
-            .Select(s => Symbol.TryCreate(s) ?? throw new ArgumentException($"Could not convert symbol '{s}' to Symbol."))
+            .Select(s => s.ToSymbol())
             .Distinct()
             .ToList();
 
@@ -39,7 +39,7 @@ public sealed class YahooQuotes
         if (!string.IsNullOrEmpty(historyBase))
         {
             historyBaseSymbol = Symbol.TryCreate(historyBase);
-            if (historyBaseSymbol is null)
+            if (!historyBaseSymbol.Value.IsValid)
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
         }
         Dictionary<Symbol, Security?> securities = await GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
@@ -52,14 +52,17 @@ public sealed class YahooQuotes
     public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags = HistoryFlags.None, Symbol? historyBase = null, CancellationToken ct = default)
     {
         HashSet<Symbol> syms = symbols.ToHashSet();
-        if (historyBase is not null && historyBase.IsCurrencyRate)
-            throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-        if (historyBase is not null && syms.Any(s => s.IsCurrencyRate))
-            throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
+        if (historyBase is not null)
+        {
+            if (historyBase.Value.IsCurrencyRate)
+                throw new ArgumentException($"Invalid base symbol: {historyBase}.");
+            if (syms.Any(s => s.IsCurrencyRate))
+                throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
+            if (!historyFlags.HasFlag(HistoryFlags.PriceHistory))
+                throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
+        }
         if (historyBase is null && syms.Any(s => s.IsCurrency))
             throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
-        if (historyBase is not null && !historyFlags.HasFlag(HistoryFlags.PriceHistory))
-            throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
         try
         {
             Dictionary<Symbol, Security?> securities = await GetSecuritiesAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
@@ -75,20 +78,20 @@ public sealed class YahooQuotes
     private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol? historyBase, CancellationToken ct)
     {
         HashSet<Symbol> stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToHashSet();
-        if (historyBase is not null && historyBase.IsStock)
-            stockAndCurrencyRateSymbols.Add(historyBase);
+        if (historyBase is not null && historyBase.Value.IsStock)
+            stockAndCurrencyRateSymbols.Add(historyBase.Value);
         Dictionary<Symbol, Security?> securities = await Snapshot.GetAsync(stockAndCurrencyRateSymbols, ct).ConfigureAwait(false);
 
         if (historyFlags == HistoryFlags.None)
             return securities;
 
         if (historyBase is not null)
-            await AddCurrencies(symbols, historyBase, securities, ct).ConfigureAwait(false);
+            await AddCurrencies(symbols, historyBase.Value, securities, ct).ConfigureAwait(false);
 
         await AddHistoryToSecurities(securities, historyFlags, ct).ConfigureAwait(false);
 
         if (historyBase is not null)
-            HistoryBaseComposer.Compose(symbols, historyBase, securities);
+            HistoryBaseComposer.Compose(symbols, historyBase.Value, securities);
 
         return securities;
     }
@@ -101,16 +104,16 @@ public sealed class YahooQuotes
             currencySymbols.Add(historyBase);
         foreach (Security security in securities.Values.NotNull())
         {
-            if (Symbol.TryCreate(security.Currency + "=X") is Symbol currencySymbol)
-                currencySymbols.Add(currencySymbol);
-            else
+            var currencySymbol = Symbol.TryCreate(security.Currency + "=X");
+            if (!currencySymbol.IsValid)
                 security.PriceHistoryBase = Result<ValueTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
+            else
+                currencySymbols.Add(currencySymbol);
         }
 
         HashSet<Symbol> rateSymbols = currencySymbols
             .Where(c => c.Currency != "USD")
             .Select(c => Symbol.TryCreate($"USD{c.Currency}=X"))
-            .Cast<Symbol>()
             .ToHashSet();
 
         if (!rateSymbols.Any())
@@ -166,12 +169,11 @@ public sealed class YahooQuotes
         if (security.ExchangeCloseTime == default)
             return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 
-        List<ValueTick> ticks = result.Value.Select(priceTick => new ValueTick
-        {
-            Date = priceTick.Date.At(security.ExchangeCloseTime).InZoneLeniently(security.ExchangeTimezone!).ToInstant(),
-            Value = UseNonAdjustedClose ? priceTick.Close : priceTick.AdjustedClose,
-            Volume = priceTick.Volume
-        }).ToList();
+        List<ValueTick> ticks = result.Value.Select(priceTick => new ValueTick(
+            priceTick.Date.At(security.ExchangeCloseTime).InZoneLeniently(security.ExchangeTimezone!).ToInstant(),
+            UseNonAdjustedClose ? priceTick.Close : priceTick.AdjustedClose,
+            priceTick.Volume
+        )).ToList();
 
         if (!ticks.Any())
             return Result<ValueTick[]>.Fail("No history available."); // ????????
@@ -220,12 +222,12 @@ public sealed class YahooQuotes
             volume = 0;
         }
 
-        ticks.Add(new ValueTick
-        {
-            Date = snapTimeInstant,
-            Value = Convert.ToDouble(snapPrice, CultureInfo.InvariantCulture),
-            Volume = volume.Value
-        }); // hist < snap < now
+        ticks.Add(new ValueTick(
+            snapTimeInstant,
+            Convert.ToDouble(snapPrice, CultureInfo.InvariantCulture),
+            volume.Value
+        )); // hist < snap < now
+
         return Result<ValueTick[]>.Ok(ticks.ToArray());
     }
 }

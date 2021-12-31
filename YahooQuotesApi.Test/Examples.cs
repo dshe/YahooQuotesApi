@@ -38,7 +38,7 @@ public class Examples
     public async Task SnapshotWithPriceHistory()
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-            .WithHistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
             .Build();
 
         Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory) ??
@@ -57,8 +57,8 @@ public class Examples
     public async Task SnapshotWithPriceHistoryInBaseCurrency()
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-            .WithHistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
-            .WithCaching(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
+            .WithHistoryStartDate(Instant.FromUtc(2020, 7, 15, 0, 0))
+            .WithCacheDuration(snapshotCacheDuration: Duration.FromMinutes(30), historyCacheDuration: Duration.FromHours(6))
             .Build();
 
         Security security = await yahooQuotes

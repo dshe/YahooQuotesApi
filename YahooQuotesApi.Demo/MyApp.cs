@@ -21,7 +21,7 @@ public class MyApp
 
         YahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(start)
+            .WithHistoryStartDate(start)
             .Build();
     }
 
@@ -56,7 +56,7 @@ public class MyApp
             .ToList();
 
         List<string> errors = lines
-            .Where(t => Symbol.TryCreate(t) is null)
+            .Where(t => !Symbol.TryCreate(t).IsValid)
             .ToList();
 
         if (errors.Any())
@@ -64,8 +64,7 @@ public class MyApp
 
         List<Symbol> symbols = lines
             .Select(t => Symbol.TryCreate(t))
-            .Where(s => s is not null)
-            .Select(s => s!)
+            .Where(s => s.IsValid)
             .OrderBy(x => x)
             .ToList();
 

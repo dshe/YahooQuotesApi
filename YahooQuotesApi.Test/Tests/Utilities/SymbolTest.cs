@@ -21,15 +21,15 @@ public class SymbolTest : TestBase
         Assert.Throws<ArgumentException>(() => "".ToSymbol());
 
         Symbol stock = "ABC".ToSymbol();
-        Assert.True(stock is not null && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
+        Assert.True(stock.IsValid && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
 
         Symbol currency = "ABC=X".ToSymbol();
-        Assert.True(currency is not null && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
-        Assert.Equal("ABC", currency?.Currency);
+        Assert.True(currency.IsValid && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
+        Assert.Equal("ABC", currency.Currency);
 
         Symbol rate = "ABCDEF=X".ToSymbol();
-        Assert.True(rate is not null && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
-        Assert.Equal("DEF", rate?.Currency);
+        Assert.True(rate.IsValid && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
+        Assert.Equal("DEF", rate.Currency);
 
         Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
         Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
@@ -54,7 +54,7 @@ public class SymbolTest : TestBase
         list.Sort();
         Assert.Equal("c1".ToSymbol(), list.First());
 
-        var dict = list.ToDictionary(x => x, x => x?.Name);
+        var dict = list.ToDictionary(x => x, x => x.Name);
         var result = dict["c2".ToSymbol()];
         Assert.Equal("C2", result);
     }
@@ -63,8 +63,8 @@ public class SymbolTest : TestBase
     public void TestDefaultEquality()
     {
         var defaultSymbol = Symbol.TryCreate("");
-        Assert.True(defaultSymbol is null);
-        //Assert.Equal(Symbol.Undefined, defaultSymbol);
+        Assert.False(defaultSymbol.IsValid);
+        Assert.Equal(Symbol.Undefined, defaultSymbol);
     }
 
 
@@ -78,6 +78,6 @@ public class SymbolTest : TestBase
     public void TestSuffix(string symbolName, string suffix)
     {
         var symbol = Symbol.TryCreate(symbolName);
-        Assert.Equal(suffix, symbol?.Suffix);
+        Assert.Equal(suffix, symbol.Suffix);
     }
 }

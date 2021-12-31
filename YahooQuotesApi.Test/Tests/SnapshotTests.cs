@@ -76,7 +76,7 @@ public class SnapshotTests : TestBase
 
             var securityWithHistory = await new YahooQuotesBuilder()
                 .WithLogger(Logger)
-                .WithHistoryStarting(date)
+                .WithHistoryStartDate(date)
                 .Build()
                 .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
@@ -95,8 +95,8 @@ public class SnapshotTests : TestBase
 
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStarting(date)
-            .UsingNonAdjustedClose()
+            .WithHistoryStartDate(date)
+            .WithNonAdjustedClose()
             .Build();
 
         var security = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory)
