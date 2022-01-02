@@ -43,7 +43,7 @@ Assert.Equal("LSE", security.Exchange);
 Assert.True(security.RegularMarketPrice > 0);
 ```
 
-#### snapshots with history
+#### snapshot with price history
 ```csharp
 using NodaTime;
 
@@ -63,7 +63,7 @@ Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
 Assert.Equal(160.62, tick.Close);
 ```
 
-#### snapshots with history in base currency
+#### snapshot with price history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
