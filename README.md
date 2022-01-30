@@ -16,6 +16,7 @@ PM> Install-Package YahooQuotesApi
 ### Examples
 #### snapshot
 ```csharp
+using NodaTime;
 using YahooQuotesApi;
 
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
@@ -45,8 +46,6 @@ Assert.True(security.RegularMarketPrice > 0);
 
 #### snapshot with price history
 ```csharp
-using NodaTime;
-
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
