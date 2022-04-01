@@ -10,20 +10,21 @@ namespace YahooQuotesApi.Tests;
 public class HistoryBaseTests : TestBase
 {
     private readonly YahooQuotes MyYahooQuotes;
-    public HistoryBaseTests(ITestOutputHelper output) : base(output, LogLevel.Debug)
+    public HistoryBaseTests(ITestOutputHelper output) : base(output)
     {
         MyYahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .WithHistoryStartDate(Instant.FromUtc(2022, 1, 1, 0, 0))
             .WithNonAdjustedClose() // for testing
             .Build();
     }
 
     [Theory]
-    [InlineData("C", null, 0)]
+    [InlineData("C", "", 0)]
+    [InlineData("C", "USD=X", 0)]
     [InlineData("C", "JPY=X", 0)]
-    [InlineData("C", "X", 0)]
-    /*
+    [InlineData("C", "SPY", 0)]
+    [InlineData("C", "C", 0)]
     [InlineData("C", "JPYCHF=X", 1)]
     [InlineData("CHF=X", "", 1)]
     [InlineData("CHF=X", "JPY=X", 0)]
@@ -35,25 +36,60 @@ public class HistoryBaseTests : TestBase
     [InlineData("JPYCHF=X", "JPY=X", 1)]
     [InlineData("JPYCHF=X", "JPYCHF=X", 1)]
     [InlineData("JPYCHF=X", "X", 1)]
-    */
     public async Task Test01Arguments(string symbol, string baseSymbol, int error)
     {
         var task = MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol);
-        if (error == 0)
-        {
-            var result = await task;
-            Assert.True(result?.PriceHistoryBase.HasValue);
-        }
         if (error == 1)
         {
             await Assert.ThrowsAsync<ArgumentException>(async () => await task);
-        }
-        if (error == 2)
-        {
-            var result = await task;
-            Assert.True(result?.PriceHistoryBase.HasError);
+            return;
         }
 
+        Security? security = await task;
+
+        if (error == 2)
+        {
+            Assert.True(security?.PriceHistoryBase.HasError);
+            return;
+        }
+        Assert.True(security?.PriceHistoryBase.HasValue);
+    }
+
+    [Theory]
+    [InlineData("C", "USD=X", 63.10)]
+    //[InlineData("C", "JPY=X")]
+    //[InlineData("C", "SPY")]
+    //[InlineData("C", "1306.T")]
+    //[InlineData("1306.T", "JPY=X")]
+    //[InlineData("1306.T", "USD=X")]
+    //[InlineData("1306.T", "SPY")]
+    //[InlineData("CHF=X", "JPY=X")]
+    //[InlineData("CHF=X", "CHF=X")]
+    //[InlineData("CHF=X", "X")]
+    public async Task Test02Arguments(string symbol, string baseSymbol, double expected)
+    {
+        Security security = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol)
+            ?? throw new ArgumentException("Invalid symbol");
+        //var currency = security.Currency.ToUpper() + "=X";
+        Assert.True(security.PriceHistory.HasValue);
+        PriceTick priceTick = security.PriceHistory.Value[0];
+
+        if (baseSymbol == "USD=X")
+        {
+            Assert.Equal(expected, priceTick.Close, 2);
+            return;
+        }
+        Assert.True(security.PriceHistoryBase.HasValue);
+        ValueTick valueTick = security.PriceHistoryBase.Value[0];
+
+        Security baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory)
+            ?? throw new ArgumentException("Invalid symbol");
+        Assert.True(baseSecurity.PriceHistory.HasValue);
+        
+        //PriceTick baseTick = baseSecurity.PriceHistory.Value[0];
+        //Write($"{symbol} + {baseSymbol} => {tick}");
+
+        Assert.Equal(expected, valueTick.Value, 2);
     }
 
     [Fact]

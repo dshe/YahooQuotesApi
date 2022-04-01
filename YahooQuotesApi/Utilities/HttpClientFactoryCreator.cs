@@ -66,7 +66,7 @@ internal class HttpClientFactoryCreator
             .GetRequiredService<IHttpClientFactory>();
     }
 
-    private AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy =
+    private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy =
         Policy.TimeoutAsync<HttpResponseMessage>(20); // Timeout for an individual try
 
     private AsyncRetryPolicy<HttpResponseMessage> RetryPolicy =>

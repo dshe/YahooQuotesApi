@@ -38,9 +38,9 @@ public sealed class YahooQuotes
         Symbol? historyBaseSymbol = null;
         if (!string.IsNullOrEmpty(historyBase))
         {
-            historyBaseSymbol = Symbol.TryCreate(historyBase);
-            if (!historyBaseSymbol.Value.IsValid)
+            if (!Symbol.TryCreate(historyBase, out Symbol hbs))
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
+            historyBaseSymbol = hbs;
         }
         Dictionary<Symbol, Security?> securities = await GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
         return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
@@ -104,8 +104,7 @@ public sealed class YahooQuotes
             currencySymbols.Add(historyBase);
         foreach (Security security in securities.Values.NotNull())
         {
-            var currencySymbol = Symbol.TryCreate(security.Currency + "=X");
-            if (!currencySymbol.IsValid)
+            if (!Symbol.TryCreate(security.Currency + "=X", out Symbol currencySymbol))
                 security.PriceHistoryBase = Result<ValueTick[]>.Fail($"Invalid currency symbol: '{security.Currency}'.");
             else
                 currencySymbols.Add(currencySymbol);
@@ -113,7 +112,7 @@ public sealed class YahooQuotes
 
         HashSet<Symbol> rateSymbols = currencySymbols
             .Where(c => c.Currency != "USD")
-            .Select(c => Symbol.TryCreate($"USD{c.Currency}=X"))
+            .Select(c => $"USD{c.Currency}=X".ToSymbol())
             .ToHashSet();
 
         if (!rateSymbols.Any())

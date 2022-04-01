@@ -10,7 +10,9 @@ public class Examples
     [Fact]
     public async Task Snapshot()
     {
-        Security? security = await new YahooQuotesBuilder().Build().GetAsync("AAPL");
+        YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+
+        Security? security = await yahooQuotes.GetAsync("AAPL");
 
         if (security is null)
             throw new ArgumentException("Unknown symbol: AAPL.");
@@ -73,7 +75,7 @@ public class Examples
         Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
         Assert.Equal(309.202, tick.Close); // in USD
 
-        var instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
+        Instant instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
             .InZoneLeniently(security.ExchangeTimezone!).ToInstant();
 
         ValueTick tickBase = security.PriceHistoryBase.Value[0];

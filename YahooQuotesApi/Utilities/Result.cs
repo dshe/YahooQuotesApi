@@ -2,18 +2,18 @@
 using System.Threading.Tasks;
 namespace YahooQuotesApi;
 
-public struct Result<T> : IEquatable<Result<T>>
+public readonly struct Result<T> : IEquatable<Result<T>>
 {
     private readonly T? value;
-    private readonly string error = "";
-    public bool HasValue => error.Length == 0;
-    public bool HasError => error.Length != 0;
-    public bool HasNothing => error.Length == 0 && !HasValue;
+    private readonly string? error;
+    public bool HasValue => error is null || error.Length == 0;
+    public bool HasError => error is not null && error.Length != 0;
+    public bool IsUndefined => error is null;
 
     public T Value {
         get {
-            if (HasValue && value is not null)
-                return value;
+            if (HasValue)
+                return value!;
             throw new InvalidOperationException("Result has no value.");
         }
     }
@@ -21,31 +21,63 @@ public struct Result<T> : IEquatable<Result<T>>
     public string Error {
         get {
             if (HasError)
-                return error;
+                return error!;
             throw new InvalidOperationException("Result has no error.");
         }
     }
 
-    private Result(T value)
+    private Result(T value) // result may not be null
     {
         ArgumentNullException.ThrowIfNull(value);
         this.value = value;
+        error = "";
     }
 
     private Result(string error)
     {
-        value = default;
         if (string.IsNullOrEmpty(error))
-            throw new ArgumentException("Invalid error.", nameof(error));
+            throw new ArgumentException("Invalid error message.", nameof(error));
         this.error = error;
+        value = default;
     }
+
+    public override int GetHashCode()
+    {
+        if (HasValue)
+            return EqualityComparer<T>.Default.GetHashCode(value!);
+        if (HasError)
+            return EqualityComparer<string>.Default.GetHashCode(error!) * -1521134295;
+        return 0;
+    }
+
+    public override string ToString()
+    {
+        if (HasValue)
+            return $"Value: {Value}";
+        if (HasError)
+            return $"Error: {Error}";
+        return "Undefined";
+    }
+
+    public override bool Equals(object? obj) =>
+        obj is Result<T> result && Equals(result);
+
+    public bool Equals(Result<T> other) =>
+        EqualityComparer<T>.Default.Equals(value, other.value) &&
+        EqualityComparer<string>.Default.Equals(error, other.error);
+
+    public void Deconstruct(out T value, out string error)
+    {
+        if (IsUndefined)
+            throw new ArgumentException("Result is undefined.");
+        (value, error) = (Value, Error);
+    }
+
+    public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
+    public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 
     public static Result<T> Ok(T value) => new(value);
     public static Result<T> Fail(string error) => new(error);
-    public static Result<T> Nothing() => new();
-
-    public override string ToString() => HasValue ? $"Value: {Value}" : $"Error: {Error}";
-    public void Deconstruct(out T value, out string error) => (value, error) = (Value, Error);
 
     public static Result<T> From(Func<T> producer)
     {
@@ -72,33 +104,11 @@ public struct Result<T> : IEquatable<Result<T>>
             return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
         }
     }
-
-    public override int GetHashCode()
-    {
-        if (value == null)
-            return -1521134295 + EqualityComparer<string>.Default.GetHashCode(error);
-        return EqualityComparer<T>.Default.GetHashCode(value) * -1521134295 + EqualityComparer<string>.Default.GetHashCode(error);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is Result<T> result)
-            return Equals(result);
-        return false;
-    }
-
-    public bool Equals(Result<T> other)
-    {
-        if (EqualityComparer<T>.Default.Equals(value, other.value))
-            return EqualityComparer<string>.Default.Equals(error, other.error);
-        return false;
-    }
-
-    public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
-    public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 }
 
 public static partial class ResultExtensions
 {
     public static Result<T> ToResult<T>(this T value) => Result<T>.Ok(value);
+    public static Result<T> ToResultError<T>(this string error) => Result<T>.Fail(error);
+    public static Result<T> ToResultUndefined<T>() => default;
 }

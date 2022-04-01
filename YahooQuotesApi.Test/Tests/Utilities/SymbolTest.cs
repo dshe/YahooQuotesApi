@@ -62,7 +62,7 @@ public class SymbolTest : TestBase
     [Fact]
     public void TestDefaultEquality()
     {
-        var defaultSymbol = Symbol.TryCreate("");
+        var defaultSymbol = "".ToSymbol(false);
         Assert.False(defaultSymbol.IsValid);
         Assert.Equal(Symbol.Undefined, defaultSymbol);
     }
@@ -77,7 +77,7 @@ public class SymbolTest : TestBase
     [InlineData("ABC.DEF", "DEF")]
     public void TestSuffix(string symbolName, string suffix)
     {
-        var symbol = Symbol.TryCreate(symbolName);
+        var symbol = symbolName.ToSymbol();
         Assert.Equal(suffix, symbol.Suffix);
     }
 }

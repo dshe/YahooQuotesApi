@@ -44,14 +44,12 @@ internal static class HistoryBaseComposer
             if (string.IsNullOrEmpty(c))
                 return Result<ValueTick[]>.Fail($"Security currency symbol not available.");
 
-            currency = Symbol.TryCreate(c + "=X");
-            if (!currency.IsValid)
+            if (!Symbol.TryCreate(c + "=X", out currency))
                 return Result<ValueTick[]>.Fail($"Invalid security currency symbol format: '{c}'.");
         }
         if (currency.Currency != "USD")
         {
-            Symbol currencyRate = Symbol.TryCreate("USD" + currency);
-            if (!currencyRate.IsValid || !currencyRate.IsCurrencyRate)
+            if (!Symbol.TryCreate("USD" + currency, out Symbol currencyRate) || !currencyRate.IsCurrencyRate)
                 return Result<ValueTick[]>.Fail($"Invalid security currency rate symbol format: '{currencyRate}'.");
             if (!securities.TryGetValue(currencyRate, out Security? currencySecurity))
                 throw new InvalidOperationException(nameof(currencySecurity));
@@ -82,16 +80,13 @@ internal static class HistoryBaseComposer
             string c = baseStockSecurity.Currency;
             if (string.IsNullOrEmpty(c))
                 return Result<ValueTick[]>.Fail($"Base security currency symbol not available.");
-            baseCurrency = Symbol.TryCreate(c + "=X");
-            if (!baseCurrency.IsValid)
+            if (!Symbol.TryCreate(c + "=X", out baseCurrency))
                 return Result<ValueTick[]>.Fail($"Invalid base security currency symbol: '{c}'.");
         }
         if (baseCurrency.Currency != "USD")
         {
-            Symbol currencyRate = Symbol.TryCreate("USD" + baseCurrency);
-            if (!currencyRate.IsValid || !currencyRate.IsCurrencyRate)
+            if (!Symbol.TryCreate("USD" + baseCurrency, out Symbol currencyRate) || !currencyRate.IsCurrencyRate)
                 return Result<ValueTick[]>.Fail($"Invalid base currency rate symbol: '{currencyRate}'.");
-
             if (!securities.TryGetValue(currencyRate, out Security? baseCurrencySecurity))
                 throw new InvalidOperationException(nameof(baseCurrencySecurity));
             if (baseCurrencySecurity is null)

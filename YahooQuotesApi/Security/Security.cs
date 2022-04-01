@@ -18,7 +18,7 @@ public class Security
 
         if (Currency.Length > 0)
         {
-            if (!Symbol.TryCreate(Currency).IsValid)
+            if (!Symbol.TryCreate(Currency, out Symbol _))
                 logger.LogWarning("Invalid currency value: '{Currency}'.", Currency);
         }
 
@@ -128,7 +128,7 @@ public class Security
     public String DisplayName { get; private set; } = "";
     public LocalDateTime DividendDate { get; }
     public Int64 DividendDateSeconds { get; private set; }
-    public Result<DividendTick[]> DividendHistory { get; internal set; } = Result<DividendTick[]>.Nothing();
+    public Result<DividendTick[]> DividendHistory { get; internal set; }
     public LocalDateTime EarningsTime { get; }
     public LocalDateTime EarningsTimeEnd { get; }
     public Int64 EarningsTimestamp { get; private set; }
@@ -179,8 +179,8 @@ public class Security
     public Int64 PreMarketTimeSeconds { get; private set; }
     public Decimal? PriceEpsCurrentYear { get; private set; }
     public Int64? PriceHint { get; private set; }
-    public Result<PriceTick[]> PriceHistory { get; internal set; } = Result<PriceTick[]>.Nothing();
-    public Result<ValueTick[]> PriceHistoryBase { get; internal set; } = Result<ValueTick[]>.Nothing();
+    public Result<PriceTick[]> PriceHistory { get; internal set; }
+    public Result<ValueTick[]> PriceHistoryBase { get; internal set; }
     public Decimal? PriceToBook { get; private set; }
     public String QuoteSourceName { get; private set; } = "";
     public String QuoteType { get; private set; } = "";
@@ -199,8 +199,8 @@ public class Security
     public Int64 SharesOutstanding { get; private set; }
     public String ShortName { get; private set; } = "";
     public Int64? SourceInterval { get; private set; }
-    public Result<SplitTick[]> SplitHistory { get; internal set; } = Result<SplitTick[]>.Nothing();
-    public Symbol Symbol { get; private set; } = Symbol.Undefined; // will be set in constructor
+    public Result<SplitTick[]> SplitHistory { get; internal set; }
+    public Symbol Symbol { get; private set; }
     public Boolean? Tradeable { get; private set; }
     public Decimal? TrailingAnnualDividendRate { get; private set; }
     public Decimal? TrailingAnnualDividendYield { get; private set; }

@@ -56,14 +56,14 @@ public class MyApp
             .ToList();
 
         List<string> errors = lines
-            .Where(t => !Symbol.TryCreate(t).IsValid)
+            .Where(t => !Symbol.TryCreate(t, out _))
             .ToList();
 
         if (errors.Any())
-            Logger.LogWarning($"Invalid symbol names: {string.Join(", ", errors)}.");
+            Logger.LogWarning("Invalid symbol names: {names}.", string.Join(", ", errors));
 
         List<Symbol> symbols = lines
-            .Select(t => Symbol.TryCreate(t))
+            .Select(t => t.ToSymbol(false))
             .Where(s => s.IsValid)
             .OrderBy(x => x)
             .ToList();
@@ -73,25 +73,25 @@ public class MyApp
 
     private void Analyze(Dictionary<string, Security?> dict)
     {
-        Logger.LogWarning($"Symbols total: {dict.Count}.");
-        Logger.LogWarning($"Symbols not found: {dict.Where(x => x.Value is null).Count()}.");
+        Logger.LogWarning("Symbols total: {count}.", dict.Count);
+        Logger.LogWarning("Symbols not found: {count}.", dict.Where(x => x.Value is null).Count());
 
-        IEnumerable<KeyValuePair<string, Security>> kvp = dict.Where(kv => kv.Value != null).Cast<KeyValuePair<string, Security>>();
+        IEnumerable<KeyValuePair<string, Security>> kvp = dict.Where(kv => kv.Value is not null).Cast<KeyValuePair<string, Security>>();
         List<Security> securities = kvp.Select(kv => kv.Value).ToList();
 
-        Logger.LogWarning($"Symbols found: {securities.Count}.");
+        Logger.LogWarning("Symbols found: {Count}.", securities.Count);
 
-        Logger.LogWarning($"Symbols no currency: {securities.Where(x => x.Currency == "").Count()}.");
-        Logger.LogWarning($"Symbols no timezone: {securities.Where(x => x.ExchangeTimezoneName == "").Count()}.");
+        Logger.LogWarning("Symbols no currency: {Securities}.", securities.Where(x => x.Currency == "").Count());
+        Logger.LogWarning("Symbols no timezone: {Securities}.", securities.Where(x => x.ExchangeTimezoneName == "").Count());
 
-        Logger.LogWarning($"Symbols with history not set: {securities.Where(x => x.PriceHistory.HasNothing).Count()}.");
-        Logger.LogWarning($"Symbols with history found:   {securities.Where(x => x.PriceHistory.HasValue).Count()}.");
-        Logger.LogWarning($"Symbols with history error:   {securities.Where(x => x.PriceHistory.HasError).Count()}.");
+        Logger.LogWarning("Symbols with history not set: {Securities}.", securities.Where(x => x.PriceHistory.IsUndefined).Count());
+        Logger.LogWarning("Symbols with history found:   {Securities}.", securities.Where(x => x.PriceHistory.HasValue).Count());
+        Logger.LogWarning("Symbols with history error:   {Securities}.", securities.Where(x => x.PriceHistory.HasError).Count());
         //foreach (var security in securities.Where(s => s.PriceHistory.HasError).Where(s => !s.PriceHistory.Error.StartsWith("History not found")))
         //    Logger.LogError($"History error for symbol '{security.Symbol}' {security.PriceHistory.Error}");
 
-        Logger.LogWarning($"Symbols with base history not set: {securities.Where(x => x.PriceHistoryBase.HasNothing).Count()}.");
-        Logger.LogWarning($"Symbols with base history found:   {securities.Where(x => x.PriceHistoryBase.HasValue).Count()}.");
+        Logger.LogWarning("Symbols with base history not set: {Securities}.", securities.Where(x => x.PriceHistoryBase.IsUndefined).Count());
+        Logger.LogWarning("Symbols with base history found:   {Securities}.", securities.Where(x => x.PriceHistoryBase.HasValue).Count());
         //foreach (var security in securities.Where(s => s.PriceHistoryBase.HasError).Where(s => !s.PriceHistoryBase.Error.StartsWith("History not found")))
         //    Logger.LogError($"Historybase error for symbol '{security.Symbol}' {security.PriceHistoryBase.Error}");
 

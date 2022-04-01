@@ -27,7 +27,7 @@ internal sealed class YahooHistory
     internal async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, CancellationToken ct) where T : ITick
     {
         if (symbol.IsCurrency)
-            throw new ArgumentException($"Invalid symbol: '{nameof(symbol)}'.");
+            throw new ArgumentException($"Invalid symbol: '{symbol.Name}'.");
         Type type = typeof(T);
         Frequency frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
         string key = $"{symbol},{type.Name},{frequency.Name()}";
@@ -35,7 +35,7 @@ internal sealed class YahooHistory
         {
             Result<ITick[]> result = await Cache.Get(key, () => Produce<T>(symbol.Name, frequency, ct)).ConfigureAwait(false);
             if (result.HasError)
-                return Result<T[]>.Fail(result.Error);
+                return result.Error.ToResultError<T[]>();
             return result.Value.Cast<T>().ToArray().ToResult(); // returns a mutable shallow copy
         }
         catch (Exception e)
@@ -59,7 +59,8 @@ internal sealed class YahooHistory
         string url = $"{address}{symbol}?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}" +
             $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}&interval=1{frequency.Name()}&events={parm}";
 
-        Logger.LogInformation("{Url}", url);
+        if (Logger.IsEnabled(LogLevel.Information))
+            Logger.LogInformation("{Url}", url);
 
         using HttpResponseMessage response = await YahooHistoryRequester.Request(url, ct).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)

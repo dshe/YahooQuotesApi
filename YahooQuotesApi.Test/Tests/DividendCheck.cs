@@ -66,7 +66,7 @@ public class DividendCheck : TestBase
         foreach (var dividend in dividends)
         {
             Rec? rec = recs.Where(rec => rec.Date == dividend.Date).SingleOrDefault();
-            if (rec == null)
+            if (rec is null)
                 Write($"Symbol {symbol}: Could not find dividend!");
             else
                 rec.Dividend = dividend.Dividend;

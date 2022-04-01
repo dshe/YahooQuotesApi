@@ -14,8 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YahooQuotesApi.Demo", "YahooQuotesApi.Demo\YahooQuotesApi.Demo.csproj", "{BD8B089B-1DE0-4C43-BE63-0263D94431CF}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{766D508C-55FA-4EA3-96EB-620C7C603A5D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

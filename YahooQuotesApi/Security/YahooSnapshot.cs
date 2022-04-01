@@ -79,7 +79,8 @@ internal class YahooSnapshot
 
     private async Task<List<JsonElement>> MakeRequest(Uri uri, CancellationToken ct)
     {
-        Logger.LogInformation("{Uri}", uri.ToString());
+        if (Logger.IsEnabled(LogLevel.Information))
+            Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
         using HttpRequestMessage request = new(HttpMethod.Get, uri);
