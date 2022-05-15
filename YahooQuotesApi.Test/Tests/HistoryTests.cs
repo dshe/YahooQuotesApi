@@ -16,7 +16,7 @@ public class HistoryTests : TestBase
     {
         var yahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)
-            .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
+            .WithHistoryStartDate(Instant.FromUtc(2022, 1, 1, 0, 0))
             .Build();
         var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory) ?? throw new ArgumentNullException();
         Assert.NotEmpty(security.PriceHistory.Value);

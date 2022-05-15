@@ -16,7 +16,7 @@ class Program
             .CreateLogger("Logger");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
-        await new MyApp(logger).Run(300, HistoryFlags.All, "JPY=X");
+        await new MyApp(logger).Run(100, HistoryFlags.All, "JPY=X");
         Console.ReadLine();
     }
 }

@@ -12,7 +12,7 @@ namespace YahooQuotesApi;
 
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
 //Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection
-//The pooled HttpMessageHandler instances results in CookieContainer objects being shared. 
+//The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 
 internal class HttpClientFactoryCreator
 {
@@ -34,7 +34,9 @@ internal class HttpClientFactoryCreator
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = false,
-                //MaxConnectionsPerServer = 1 // The default: int.MaxValue
+                MaxConnectionsPerServer = 1, // The default: int.MaxValue
+                //CookieContainer = new CookieContainer(),
+                UseCookies = false // manual cookie handling, if any
             })
             //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
             .AddPolicyHandler(RetryPolicy)
@@ -45,7 +47,7 @@ internal class HttpClientFactoryCreator
             .AddHttpClient("history", client =>
             {
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
+                //client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
                 client.DefaultRequestVersion = new Version(2, 0);
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
             })
@@ -53,8 +55,9 @@ internal class HttpClientFactoryCreator
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = false,
-                CookieContainer = new CookieContainer(),
-                //MaxConnectionsPerServer = 1 // The default: int.MaxValue
+                MaxConnectionsPerServer = 1, // The default: int.MaxValue
+                //CookieContainer = new CookieContainer(),
+                UseCookies = false // manual cookie handling, if any
             })
             //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default is 2 minutes
             .AddPolicyHandler(RetryPolicy)
@@ -87,12 +90,16 @@ internal class HttpClientFactoryCreator
                     Logger.LogError("Retry[{N}]: ({StatusCode}) {ReasonPhrase}", n, r.Result.StatusCode, r.Result.ReasonPhrase);
             });
 
+
+    /// <summary>
+    /// Halt requests for 10 seconds if a HttpStatusCode.Unauthorized is received. Send BrokenCircuitException.
+    /// </summary>
     private AsyncCircuitBreakerPolicy<HttpResponseMessage> CircuitBreakerPolicy =>
-        HttpPolicyExtensions
-            .HandleTransientHttpError()
+        Policy
+            .HandleResult<HttpResponseMessage>(x => x.StatusCode == HttpStatusCode.Unauthorized)
             .CircuitBreakerAsync(
-                handledEventsAllowedBeforeBreaking: 3,
-                durationOfBreak: TimeSpan.FromSeconds(30),
+                handledEventsAllowedBeforeBreaking: 1,
+                durationOfBreak: TimeSpan.FromSeconds(10),
                 onBreak: (r, ts, ctx) =>
                 {
                     if (r.Result == default) // no result, an exception was thrown

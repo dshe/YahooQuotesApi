@@ -19,7 +19,7 @@ public class Security
         if (Currency.Length > 0)
         {
             if (!Symbol.TryCreate(Currency, out Symbol _))
-                logger.LogWarning("Invalid currency value: '{Currency}'.", Currency);
+                logger.LogWarning("Invalid currency symbol: '{Currency}'.", Currency);
         }
 
         if (DividendDateSeconds > 0)
@@ -32,7 +32,11 @@ public class Security
             EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampEnd).InUtc().LocalDateTime;
         ExchangeCloseTime = Exchanges.GetCloseTimeFromSymbol(Symbol);
         if (ExchangeTimezoneName.Length > 0)
+        {
             ExchangeTimezone = DateTimeZoneProvider.GetZoneOrNull(ExchangeTimezoneName);
+            if (ExchangeTimezone is null)
+                logger.LogWarning("ExchangeTimezone not found for: '{ExchangeTimezoneName}'.", ExchangeTimezoneName);
+        }
         if (RegularMarketTimeSeconds > 0 && ExchangeTimezone is not null)
             RegularMarketTime = Instant.FromUnixTimeSeconds(RegularMarketTimeSeconds).InZone(ExchangeTimezone);
         if (PreMarketTimeSeconds > 0 && ExchangeTimezone is not null)

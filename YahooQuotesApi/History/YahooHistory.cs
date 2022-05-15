@@ -59,9 +59,6 @@ internal sealed class YahooHistory
         string url = $"{address}{symbol}?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}" +
             $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}&interval=1{frequency.Name()}&events={parm}";
 
-        if (Logger.IsEnabled(LogLevel.Information))
-            Logger.LogInformation("{Url}", url);
-
         using HttpResponseMessage response = await YahooHistoryRequester.Request(url, ct).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return Result<ITick[]>.Fail("History not found.");
@@ -71,7 +68,7 @@ internal sealed class YahooHistory
         {
             using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             using StreamReader streamReader = new(stream);
-            ITick[] ticks = await streamReader.ToTicks<T>().ConfigureAwait(false);
+            ITick[] ticks = await streamReader.ToTicks<T>(Logger).ConfigureAwait(false);
             return Result<ITick[]>.Ok(ticks);
         }
         catch (Exception e)

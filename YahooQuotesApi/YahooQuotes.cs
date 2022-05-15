@@ -174,58 +174,50 @@ public sealed class YahooQuotes
             priceTick.Volume
         )).ToList();
 
-        if (!ticks.Any())
-            return Result<ValueTick[]>.Fail("No history available."); // ????????
-
         return AddLatest(ticks, security);
     }
 
     private Result<ValueTick[]> AddLatest(List<ValueTick> ticks, Security security)
     {
-        ZonedDateTime snapTime = security.RegularMarketTime;
-        if (snapTime == default)
-        {
-            Logger.LogDebug("RegularMarketTime unavailable for symbol: {Symbol}.", security.Symbol);
-            return Result<ValueTick[]>.Ok(ticks.ToArray());
-        }
-
-        decimal? snapPrice = security.RegularMarketPrice;
-        if (snapPrice is null)
+        if (security.RegularMarketPrice is null)
         {
             Logger.LogDebug("RegularMarketPrice unavailable for symbol: {Symbol}.", security.Symbol);
             return Result<ValueTick[]>.Ok(ticks.ToArray());
         }
 
+        if (security.RegularMarketTime == default)
+        {
+            Logger.LogDebug("RegularMarketTime unavailable for symbol: {Symbol}.", security.Symbol);
+            return Result<ValueTick[]>.Ok(ticks.ToArray());
+        }
+
         Instant now = Clock.GetCurrentInstant();
-        Instant snapTimeInstant = snapTime.ToInstant();
-        if (snapTimeInstant > now)
+        Instant snapTime = security.RegularMarketTime.ToInstant();
+        if (snapTime > now)
         {
-            if ((snapTimeInstant - now) > Duration.FromSeconds(10))
-                Logger.LogWarning("Snapshot date: {SnapTimeInstant} which follows current date: {Now} adjusted for symbol: {Symbol}.", snapTimeInstant, now, security.Symbol);
-            snapTimeInstant = now;
+            if ((snapTime - now) > Duration.FromSeconds(20))
+                Logger.LogWarning("Snapshot date: {SnapTimeInstant} which follows current date: {Now} adjusted for symbol: {Symbol}.", snapTime, now, security.Symbol);
+            snapTime = now;
         }
 
-        ValueTick latestHistory = ticks.Last();
-        if (latestHistory.Date >= snapTimeInstant)
-        {   // if history already includes snapshot, or exchange closes early
-            Logger.LogTrace("History tick with date: {Date} follows snapshot date: {SnapTimeInstant} removed for symbol: {Symbol}.", latestHistory.Date, snapTimeInstant, security.Symbol);
-            ticks.Remove(latestHistory);
-            if (!ticks.Any() || ticks.Last().Date >= snapTimeInstant)
-                return Result<ValueTick[]>.Fail($"Invalid dates.");
-        }
-
-        long? volume = security.RegularMarketVolume;
-        if (volume is null)
+        // assume snaptime is correct
+        while (ticks.Any())
         {
-            Logger.LogTrace("RegularMarketVolume unavailable for symbol: {Symbol}.", security.Symbol);
-            volume = 0;
+            ValueTick lastHistory = ticks.Last()!;
+            Instant lastDate = lastHistory.Date;
+            if (snapTime > lastDate)
+                break;
+            // if history already includes snapshot, or exchange closes early
+            // hist < snap <= now
+            Logger.LogTrace("History tick with date: {Date} equals or follows snapshot date: {SnapTimeInstant} removed for symbol: {Symbol}.", lastDate, snapTime, security.Symbol);
+            ticks.Remove(lastHistory);
         }
 
         ticks.Add(new ValueTick(
-            snapTimeInstant,
-            Convert.ToDouble(snapPrice, CultureInfo.InvariantCulture),
-            volume.Value
-        )); // hist < snap < now
+            snapTime,
+            Convert.ToDouble(security.RegularMarketPrice.Value, CultureInfo.InvariantCulture),
+            security.RegularMarketVolume ?? 0
+        )); 
 
         return Result<ValueTick[]>.Ok(ticks.ToArray());
     }

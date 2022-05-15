@@ -7,12 +7,13 @@ internal static class Exchanges
 {
     internal static LocalTime GetCloseTimeFromSymbol(Symbol symbol)
     {
+        if (symbol.IsCurrency)
+            throw new ArgumentException("Currency: {SymbolName}", symbol.Name);
+
         if (symbol.IsCurrencyRate)
             return new LocalTime(16, 0, 0);
 
-        string suffix = symbol.Suffix;
-
-        (int hour, int minute) = suffix switch
+        (int hour, int minute) = symbol.Suffix switch
         {
             "TO" => (16, 0), // Toronto Stock Exchange (TSX)
             "V" => (16, 0), // TSXV (Venture)

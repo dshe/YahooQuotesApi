@@ -33,6 +33,7 @@ public class ArgumentTests : TestBase
     [InlineData("=X")]
     [InlineData("JPY=X")]
     [InlineData("JPYX=X")]
+    //[InlineData("YNDX")]
     public async Task TestInvalidSymbols(string symbol)
     {
         await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(symbol));

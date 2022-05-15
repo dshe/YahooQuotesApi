@@ -1,4 +1,5 @@
-﻿using NodaTime.Text;
+﻿using Microsoft.Extensions.Logging;
+using NodaTime.Text;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -10,11 +11,14 @@ internal static class TickParser
 {
     private static readonly LocalDatePattern DatePattern = LocalDatePattern.CreateWithInvariantCulture("yyyy-MM-dd");
 
-    internal static async Task<ITick[]> ToTicks<T>(this StreamReader streamReader) where T : ITick
+    internal static async Task<ITick[]> ToTicks<T>(this StreamReader streamReader, ILogger logger) where T : ITick
     {
-        HashSet<ITick> ticks = new();
+        Dictionary<LocalDate, ITick> ticks = new();
+
         // read header
         await streamReader.ReadLineAsync().ConfigureAwait(false);
+
+        // add ticks to list
         while (!streamReader.EndOfStream)
         {
             string? row = await streamReader.ReadLineAsync().ConfigureAwait(false);
@@ -23,34 +27,34 @@ internal static class TickParser
             ITick? tick = GetTick<T>(row);
             if (tick is null)
                 continue;
-            if (!ticks.Add(tick))
-                throw new InvalidDataException("Duplicate tick date: " + tick.ToString() + ".");
+            // Sometimes currencies end with two rows having the same date.
+            if (ticks.TryGetValue(tick.Date, out ITick? tick1))
+                logger.LogInformation("Ticks have same date: {Tick1} => {Tick}", tick1, tick);
+            ticks[tick.Date] = tick; // Add or update (keep the latest).
         }
-        // occasionally, ticks are returned in seemingly random order!
-        return ticks.OrderBy(x => x.Date).ToArray();
+
+        // occasionally, ticks are returned in seemingly random order.
+        return ticks.Values.OrderBy(x => x.Date).ToArray();
     }
 
-    private static ITick? GetTick<T>(string rows) where T : ITick
+    private static ITick? GetTick<T>(string row) where T : ITick
     {
-        //ReadOnlySpan<char> all = rows;
-        //int i = all.IndexOf(',');
-        //ReadOnlySpan<char> theDate = all[..i];
-        //If you care about allocations, then you want a different API. And if you don't care about allocations, well, then you can just use String.Split.
-        string[] row = rows.Split(',');
+        // If you don't care about allocations, well, then you can just use String.Split.
+        string[] column = row.Split(',');
 
-        LocalDate date = row[0].ToDate();
+        LocalDate date = column[0].ToDate();
         if (typeof(T) == typeof(PriceTick))
         {
-            if (row[5] == "null")
+            if (column[5] == "null")
                 return null;
-            return new PriceTick(date, row[1].ToDouble(), row[2].ToDouble(), row[3].ToDouble(), row[4].ToDouble(), row[5].ToDouble(), row[6].ToLong());
+            return new PriceTick(date, column[1].ToDouble(), column[2].ToDouble(), column[3].ToDouble(), column[4].ToDouble(), column[5].ToDouble(), column[6].ToLong());
         }
         if (typeof(T) == typeof(DividendTick))
-            //return new DividendTick { Date = date, Dividend = row[1].ToDouble() };
-            return new DividendTick(date, row[1].ToDouble());
+            //return new DividendTick { Date = date, Dividend = column[1].ToDouble() };
+            return new DividendTick(date, column[1].ToDouble());
         if (typeof(T) == typeof(SplitTick))
         {
-            string[] split = row[1].Split(new[] { ':', '/' });
+            string[] split = column[1].Split(new[] { ':', '/' });
             if (split.Length != 2)
                 throw new InvalidOperationException("Split separator not found.");
             //return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
