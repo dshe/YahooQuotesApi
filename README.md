@@ -47,7 +47,7 @@ Assert.True(security.RegularMarketPrice > 0);
 #### snapshot with price history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-    .HistoryStarting(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
 Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory)
@@ -65,8 +65,8 @@ Assert.Equal(160.62, tick.Close);
 #### snapshot with price history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-    .HistoryStarting(Instant.FromUtc(2020, 7, 15, 0, 0))
-    .WithCaching(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
+    .WithHistoryStartDate(Instant.FromUtc(2020, 7, 15, 0, 0))
+    .WithCacheDuration(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
     .Build();
 
 Security security = await yahooQuotes
