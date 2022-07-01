@@ -111,7 +111,7 @@ public sealed class YahooQuotes
         }
 
         HashSet<Symbol> rateSymbols = currencySymbols
-            .Where(c => c.Currency != "USD")
+            .Where(c => c.Currency is not "USD")
             .Select(c => $"USD{c.Currency}=X".ToSymbol())
             .ToHashSet();
 
@@ -164,7 +164,7 @@ public sealed class YahooQuotes
         if (!result.Value.Any())
             return Result<ValueTick[]>.Fail("No history available.");
         if (security.ExchangeTimezone is null)
-            return Result<ValueTick[]>.Fail("Exchange timezone not found.");
+            return Result<ValueTick[]>.Fail("ExchangeTimezone not found.");
         if (security.ExchangeCloseTime == default)
             return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
 

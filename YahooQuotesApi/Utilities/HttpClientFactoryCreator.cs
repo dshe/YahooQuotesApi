@@ -14,6 +14,9 @@ namespace YahooQuotesApi;
 //Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection
 //The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 
+// The next version of Polly Http supports rate-limiting (v7.2.3 onwards)
+// https://github.com/App-vNext/Polly/wiki/Rate-Limit
+
 internal class HttpClientFactoryCreator
 {
     private readonly ILogger Logger;
@@ -34,7 +37,7 @@ internal class HttpClientFactoryCreator
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = false,
-                MaxConnectionsPerServer = 1, // The default: int.MaxValue
+                //MaxConnectionsPerServer = 1, // default is int.MaxValue; with HTTP/2, every request tends to reuse the same connectiom
                 //CookieContainer = new CookieContainer(),
                 UseCookies = false // manual cookie handling, if any
             })
@@ -55,7 +58,7 @@ internal class HttpClientFactoryCreator
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = false,
-                MaxConnectionsPerServer = 1, // The default: int.MaxValue
+                //MaxConnectionsPerServer = 1, // default is int.MaxValue; with HTTP/2, every request tends to reuse the same connectiom
                 //CookieContainer = new CookieContainer(),
                 UseCookies = false // manual cookie handling, if any
             })
