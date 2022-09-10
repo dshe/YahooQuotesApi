@@ -17,6 +17,9 @@ class Program
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
         await new MyApp(logger).Run(100, HistoryFlags.All, "JPY=X");
+
+        Console.WriteLine("Completed!");
+        Console.WriteLine("Press a key to exit...");
         Console.ReadLine();
     }
 }

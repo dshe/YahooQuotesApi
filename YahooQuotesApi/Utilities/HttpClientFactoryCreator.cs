@@ -5,9 +5,11 @@ using Polly.Extensions.Http;
 using Polly.Timeout;
 using Polly.Retry;
 using Polly.CircuitBreaker;
+//using Polly.RateLimit;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+
 namespace YahooQuotesApi;
 
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
@@ -42,9 +44,12 @@ internal class HttpClientFactoryCreator
                 UseCookies = false // manual cookie handling, if any
             })
             //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
+            //.AddTransientHttpErrorPolicy
+            //.AddTransientHttpErrorPolicy(x => x.RetryAsync(3))
             .AddPolicyHandler(RetryPolicy)
             .AddPolicyHandler(TimeoutPolicy)
             .AddPolicyHandler(CircuitBreakerPolicy)
+            //.AddPolicyHandler(RateLimitPolicy)
             .Services
 
             .AddHttpClient("history", client =>
@@ -63,6 +68,8 @@ internal class HttpClientFactoryCreator
                 UseCookies = false // manual cookie handling, if any
             })
             //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default is 2 minutes
+            //.AddTransientHttpErrorPolicy
+            //
             .AddPolicyHandler(RetryPolicy)
             .AddPolicyHandler(TimeoutPolicy)
             .AddPolicyHandler(CircuitBreakerPolicy)
@@ -71,9 +78,6 @@ internal class HttpClientFactoryCreator
             .BuildServiceProvider()
             .GetRequiredService<IHttpClientFactory>();
     }
-
-    private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy =
-        Policy.TimeoutAsync<HttpResponseMessage>(20); // Timeout for an individual try
 
     private AsyncRetryPolicy<HttpResponseMessage> RetryPolicy =>
         HttpPolicyExtensions
@@ -93,6 +97,8 @@ internal class HttpClientFactoryCreator
                     Logger.LogError("Retry[{N}]: ({StatusCode}) {ReasonPhrase}", n, r.Result.StatusCode, r.Result.ReasonPhrase);
             });
 
+    private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy =
+        Policy.TimeoutAsync<HttpResponseMessage>(20); // Timeout for an individual try
 
     /// <summary>
     /// Halt requests for 10 seconds if a HttpStatusCode.Unauthorized is received. Send BrokenCircuitException.
@@ -114,4 +120,9 @@ internal class HttpClientFactoryCreator
                 {
                     Logger.LogWarning($"Circuit Resetting...");
                 });
+
+    /*
+    private readonly AsyncRateLimitPolicy<HttpResponseMessage> RateLimitPolicy = 
+        Policy.RateLimitAsync<HttpResponseMessage>(100, TimeSpan.FromSeconds(1), 100);
+    */
 }

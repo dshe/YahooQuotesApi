@@ -73,13 +73,13 @@ public class Examples
 
         PriceTick tick = security.PriceHistory.Value[0];
         Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
-        Assert.Equal(309.202, tick.Close); // in USD
+        Assert.Equal(103.0673, tick.Close); // in USD
 
         Instant instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
             .InZoneLeniently(security.ExchangeTimezone!).ToInstant();
 
         ValueTick tickBase = security.PriceHistoryBase.Value[0];
         Assert.Equal(instant, tickBase.Date);
-        Assert.Equal(33139, tickBase.Value, 0); // in JPY
+        Assert.Equal(11046, tickBase.Value, 0); // in JPY
     }
 }
