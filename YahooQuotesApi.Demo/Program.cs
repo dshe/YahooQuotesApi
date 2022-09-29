@@ -16,7 +16,9 @@ class Program
             .CreateLogger("Logger");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
-        await new MyApp(logger).Run(100, HistoryFlags.All, "JPY=X");
+        await new MyApp(logger).Run(100, Histories.All, "JPY=X");
+
+        await Task.Delay(3000);
 
         Console.WriteLine("Completed!");
         Console.WriteLine("Press a key to exit...");

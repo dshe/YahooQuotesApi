@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ internal class YahooSnapshot
         Cache = new SerialProducerCache<Symbol, Security?>(clock, cacheDuration, Producer);
     }
 
-    internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct = default)
+    internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
     {
         Symbol currency = symbols.FirstOrDefault(s => s.IsCurrency, Symbol.Undefined);
         if (currency.IsValid)
@@ -56,7 +57,7 @@ internal class YahooSnapshot
 
         ParallelOptions parallelOptions = new()
         {
-            //MaxDegreeOfParallelism = 16,
+            MaxDegreeOfParallelism = 4,
             CancellationToken = ct
         };
 
@@ -90,8 +91,8 @@ internal class YahooSnapshot
 
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 
-        //var options = new JsonSerializerOptions() { }
-        //var xx = await HttpClient.GetFromJsonAsync<object>(uri, options, ct).ConfigureAwait(false);
+        //var options = new JsonSerializerOptions() { };
+        //var xx = await httpClient.GetFromJsonAsync<object>(uri, options, ct).ConfigureAwait(false);
 
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))

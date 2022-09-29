@@ -25,7 +25,7 @@ public class MyApp
             .Build();
     }
 
-    public async Task Run(int number, HistoryFlags flags, string baseCurrency)
+    public async Task Run(int number, Histories flags, string baseCurrency)
     {
         List<Symbol> symbols = GetSymbols(number);
 

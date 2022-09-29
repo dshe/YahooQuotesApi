@@ -25,10 +25,10 @@ public sealed class YahooQuotes
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
-    public async Task<Security?> GetAsync(string symbol, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default) =>
+    public async Task<Security?> GetAsync(string symbol, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default) =>
         (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, HistoryFlags historyFlags = HistoryFlags.None, string historyBase = "", CancellationToken ct = default)
+    public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default)
     {
         List<Symbol> syms = symbols
             .Select(s => s.ToSymbol())
@@ -46,10 +46,10 @@ public sealed class YahooQuotes
         return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<Security?> GetAsync(Symbol symbol, HistoryFlags historyFlags = HistoryFlags.None, Symbol? historyBase = null, CancellationToken ct = default) =>
+    public async Task<Security?> GetAsync(Symbol symbol, Histories historyFlags = Histories.None, Symbol? historyBase = null, CancellationToken ct = default) =>
         (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, HistoryFlags historyFlags = HistoryFlags.None, Symbol? historyBase = null, CancellationToken ct = default)
+    public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, Histories historyFlags = Histories.None, Symbol? historyBase = null, CancellationToken ct = default)
     {
         HashSet<Symbol> syms = symbols.ToHashSet();
         if (historyBase is not null)
@@ -58,7 +58,7 @@ public sealed class YahooQuotes
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
             if (syms.Any(s => s.IsCurrencyRate))
                 throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
-            if (!historyFlags.HasFlag(HistoryFlags.PriceHistory))
+            if (!historyFlags.HasFlag(Histories.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
         }
         if (historyBase is null && syms.Any(s => s.IsCurrency))
@@ -75,14 +75,14 @@ public sealed class YahooQuotes
         }
     }
 
-    private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, HistoryFlags historyFlags, Symbol? historyBase, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, Histories historyFlags, Symbol? historyBase, CancellationToken ct)
     {
         HashSet<Symbol> stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToHashSet();
         if (historyBase is not null && historyBase.Value.IsStock)
             stockAndCurrencyRateSymbols.Add(historyBase.Value);
         Dictionary<Symbol, Security?> securities = await Snapshot.GetAsync(stockAndCurrencyRateSymbols, ct).ConfigureAwait(false);
 
-        if (historyFlags == HistoryFlags.None)
+        if (historyFlags == Histories.None)
             return securities;
 
         if (historyBase is not null)
@@ -123,38 +123,33 @@ public sealed class YahooQuotes
             securities[security.Key] = security.Value; // long symbol
     }
 
-    private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, HistoryFlags historyFlags, CancellationToken ct)
+    private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, Histories historyFlags, CancellationToken ct)
     {
-        List<Security> secs = securities.Values.NotNull().ToList();
-
-        List<Task> tasks = new();
+        (Security security, Histories flag)[] jobs = securities.Values.NotNull()
+            .Select(security => Enum.GetValues<Histories>().Select(flag => (security, flag)))
+            .SelectMany(x => x)
+            .ToArray();
 
         ParallelOptions parallelOptions = new()
         {
-            //MaxDegreeOfParallelism = 16,
+            MaxDegreeOfParallelism = 8,
             CancellationToken = ct
         };
 
-        if (historyFlags.HasFlag(HistoryFlags.PriceHistory))
+        await Parallel.ForEachAsync(jobs, parallelOptions, async (job, ct) =>
         {
-            tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
+            Security security = job.security;
+            Histories flag = job.flag;
+            if (flag == Histories.PriceHistory)
             {
-                sec.PriceHistory = await History.GetTicksAsync<PriceTick>(sec.Symbol, ct).ConfigureAwait(false);
-                sec.PriceHistoryBase = GetPriceHistoryBase(sec.PriceHistory, sec);
-            }));
-        }
-        if (historyFlags.HasFlag(HistoryFlags.DividendHistory))
-        {
-            tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
-                 sec.DividendHistory = await History.GetTicksAsync<DividendTick>(sec.Symbol, ct).ConfigureAwait(false)));
-        }
-        if (historyFlags.HasFlag(HistoryFlags.SplitHistory))
-        {
-            tasks.Add(Parallel.ForEachAsync(secs, parallelOptions, async (sec, ct) =>
-                 sec.SplitHistory = await History.GetTicksAsync<SplitTick>(sec.Symbol, ct).ConfigureAwait(false)));
-        }
-
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+                security.PriceHistory = await History.GetTicksAsync<PriceTick>(security.Symbol, ct).ConfigureAwait(false);
+                security.PriceHistoryBase = GetPriceHistoryBase(security.PriceHistory, security);
+            }
+            else if (flag == Histories.DividendHistory)
+                security.DividendHistory = await History.GetTicksAsync<DividendTick>(security.Symbol, ct).ConfigureAwait(false);
+            else if (flag == Histories.SplitHistory)
+                security.SplitHistory = await History.GetTicksAsync<SplitTick>(security.Symbol, ct).ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 
     private Result<ValueTick[]> GetPriceHistoryBase(Result<PriceTick[]> result, Security security)

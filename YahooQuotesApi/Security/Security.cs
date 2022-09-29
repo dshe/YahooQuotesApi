@@ -5,7 +5,9 @@ using System.Reflection;
 using System.Text.Json;
 namespace YahooQuotesApi;
 
+#pragma warning disable CA1724 // The type name Security conflicts...
 public class Security
+#pragma warning restore CA1724
 {
     private static readonly IDateTimeZoneProvider DateTimeZoneProvider = DateTimeZoneProviders.Tzdb;
 

@@ -43,7 +43,7 @@ public class HistoryBaseTests : TestBase
 
     public async Task Test01Arguments(string symbol, string baseSymbol, int error)
     {
-        var task = MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol);
+        var task = MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol);
         if (error == 1)
         {
             await Assert.ThrowsAsync<ArgumentException>(async () => await task);
@@ -73,7 +73,7 @@ public class HistoryBaseTests : TestBase
     //[InlineData("CHF=X", "X")]
     public async Task Test02Arguments(string symbol, string baseSymbol, double expected)
     {
-        Security security = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol)
+        Security security = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol)
             ?? throw new ArgumentException("Invalid symbol");
         //var currency = security.Currency.ToUpper() + "=X";
         Assert.True(security.PriceHistory.HasValue);
@@ -87,7 +87,7 @@ public class HistoryBaseTests : TestBase
         Assert.True(security.PriceHistoryBase.HasValue);
         ValueTick valueTick = security.PriceHistoryBase.Value[0];
 
-        Security baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory)
+        Security baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, Histories.PriceHistory)
             ?? throw new ArgumentException("Invalid symbol");
         Assert.True(baseSecurity.PriceHistory.HasValue);
         
@@ -101,7 +101,7 @@ public class HistoryBaseTests : TestBase
     public async Task Test02NoHistory()
     {
         // Symbol SFO does not have history.
-        var result = await MyYahooQuotes.GetAsync("SFO", HistoryFlags.PriceHistory, "USD=X");
+        var result = await MyYahooQuotes.GetAsync("SFO", Histories.PriceHistory, "USD=X");
         Assert.True(result?.PriceHistory.HasError);
         Assert.True(result?.PriceHistoryBase.HasError);
     }
@@ -114,7 +114,7 @@ public class HistoryBaseTests : TestBase
     [InlineData("7203.T", "EUR=X")]
     public async Task Test03SecurityBaseCurrency(string symbol, string baseSymbol)
     {
-        var security = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+        var security = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
         var currency = security.Currency + "=X";
         var date = security.PriceHistoryBase.Value.First().Date;
         var price = security.PriceHistory.Value.First().Close;
@@ -124,14 +124,14 @@ public class HistoryBaseTests : TestBase
             if (baseSymbol != "USD=X")
             {
                 var rateSymbol = "USD" + baseSymbol;
-                var sec = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
+                var sec = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
                 var rate = sec.PriceHistoryBase.Value.InterpolateValue(date);
                 price *= rate;
             }
             if (currency != "USD=X")
             {
                 var rateSymbol = "USD" + currency;
-                var sec = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
+                var sec = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
                 var rate = sec.PriceHistoryBase.Value.InterpolateValue(date);
                 price /= rate;
             }
@@ -148,11 +148,11 @@ public class HistoryBaseTests : TestBase
     //[InlineData("7203.T", "HXT.TO")]
     public async Task Test04SecurityBaseSecurity(string symbol, string baseSymbol)
     {
-        var security = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+        var security = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
         var currency = security.Currency + "=X";
         var date = security.PriceHistoryBase.Value.First().Date;
         var price = security.PriceHistory.Value.First().Close;
-        var baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
+        var baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
         var baseSecurityCurrency = baseSecurity.Currency + "=X";
 
         if (currency != baseSecurityCurrency)
@@ -160,14 +160,14 @@ public class HistoryBaseTests : TestBase
             if (baseSecurityCurrency != "USD=X")
             {
                 var rateSymbol = "USD" + baseSecurityCurrency;
-                var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
+                var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
                 var rate = secCurrency.PriceHistoryBase.Value.InterpolateValue(date);
                 price *= rate;
             }
             if (currency != "USD=X")
             {
                 var rateSymbol = "USD" + currency;
-                var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
+                var secCurrency = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
                 var rate = secCurrency.PriceHistoryBase.Value.InterpolateValue(date);
                 price /= rate;
             }
@@ -185,13 +185,13 @@ public class HistoryBaseTests : TestBase
     [InlineData("EUR=X", "CAD=X")] // change base to CAD
     public async Task Test05CurrencyBaseCurrency(string currencySymbol, string baseCurrencySymbol)
     {
-        Security security = await MyYahooQuotes.GetAsync(currencySymbol, HistoryFlags.PriceHistory, baseCurrencySymbol) ?? throw new Exception($"Unknown symbol: {currencySymbol}.");
+        Security security = await MyYahooQuotes.GetAsync(currencySymbol, Histories.PriceHistory, baseCurrencySymbol) ?? throw new Exception($"Unknown symbol: {currencySymbol}.");
 
         var date = security.PriceHistoryBase.Value.First().Date;
         var resultFound = security.PriceHistoryBase.Value.First().Value;
 
         var symbol = $"{currencySymbol[..3]}{baseCurrencySymbol}";
-        var security2 = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
+        var security2 = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
         var priceHistory = security2.PriceHistoryBase.Value;
         var rate = priceHistory.InterpolateValue(date);
         Assert.Equal(rate, resultFound, 2);
@@ -204,26 +204,26 @@ public class HistoryBaseTests : TestBase
     //[InlineData("CHF=X", "7203.T")]
     public async Task Test06CurrencyBaseSecurity(string symbol, string baseSymbol)
     {
-        var security = await MyYahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
+        var security = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
         var date = security.PriceHistoryBase.Value[0].Date;
         var price = 1d;
 
         if (symbol != "USD=X")
         {
             var rateSymbol = "USD" + symbol;
-            var sec1 = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
+            var sec1 = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol:?");
             var rate = sec1.PriceHistoryBase.Value.InterpolateValue(date);
             price /= rate;
         }
 
-        var sec2 = await MyYahooQuotes.GetAsync(baseSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
+        var sec2 = await MyYahooQuotes.GetAsync(baseSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {baseSymbol}.");
         var value = sec2.PriceHistoryBase.Value.InterpolateValue(date);
         price /= value;
 
         if (sec2.Currency != "USD")
         {
             var rateSymbol = $"USD{sec2.Currency}=X";
-            var sec3 = await MyYahooQuotes.GetAsync(rateSymbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
+            var sec3 = await MyYahooQuotes.GetAsync(rateSymbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {rateSymbol}.");
             var rate = sec3.PriceHistoryBase.Value.InterpolateValue(date);
             price *= rate;
         }

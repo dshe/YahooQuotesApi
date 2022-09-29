@@ -44,7 +44,7 @@ public class DividendCheck : TestBase
 
     public async Task<List<Rec>> CheckDividends(string symbol)
     {
-        var security = await YahooQuotes.GetAsync(symbol, HistoryFlags.All);
+        var security = await YahooQuotes.GetAsync(symbol, Histories.All);
         var prices = security!.PriceHistory.Value;
         var dividends = security!.DividendHistory.Value; // may be incomplete
 

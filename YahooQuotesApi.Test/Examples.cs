@@ -43,7 +43,7 @@ public class Examples
             .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
             .Build();
 
-        Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory) ??
+        Security security = await yahooQuotes.GetAsync("MSFT", Histories.PriceHistory) ??
             throw new ArgumentException("Unknown symbol: MSFT.");
 
         Assert.Equal("NasdaqGS", security.FullExchangeName);
@@ -64,7 +64,7 @@ public class Examples
             .Build();
 
         Security security = await yahooQuotes
-            .GetAsync("TSLA", HistoryFlags.PriceHistory, historyBase: "JPY=X")
+            .GetAsync("TSLA", Histories.PriceHistory, historyBase: "JPY=X")
                 ?? throw new ArgumentException("Unknown symbol: TSLA.");
 
         Assert.Equal("Tesla, Inc.", security.ShortName);

@@ -1,7 +1,7 @@
 ﻿namespace YahooQuotesApi;
 
 [Flags]
-public enum HistoryFlags
+public enum Histories
 {
     None = 0,
     PriceHistory = 1,

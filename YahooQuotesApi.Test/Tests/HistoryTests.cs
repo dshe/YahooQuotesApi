@@ -18,7 +18,7 @@ public class HistoryTests : TestBase
             .WithLogger(Logger)
             .WithHistoryStartDate(Instant.FromUtc(2022, 1, 1, 0, 0))
             .Build();
-        var security = await yahooQuotes.GetAsync("IBM", HistoryFlags.PriceHistory) ?? throw new ArgumentNullException();
+        var security = await yahooQuotes.GetAsync("IBM", Histories.PriceHistory) ?? throw new ArgumentNullException();
         Assert.NotEmpty(security.PriceHistory.Value);
     }
 
@@ -35,7 +35,7 @@ public class HistoryTests : TestBase
             .WithLogger(Logger)
             .WithHistoryStartDate(instant)
             .Build()
-            .GetAsync("AAPL", HistoryFlags.PriceHistory) ?? throw new ArgumentException();
+            .GetAsync("AAPL", Histories.PriceHistory) ?? throw new ArgumentException();
 
         var history = security.PriceHistory;
         var tick = history.Value.First();
@@ -54,7 +54,7 @@ public class HistoryTests : TestBase
             .WithLogger(Logger)
             .WithHistoryStartDate(instant)
             .Build()
-            .GetAsync("2618.TW", HistoryFlags.PriceHistory);
+            .GetAsync("2618.TW", Histories.PriceHistory);
 
         var ticks = security!.PriceHistory.Value;
 
@@ -74,7 +74,7 @@ public class HistoryTests : TestBase
             .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
-        var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.DividendHistory) ?? throw new ArgumentException();
+        var security = await yahooQuotes.GetAsync("AAPL", Histories.DividendHistory) ?? throw new ArgumentException();
         var dividends = security.DividendHistory.Value.ToList();
         var dividend = dividends.First();
 
@@ -94,7 +94,7 @@ public class HistoryTests : TestBase
             .WithHistoryStartDate(instant)
             .Build();
 
-        var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.SplitHistory) ?? throw new ArgumentException();
+        var security = await yahooQuotes.GetAsync("AAPL", Histories.SplitHistory) ?? throw new ArgumentException();
         SplitTick split = security.SplitHistory.Value[0];
 
         Assert.Equal(1, split.BeforeSplit);
@@ -114,7 +114,7 @@ public class HistoryTests : TestBase
             .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
-        var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
+        var security = await yahooQuotes.GetAsync("AAPL", Histories.PriceHistory);
         var ticks = security!.PriceHistory.Value;
 
         Assert.Equal(zdt.LocalDateTime.Date, ticks[0].Date);
@@ -134,7 +134,7 @@ public class HistoryTests : TestBase
             .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
-        var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
+        var security = await yahooQuotes.GetAsync("AAPL", Histories.PriceHistory);
         var ticks = security!.PriceHistory.Value;
 
         Assert.Equal(startDate, ticks[0].Date); // previous Monday
@@ -154,7 +154,7 @@ public class HistoryTests : TestBase
             .WithHistoryStartDate(zdt.ToInstant())
             .Build();
 
-        var security = await yahooQuotes.GetAsync("AAPL", HistoryFlags.PriceHistory);
+        var security = await yahooQuotes.GetAsync("AAPL", Histories.PriceHistory);
         var ticks = security!.PriceHistory.Value;
 
         foreach (var tick in ticks)

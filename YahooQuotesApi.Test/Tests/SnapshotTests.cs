@@ -78,7 +78,7 @@ public class SnapshotTests : TestBase
                 .WithLogger(Logger)
                 .WithHistoryStartDate(date)
                 .Build()
-                .GetAsync(symbol, HistoryFlags.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
+                .GetAsync(symbol, Histories.PriceHistory) ?? throw new Exception($"Unknown symbol: {symbol}.");
 
             var ticks = securityWithHistory.PriceHistoryBase.Value;
             Assert.Equal(date, ticks.First().Date);
@@ -99,7 +99,7 @@ public class SnapshotTests : TestBase
             .WithNonAdjustedClose()
             .Build();
 
-        var security = await yahooQuotes.GetAsync(symbol, HistoryFlags.PriceHistory)
+        var security = await yahooQuotes.GetAsync(symbol, Histories.PriceHistory)
             ?? throw new ArgumentException();
         Assert.Equal(timeZone, security.ExchangeTimezone);
 
