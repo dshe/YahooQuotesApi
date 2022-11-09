@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+
 namespace YahooQuotesApi;
 
 public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>

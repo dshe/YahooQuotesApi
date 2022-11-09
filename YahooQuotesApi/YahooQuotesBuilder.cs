@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
 namespace YahooQuotesApi;
 
 public sealed class YahooQuotesBuilder
 {
+    public YahooQuotesBuilder() { }
+
     internal IClock Clock { get; private set; } =  SystemClock.Instance;
     internal YahooQuotesBuilder WithClock(IClock clock) // for testing
     {

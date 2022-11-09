@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 namespace YahooQuotesApi;
 
 internal static class TickParser

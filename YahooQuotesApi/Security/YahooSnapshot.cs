@@ -4,13 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+
 namespace YahooQuotesApi;
 
-internal class YahooSnapshot
+internal class YahooSnapshot : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
@@ -80,19 +81,12 @@ internal class YahooSnapshot
 
     private async Task<List<JsonElement>> MakeRequest(Uri uri, CancellationToken ct)
     {
-        if (Logger.IsEnabled(LogLevel.Information))
-            Logger.LogInformation("{Uri}", uri.ToString());
+        Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
-        using HttpRequestMessage request = new(HttpMethod.Get, uri);
-        using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
-
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-
-        //var options = new JsonSerializerOptions() { };
-        //var xx = await httpClient.GetFromJsonAsync<object>(uri, options, ct).ConfigureAwait(false);
 
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))
@@ -106,4 +100,6 @@ internal class YahooSnapshot
             throw new InvalidDataException("result");
         return result.EnumerateArray().ToList();
     }
+
+    public void Dispose() => Cache.Dispose();
 }

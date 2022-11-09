@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+
 namespace YahooQuotesApi;
 
 public readonly struct Result<T> : IEquatable<Result<T>>
@@ -73,9 +74,11 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         (value, error) = (Value, Error);
     }
 
+
     public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
     public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 
+#pragma warning disable CA1000 // static members on generic types
     public static Result<T> Ok(T value) => new(value);
     public static Result<T> Fail(string error) => new(error);
 
@@ -86,6 +89,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         {
             return Result<T>.Ok(producer());
         }
+#pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
         {
             return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");

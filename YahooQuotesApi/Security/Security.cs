@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+
 namespace YahooQuotesApi;
 
 #pragma warning disable CA1724 // The type name Security conflicts...
@@ -107,7 +108,7 @@ public class Security
         JsonElement value = jproperty.Value;
         JsonValueKind kind = value.ValueKind;
         if (kind == JsonValueKind.String)
-            return value.GetString();
+            return value.GetString(); // may return null
         if (kind == JsonValueKind.True || kind == JsonValueKind.False)
             return value.GetBoolean();
         if (kind == JsonValueKind.Number)
@@ -120,7 +121,7 @@ public class Security
         return value.GetRawText();
     }
 
-    public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
+    public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
     public Decimal Ask { get; private set; }
     public Int64 AskSize { get; private set; }
@@ -130,7 +131,9 @@ public class Security
     public Decimal Bid { get; internal set; }
     public Int64 BidSize { get; private set; }
     public Decimal BookValue { get; private set; }
+    public Boolean? CryptoTradeable { get; private set; }
     public String Currency { get; internal set; } = "";
+    public String CustomPriceAlertConfidence { get; private set; } = "";
     public String DisplayName { get; private set; } = "";
     public LocalDateTime DividendDate { get; }
     public Int64 DividendDateSeconds { get; private set; }
@@ -217,5 +220,6 @@ public class Security
     public Decimal? TwoHundredDayAverage { get; private set; }
     public Decimal? TwoHundredDayAverageChange { get; private set; }
     public Decimal? TwoHundredDayAverageChangePercent { get; private set; }
+    public String TypeDisp { get; private set; } = "";
     public Decimal? YtdReturn { get; private set; }
 }

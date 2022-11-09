@@ -5,9 +5,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+
 namespace YahooQuotesApi;
 
-public sealed class YahooQuotes
+public sealed class YahooQuotes : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IClock Clock;
@@ -125,8 +126,11 @@ public sealed class YahooQuotes
 
     private async Task AddHistoryToSecurities(Dictionary<Symbol, Security?> securities, Histories historyFlags, CancellationToken ct)
     {
-        (Security security, Histories flag)[] jobs = securities.Values.NotNull()
-            .Select(security => Enum.GetValues<Histories>().Select(flag => (security, flag)))
+        Histories[] histories = Enum.GetValues<Histories>().Where(history => historyFlags.HasFlag(history)).ToArray();
+
+        (Security security, Histories flag)[] jobs = securities.Values
+            .NotNull()
+            .Select(security => histories.Select(history => (security, history)))
             .SelectMany(x => x)
             .ToArray();
 
@@ -216,4 +220,6 @@ public sealed class YahooQuotes
 
         return Result<ValueTick[]>.Ok(ticks.ToArray());
     }
+
+    public void Dispose() => Snapshot.Dispose();
 }
