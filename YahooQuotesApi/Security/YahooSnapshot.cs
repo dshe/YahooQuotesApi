@@ -11,17 +11,18 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
-internal class YahooSnapshot : IDisposable
+public sealed class YahooSnapshot : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    internal YahooSnapshot(IClock clock, ILogger logger, IHttpClientFactory factory, Duration cacheDuration)
+    public YahooSnapshot(YahooQuotesBuilder builder, IHttpClientFactory factory)
     {
-        Logger = logger;
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        Logger = builder.Logger;
         HttpClientFactory = factory;
-        Cache = new SerialProducerCache<Symbol, Security?>(clock, cacheDuration, Producer);
+        Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
     }
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
@@ -51,10 +52,10 @@ internal class YahooSnapshot : IDisposable
 
     private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
     {
-        List<(Uri uri, List<JsonElement> elements)> datas =
+        (Uri uri, List<JsonElement> elements)[] datas =
             GetUris(symbols)
                 .Select(uri => (uri, elements: new List<JsonElement>()))
-                .ToList();
+                .ToArray();
 
         ParallelOptions parallelOptions = new()
         {
@@ -79,26 +80,36 @@ internal class YahooSnapshot : IDisposable
             .Select(s => new Uri(s));
     }
 
-    private async Task<List<JsonElement>> MakeRequest(Uri uri, CancellationToken ct)
+    private async Task<JsonElement[]> MakeRequest(Uri uri, CancellationToken ct)
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
-        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-        using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        //response.EnsureSuccessStatusCode();
+        using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+
         if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))
             throw new InvalidDataException("quoteResponse");
         if (!quoteResponse.TryGetProperty("error", out JsonElement error))
             throw new InvalidDataException("error");
-        string? errorMessage = error.GetString();
-        if (errorMessage is not null)
-            throw new InvalidDataException($"Error requesting YahooSnapshot: {errorMessage}.");
+        if (error.ValueKind is not JsonValueKind.Null)
+        {
+            string errorMessage = error.ToString();
+            if (error.TryGetProperty("description", out JsonElement property))
+            {
+                string? description = property.GetString();
+                if (description is not null)
+                    errorMessage = description;
+            }
+            throw new InvalidDataException($"Error requesting YahooSnapshot: {errorMessage}");
+        }
         if (!quoteResponse.TryGetProperty("result", out JsonElement result))
             throw new InvalidDataException("result");
-        return result.EnumerateArray().ToList();
+        return result.EnumerateArray().ToArray();
     }
 
     public void Dispose() => Cache.Dispose();

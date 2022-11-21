@@ -38,7 +38,7 @@ internal static class HistoryBaseComposer
             if (res.HasError)
                 return res;
             if (res.Value.Length < 2)
-                return Result<ValueTick[]>.Fail($"Not enough history items({res.Value.Length}).");
+                return Result<ValueTick[]>.Fail($"Not enough history items: ({res.Value.Length}).");
             stockTicks = res.Value;
 
             string c = stockSecurity.Currency;
@@ -96,7 +96,7 @@ internal static class HistoryBaseComposer
             if (res.HasError)
                 return res;
             if (res.Value.Length < 2)
-                return Result<ValueTick[]>.Fail($"Base currency rate not enough history items({res.Value.Length}): '{baseSymbol}'.");
+                return Result<ValueTick[]>.Fail($"Base currency rate not enough history items ({res.Value.Length}): '{baseSymbol}'.");
             baseCurrencyTicks = res.Value;
         }
 

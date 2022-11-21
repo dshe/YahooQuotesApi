@@ -14,12 +14,15 @@ internal static class TickParser
 
     internal static async Task<ITick[]> ToTicks<T>(this StreamReader streamReader, ILogger logger) where T : ITick
     {
-        Dictionary<LocalDate, ITick> ticks = new();
+        // Sometimes currencies end with two rows having the same date.
+        // Sometimes ticks are returned in seemingly random order.
+        // So use a dictionary to clean data.
+        Dictionary<LocalDate, ITick> ticks = new(0x100);
 
         // read header
         await streamReader.ReadLineAsync().ConfigureAwait(false);
 
-        // add ticks to list
+        // add ticks to dictionary
         while (!streamReader.EndOfStream)
         {
             string? row = await streamReader.ReadLineAsync().ConfigureAwait(false);
@@ -28,13 +31,10 @@ internal static class TickParser
             ITick? tick = GetTick<T>(row);
             if (tick is null)
                 continue;
-            // Sometimes currencies end with two rows having the same date.
             if (ticks.TryGetValue(tick.Date, out ITick? tick1))
                 logger.LogInformation("Ticks have same date: {Tick1} => {Tick}", tick1, tick);
             ticks[tick.Date] = tick; // Add or update (keep the latest).
         }
-
-        // occasionally, ticks are returned in seemingly random order.
         return ticks.Values.OrderBy(x => x.Date).ToArray();
     }
 
@@ -51,14 +51,12 @@ internal static class TickParser
             return new PriceTick(date, column[1].ToDouble(), column[2].ToDouble(), column[3].ToDouble(), column[4].ToDouble(), column[5].ToDouble(), column[6].ToLong());
         }
         if (typeof(T) == typeof(DividendTick))
-            //return new DividendTick { Date = date, Dividend = column[1].ToDouble() };
             return new DividendTick(date, column[1].ToDouble());
         if (typeof(T) == typeof(SplitTick))
         {
             string[] split = column[1].Split(new[] { ':', '/' });
             if (split.Length != 2)
                 throw new InvalidOperationException("Split separator not found.");
-            //return new SplitTick { Date = date, BeforeSplit = split[1].ToDouble(), AfterSplit = split[0].ToDouble() };
             return new SplitTick(date, split[1].ToDouble(), split[0].ToDouble());
         }
         throw new InvalidOperationException("Tick type.");

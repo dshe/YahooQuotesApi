@@ -95,10 +95,10 @@ public class MyApp
         //foreach (var security in securities.Where(s => s.PriceHistoryBase.HasError).Where(s => !s.PriceHistoryBase.Error.StartsWith("History not found")))
         //    Logger.LogError($"Historybase error for symbol '{security.Symbol}' {security.PriceHistoryBase.Error}");
 
-        LogUnique(securities.Where(s => s.PriceHistory.HasError).Select(s => s.PriceHistory.Error)
-        .Concat(securities.Where(s => s.DividendHistory.HasError).Select(s => s.DividendHistory.Error))
-        .Concat(securities.Where(s => s.SplitHistory.HasError).Select(s => s.SplitHistory.Error))
-        .Concat(securities.Where(s => s.PriceHistoryBase.HasError).Select(s => s.PriceHistoryBase.Error)));
+        LogUnique(securities.Where(s => s.PriceHistory.HasError).Select(s => s.PriceHistory.Error.Message)
+        .Concat(securities.Where(s => s.DividendHistory.HasError).Select(s => s.DividendHistory.Error.Message))
+        .Concat(securities.Where(s => s.SplitHistory.HasError).Select(s => s.SplitHistory.Error.Message))
+        .Concat(securities.Where(s => s.PriceHistoryBase.HasError).Select(s => s.PriceHistoryBase.Error.Message)));
     }
 
     private void LogUnique(IEnumerable<string> errors)

@@ -2,27 +2,30 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
-public sealed class YahooQuotes : IDisposable
+public sealed partial class YahooQuotes : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IClock Clock;
     private readonly YahooSnapshot Snapshot;
     private readonly YahooHistory History;
+    private readonly YahooModules Modules;
     private readonly bool UseNonAdjustedClose;
 
-    internal YahooQuotes(YahooQuotesBuilder builder)
+    // must be public to support dependency injection
+    public YahooQuotes(YahooQuotesBuilder builder, YahooSnapshot snapshot, YahooHistory history, YahooModules modules)
     {
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         Logger = builder.Logger;
         Clock = builder.Clock;
-        IHttpClientFactory httpFactory = new HttpClientFactoryCreator(Logger).Create();
-        Snapshot = new YahooSnapshot(Clock, Logger, httpFactory, builder.SnapshotCacheDuration);
-        History = new YahooHistory(Clock, Logger, httpFactory, builder.HistoryStartDate, builder.HistoryCacheDuration, builder.PriceHistoryFrequency);
+        Snapshot = snapshot;
+        History = history;
+        Modules = modules;
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
@@ -31,10 +34,10 @@ public sealed class YahooQuotes : IDisposable
 
     public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default)
     {
-        List<Symbol> syms = symbols
+        Symbol[] syms = symbols
             .Select(s => s.ToSymbol())
             .Distinct()
-            .ToList();
+            .ToArray();
 
         Symbol? historyBaseSymbol = null;
         if (!string.IsNullOrEmpty(historyBase))
@@ -144,14 +147,14 @@ public sealed class YahooQuotes : IDisposable
         {
             Security security = job.security;
             Histories flag = job.flag;
-            if (flag == Histories.PriceHistory)
+            if (flag is Histories.PriceHistory)
             {
                 security.PriceHistory = await History.GetTicksAsync<PriceTick>(security.Symbol, ct).ConfigureAwait(false);
                 security.PriceHistoryBase = GetPriceHistoryBase(security.PriceHistory, security);
             }
-            else if (flag == Histories.DividendHistory)
+            else if (flag is Histories.DividendHistory)
                 security.DividendHistory = await History.GetTicksAsync<DividendTick>(security.Symbol, ct).ConfigureAwait(false);
-            else if (flag == Histories.SplitHistory)
+            else if (flag is Histories.SplitHistory)
                 security.SplitHistory = await History.GetTicksAsync<SplitTick>(security.Symbol, ct).ConfigureAwait(false);
         }).ConfigureAwait(false);
     }
@@ -173,21 +176,23 @@ public sealed class YahooQuotes : IDisposable
             priceTick.Volume
         )).ToList();
 
-        return AddLatest(ticks, security);
+        AddLatest(ticks, security);
+
+        return ticks.ToArray().ToResult();
     }
 
-    private Result<ValueTick[]> AddLatest(List<ValueTick> ticks, Security security)
+    private void AddLatest(List<ValueTick> ticks, Security security)
     {
         if (security.RegularMarketPrice is null)
         {
             Logger.LogDebug("RegularMarketPrice unavailable for symbol: {Symbol}.", security.Symbol);
-            return Result<ValueTick[]>.Ok(ticks.ToArray());
+            return;
         }
 
         if (security.RegularMarketTime == default)
         {
             Logger.LogDebug("RegularMarketTime unavailable for symbol: {Symbol}.", security.Symbol);
-            return Result<ValueTick[]>.Ok(ticks.ToArray());
+            return;
         }
 
         Instant now = Clock.GetCurrentInstant();
@@ -217,8 +222,30 @@ public sealed class YahooQuotes : IDisposable
             Convert.ToDouble(security.RegularMarketPrice.Value, CultureInfo.InvariantCulture),
             security.RegularMarketVolume ?? 0
         )); 
+    }
 
-        return Result<ValueTick[]>.Ok(ticks.ToArray());
+
+    public async Task<Result<JsonProperty>> GetModulesAsync(string symbol, string module, CancellationToken ct = default)
+    {
+        Result<JsonProperty[]> result = await GetModulesAsync(symbol, new[] { module }, ct).ConfigureAwait(false);
+        if (result.HasError)
+            return Result<JsonProperty>.Fail(result.Error);
+        return result.Value.Single().ToResult();
+    }
+    public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, string[] modules, CancellationToken ct = default)
+    {
+        try
+        {
+            Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, modules, ct).ConfigureAwait(false);
+            if (result.HasError)
+                Logger.LogWarning("GetModulesAsync error: {Message}.", result.Error);
+            return result;
+        }
+        catch (Exception e)
+        {
+            Logger.LogCritical(e, "GetModulesAsync error: {Message}.", e.Message);
+            throw;
+        }
     }
 
     public void Dispose() => Snapshot.Dispose();

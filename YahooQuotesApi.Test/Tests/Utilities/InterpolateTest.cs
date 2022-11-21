@@ -1,8 +1,10 @@
 ﻿using NodaTime;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections.Immutable;
 namespace YahooQuotesApi.Tests;
 
 public class InterpolateTest : TestBase
@@ -13,14 +15,14 @@ public class InterpolateTest : TestBase
     public void TestNotEnoughData()
     {
         var list = new List<ValueTick>();
-        Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
+        Assert.Throws<ArgumentException>(() => list.ToArray().InterpolateValue(new Instant()));
         list.Add(new ValueTick(new Instant(), 0, 0));
 
-        Assert.Throws<ArgumentException>(() => list.InterpolateValue(new Instant()));
+        Assert.Throws<ArgumentException>(() => list.ToArray().InterpolateValue(new Instant()));
         list.Add(new ValueTick(new Instant(), 0, 0));
-        Assert.Equal(0, list.InterpolateValue(new Instant()));
+        Assert.Equal(0, list.ToArray().InterpolateValue(new Instant()));
         list.Add(new ValueTick(new Instant(), 0, 0));
-        Assert.Equal(0, list.InterpolateValue(new Instant()));
+        Assert.Equal(0, list.ToArray().InterpolateValue(new Instant()));
     }
 
     [Fact]
@@ -33,16 +35,16 @@ public class InterpolateTest : TestBase
         list.Add(new ValueTick(date1, 0, 0));
         list.Add(new ValueTick(date2, 0, 0));
 
-        var result = list.InterpolateValue(date1);
+        var result = list.ToArray().InterpolateValue(date1);
         Assert.False(double.IsNaN(result)); // enough data
 
-        result = list.InterpolateValue(date1.Plus(Duration.FromHours(-7 * 24)));
+        result = list.ToArray().InterpolateValue(date1.Plus(Duration.FromHours(-7 * 24)));
         Assert.True(double.IsNaN(result)); // not enough data
 
-        result = list.InterpolateValue(date2);
+        result = list.ToArray().InterpolateValue(date2);
         Assert.False(double.IsNaN(result)); // enough data
 
-        result = list.InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
+        result = list.ToArray().InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
         Assert.True(double.IsNaN(result)); // not enough data
     }
 
@@ -56,10 +58,10 @@ public class InterpolateTest : TestBase
         list.Add(new ValueTick(date1, 1, 0));
         list.Add(new ValueTick(date2, 2, 0));
 
-        var result = list.InterpolateValue(date2.PlusTicks(1));
+        var result = list.ToArray().InterpolateValue(date2.PlusTicks(1));
         Assert.Equal(2, result);
 
-        result = list.InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
+        result = list.ToArray().InterpolateValue(date2.Plus(Duration.FromHours(7 * 24)));
         Assert.True(double.IsNaN(result)); // not enough data
     }
 
@@ -74,7 +76,7 @@ public class InterpolateTest : TestBase
         list.Add(new ValueTick(date1, 1, 0));
         list.Add(new ValueTick(date2, 2, 0));
 
-        var result = list.InterpolateValue(date1.Plus(Duration.FromDays(1)));
+        var result = list.ToArray().InterpolateValue(date1.Plus(Duration.FromDays(1)));
         Assert.Equal(1.25, result);
     }
 
@@ -85,10 +87,10 @@ public class InterpolateTest : TestBase
 
         IReadOnlyList<double> ilist = list;
 
-        var index = ilist.BinarySearch(0.0, x => x);
+        var index = ilist.ToArray().BinarySearch(0.0, x => x);
         Assert.Equal(~0, index);
 
-        index = ilist.BinarySearch(2.0, x => x);
+        index = ilist.ToArray().BinarySearch(2.0, x => x);
         Assert.Equal(~1, index);
     }
 
@@ -106,7 +108,7 @@ public class InterpolateTest : TestBase
 
         IReadOnlyList<double> ilist = list;
 
-        var index = ilist.BinarySearch(searchValue, x => x);
+        var index = ilist.ToArray().BinarySearch(searchValue, x => x);
         Assert.Equal(expectedIndex, index);
     }
 }

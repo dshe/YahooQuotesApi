@@ -3,43 +3,49 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
+public sealed record ErrorResult(string Message, Exception? Exception = null);
+
 public readonly struct Result<T> : IEquatable<Result<T>>
 {
     private readonly T? value;
-    private readonly string? error;
-    public bool HasValue => error is null || error.Length == 0;
-    public bool HasError => error is not null && error.Length != 0;
-    public bool IsUndefined => error is null;
+    private readonly ErrorResult? errorResult;
+
+    public bool HasValue { get; }
+    public bool HasError { get; }
+    public bool IsUndefined => !HasValue && !HasError;
 
     public T Value {
         get {
-            if (HasValue)
-                return value!;
+            if (value is not null)
+                return value;
             throw new InvalidOperationException("Result has no value.");
         }
     }
 
-    public string Error {
+    public ErrorResult Error {
         get {
-            if (HasError)
-                return error!;
+            if (errorResult is not null)
+                return errorResult;
             throw new InvalidOperationException("Result has no error.");
         }
     }
 
-    private Result(T value) // result may not be null
+    private Result(T value) // result may not be null!
     {
         ArgumentNullException.ThrowIfNull(value);
         this.value = value;
-        error = "";
+        HasValue = true;
+        errorResult = null;
+        HasError = false;
     }
 
-    private Result(string error)
+    private Result(ErrorResult errorResult)
     {
-        if (string.IsNullOrEmpty(error))
-            throw new ArgumentException("Invalid error message.", nameof(error));
-        this.error = error;
+        ArgumentNullException.ThrowIfNull(errorResult);
         value = default;
+        HasValue = false;
+        this.errorResult = errorResult;
+        HasError = true;
     }
 
     public override int GetHashCode()
@@ -47,7 +53,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         if (HasValue)
             return EqualityComparer<T>.Default.GetHashCode(value!);
         if (HasError)
-            return EqualityComparer<string>.Default.GetHashCode(error!) * -1521134295;
+            return EqualityComparer<ErrorResult>.Default.GetHashCode(errorResult!) * -1521134295;
         return 0;
     }
 
@@ -60,27 +66,31 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         return "Undefined";
     }
 
-    public override bool Equals(object? obj) =>
-        obj is Result<T> result && Equals(result);
+    public override bool Equals(object? obj) => obj is Result<T> result && Equals(result);
 
     public bool Equals(Result<T> other) =>
         EqualityComparer<T>.Default.Equals(value, other.value) &&
-        EqualityComparer<string>.Default.Equals(error, other.error);
+        EqualityComparer<ErrorResult>.Default.Equals(errorResult, other.errorResult);
 
-    public void Deconstruct(out T value, out string error)
+    public void Deconstruct(out T value, out ErrorResult error)
     {
         if (IsUndefined)
             throw new ArgumentException("Result is undefined.");
         (value, error) = (Value, Error);
     }
 
-
     public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
     public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 
 #pragma warning disable CA1000 // static members on generic types
     public static Result<T> Ok(T value) => new(value);
-    public static Result<T> Fail(string error) => new(error);
+    public static Result<T> Fail(ErrorResult errorResult) => new(errorResult);
+    public static Result<T> Fail(string message, Exception? ex = null) => new(new ErrorResult(message, ex));
+    public static Result<T> Fail(Exception ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+        return new(new ErrorResult(ex.Message, ex));
+    }
 
     public static Result<T> From(Func<T> producer)
     {
@@ -92,7 +102,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
         {
-            return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
+            return Result<T>.Fail(e);
         }
     }
 
@@ -105,14 +115,12 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         }
         catch (Exception e)
         {
-            return Result<T>.Fail($"{e.GetType().Name}: {e.Message}");
+            return Result<T>.Fail(e);
         }
     }
 }
 
-public static partial class ResultExtensions
+public static class ResultExtensions
 {
     public static Result<T> ToResult<T>(this T value) => Result<T>.Ok(value);
-    public static Result<T> ToResultError<T>(this string error) => Result<T>.Fail(error);
-    public static Result<T> ToResultUndefined<T>() => default;
 }

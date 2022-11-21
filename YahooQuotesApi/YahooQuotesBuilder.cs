@@ -36,7 +36,7 @@ public sealed class YahooQuotesBuilder
     }
 
     internal Duration SnapshotCacheDuration { get; private set; } = Duration.Zero;
-    internal Duration HistoryCacheDuration { get; private set; } = Duration.MaxValue;
+    internal Duration HistoryCacheDuration { get; private set; } = Duration.Zero;
     public YahooQuotesBuilder WithCacheDuration(Duration snapshotCacheDuration, Duration historyCacheDuration)
     {
         if (snapshotCacheDuration > historyCacheDuration)
@@ -53,5 +53,5 @@ public sealed class YahooQuotesBuilder
         return this;
     }
 
-    public YahooQuotes Build() => new(this);
+    public YahooQuotes Build() => new Services(this).GetCompositionalRoot();
 }

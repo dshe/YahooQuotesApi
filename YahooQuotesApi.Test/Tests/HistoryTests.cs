@@ -18,7 +18,11 @@ public class HistoryTests : TestBase
             .WithLogger(Logger)
             .WithHistoryStartDate(Instant.FromUtc(2022, 1, 1, 0, 0))
             .Build();
+
         var security = await yahooQuotes.GetAsync("IBM", Histories.PriceHistory) ?? throw new ArgumentNullException();
+
+        security = await yahooQuotes.GetAsync("IBM", Histories.PriceHistory) ?? throw new ArgumentNullException();
+
         Assert.NotEmpty(security.PriceHistory.Value);
     }
 

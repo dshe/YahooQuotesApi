@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 
 namespace YahooQuotesApi;
 
@@ -8,12 +7,12 @@ internal static class InterpolateExtensions
     private static readonly Duration FutureLimit = Duration.FromDays(4);
     private static readonly Duration PastLimit = Duration.FromDays(4);
 
-    internal static double InterpolateValue(this IReadOnlyList<ValueTick> list, Instant date) =>
-        Interpolate(list, date, x => x.Date, x => x.Value);
+    internal static double InterpolateValue(this ValueTick[] ticks, Instant date) =>
+        Interpolate(ticks, date, tick => tick.Date, tick => tick.Value);
 
-    private static double Interpolate<T>(this IReadOnlyList<T> list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
+    private static double Interpolate<T>(this T[] list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
     {
-        if (list.Count < 2)
+        if (list.Length < 2)
             throw new ArgumentException("Not enough items.", nameof(list));
 
         T firstItem = list[0];
@@ -21,7 +20,7 @@ internal static class InterpolateExtensions
         if (date <= firstDate) // not enough data
             return firstDate - date <= PastLimit ? getValue(firstItem) : double.NaN;
 
-        T lastItem = list[list.Count - 1];
+        T lastItem = list[list.Length - 1];
         Instant lastDate = getDate(lastItem);
         if (date >= lastDate)
             return date - lastDate <= FutureLimit ? getValue(lastItem) : double.NaN;
@@ -43,12 +42,13 @@ internal static class InterpolateExtensions
         return rate;
     }
 
-    internal static int BinarySearch<T>(this IReadOnlyList<T> list, IComparable searchValue, Func<T, IComparable> getComparable)
+    // This method is interal to allow testing
+    internal static int BinarySearch<T>(this T[] list, IComparable searchValue, Func<T, IComparable> getComparable)
     {
         if (!list.Any())
             throw new ArgumentException("No items.", nameof(list));
         int low = 0;
-        int high = list.Count - 1;
+        int high = list.Length - 1;
         while (low <= high)
         {
             int mid = (high + low) >> 1;

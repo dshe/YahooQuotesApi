@@ -8,21 +8,22 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
-internal sealed class YahooHistory
+public sealed class YahooHistory
 {
     private readonly ILogger Logger;
     private readonly Instant Start;
     private readonly Frequency PriceHistoryFrequency;
-    private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
     private readonly IHttpClientFactory HttpClientFactory;
+    private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
 
-    internal YahooHistory(IClock clock, ILogger logger, IHttpClientFactory factory, Instant start, Duration cacheDuration, Frequency frequency)
+    public YahooHistory(YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
     {
-        Logger = logger;
-        Start = start;
-        PriceHistoryFrequency = frequency;
-        HttpClientFactory = factory;
-        Cache = new ParallelProducerCache<string, Result<ITick[]>>(clock, cacheDuration);
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        Logger = builder.Logger;
+        Start = builder.HistoryStartDate;
+        PriceHistoryFrequency = builder.PriceHistoryFrequency;
+        HttpClientFactory = httpClientFactory;
+        Cache = new ParallelProducerCache<string, Result<ITick[]>>(builder.Clock, builder.HistoryCacheDuration);
     }
 
     internal async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, CancellationToken ct) where T : ITick
@@ -37,8 +38,8 @@ internal sealed class YahooHistory
         {
             Result<ITick[]> result = await Cache.Get(key, () => Produce<T>(uri, ct)).ConfigureAwait(false);
             if (result.HasError)
-                return result.Error.ToResultError<T[]>();
-            return result.Value.Cast<T>().ToArray().ToResult(); // returns a mutable shallow copy
+                return Result<T[]>.Fail(result.Error);
+            return result.Value.Cast<T>().ToArray().ToResult(); // returns an copy of an array (mutable shallow copy)
         }
         catch (Exception e)
         {
@@ -70,19 +71,19 @@ internal sealed class YahooHistory
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return Result<ITick[]>.Fail("History not found.");
-        response.EnsureSuccessStatusCode();
-
         try
         {
+            response.EnsureSuccessStatusCode();
+
             using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             using StreamReader streamReader = new(stream);
             ITick[] ticks = await streamReader.ToTicks<T>(Logger).ConfigureAwait(false);
-            return Result<ITick[]>.Ok(ticks);
+            return ticks.ToResult();
         }
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
         {
-            return Result<ITick[]>.Fail($"{e.GetType().Name}: {e.Message}");
+            return Result<ITick[]>.Fail(e);
         }
     }
 }

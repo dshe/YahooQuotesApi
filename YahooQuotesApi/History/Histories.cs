@@ -1,4 +1,8 @@
-﻿namespace YahooQuotesApi;
+﻿using System;
+
+namespace YahooQuotesApi;
+
+// A1717: Only FlagsAttribute enums should have plural names
 
 [Flags]
 public enum Histories
