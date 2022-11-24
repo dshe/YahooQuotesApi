@@ -3,31 +3,13 @@ using System.Globalization;
 using System.Linq;
 
 namespace YahooQuotesApi;
-
+ 
 public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
 {
-    private readonly string? name; // may be null
+    // The default value of a struct is the value produced by setting all fields to their default value.
+    // String is a reference type with default value of null
+    private readonly string? name = null;
     private Symbol(string name) => this.name = name;
-    internal static Symbol Undefined { get; }
-    public static bool TryCreate(string name, out Symbol symbol)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        symbol = Undefined;
-        if (name.Length == 0 || name.Any(char.IsWhiteSpace))
-            return false;
-        if (name.Count(c => c == '.') > 1 || name.Count(c => c == '=') > 1)
-            return false;
-        name = name.ToUpper(CultureInfo.InvariantCulture);
-        if (name.Contains("=X", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!name.EndsWith("=X", StringComparison.OrdinalIgnoreCase)
-                || (name.Length != 5 && name.Length != 8)
-                || (name.Length == 8 && name[0..3] == name[3..6]))
-                return false;
-        }
-        symbol = new Symbol(name);
-        return true;
-    }
 
     public string Name {
         get {
@@ -70,16 +52,37 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
     public static bool operator <=(Symbol left, Symbol right) => left.CompareTo(right) <= 0;
     public static bool operator >(Symbol left, Symbol right) => left.CompareTo(right) > 0;
     public static bool operator >=(Symbol left, Symbol right) => left.CompareTo(right) >= 0;
+
+    public static bool TryCreate(string name, out Symbol symbol)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        symbol = default;
+        if (name.Length == 0 || name.Any(char.IsWhiteSpace))
+            return false;
+        if (name.Count(c => c == '.') > 1 || name.Count(c => c == '=') > 1)
+            return false;
+        name = name.ToUpper(CultureInfo.InvariantCulture);
+        if (name.Contains("=X", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!name.EndsWith("=X", StringComparison.OrdinalIgnoreCase)
+                || (name.Length != 5 && name.Length != 8)
+                || (name.Length == 8 && name[0..3] == name[3..6]))
+                return false;
+        }
+        symbol = new Symbol(name);
+        return true;
+    }
 }
 
 public static class SymbolExtensions
 {
     public static Symbol ToSymbol(this string name, bool throwOnFailure = true)
     {
+        ArgumentNullException.ThrowIfNull(name);
         if (Symbol.TryCreate(name, out Symbol symbol))
             return symbol;
         if (throwOnFailure)
             throw new ArgumentException($"Could not convert '{name}' to Symbol.");
-        return Symbol.Undefined;
+        return default;
     }
 }

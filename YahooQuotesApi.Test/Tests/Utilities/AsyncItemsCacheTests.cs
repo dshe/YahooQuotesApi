@@ -5,12 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+
 namespace YahooQuotesApi.Tests;
 
 public class AsyncItemsCacheTests : TestBase
 {
     private readonly SerialProducerCache<int, string> Cache;
-    private readonly List<string> RequestHistory = new List<string>();
+    private readonly List<string> RequestHistory = new();
     public AsyncItemsCacheTests(ITestOutputHelper output) : base(output)
     {
         Cache = new SerialProducerCache<int, string>(SystemClock.Instance, Duration.MaxValue, Producer);

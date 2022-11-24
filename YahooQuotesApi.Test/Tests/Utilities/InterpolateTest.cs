@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
-using System.Collections.Immutable;
+
 namespace YahooQuotesApi.Tests;
 
 public class InterpolateTest : TestBase

@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using NodaTime;
+﻿using NodaTime;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+
 namespace YahooQuotesApi.Tests;
 
 public class HistoryBaseTests : TestBase

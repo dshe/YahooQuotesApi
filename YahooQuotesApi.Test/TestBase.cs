@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using Xunit.Abstractions;
+
 namespace YahooQuotesApi.Tests;
 
 public abstract class TestBase

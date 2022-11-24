@@ -20,7 +20,7 @@ internal static class InterpolateExtensions
         if (date <= firstDate) // not enough data
             return firstDate - date <= PastLimit ? getValue(firstItem) : double.NaN;
 
-        T lastItem = list[list.Length - 1];
+        T lastItem = list[^1];
         Instant lastDate = getDate(lastItem);
         if (date >= lastDate)
             return date - lastDate <= FutureLimit ? getValue(lastItem) : double.NaN;

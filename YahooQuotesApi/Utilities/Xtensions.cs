@@ -8,9 +8,6 @@ namespace YahooQuotesApi;
 
 internal static partial class Xtensions
 {
-    internal static string GetRandomString(int length) =>
-        Guid.NewGuid().ToString()[..length];
-
     internal static string ToPascal(this string source)
     {
         if (source.Length == 0)

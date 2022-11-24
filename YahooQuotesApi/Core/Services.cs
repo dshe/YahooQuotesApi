@@ -88,8 +88,8 @@ internal static partial class Xtensions
             .AddHttpClient(name, client =>
             {
                 //client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
-                //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestVersion = new Version(2, 0);
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
             })
@@ -101,9 +101,6 @@ internal static partial class Xtensions
                 //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
                 //CookieContainer = new CookieContainer(),
                 UseCookies = false // manual cookie handling, if any
-            })
-            //.SetHandlerLifetime(Timeout.InfiniteTimeSpan) // default: 2 minutes
-            //.AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(3, _ => TimeSpan.FromSeconds(2)))
-            ;
+            });
     }
 }

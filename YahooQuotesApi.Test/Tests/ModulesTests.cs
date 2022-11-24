@@ -73,4 +73,15 @@ public class ModulesTests : TestBase
         Assert.Equal("Invalid module(s): 'InvalidModuleName1, InvalidModuleName2'.", results.Error.Message);
     }
 
+    [Fact]
+    public async Task DuplicateModuleName()
+    {
+        //var results = await YahooQuotes.GetModulesAsync("IBM", new[] { "Price", "Price" });
+        //Assert.Equal("Duplicate module(s): 'Price'.", results.Error.Message);
+
+        var results = await YahooQuotes.GetModulesAsync("IBM", new[] { "balanceSheetHistoryQuarterly", "Price", "Price", "balanceSheetHistoryQuarterly" });
+        Assert.Equal("Duplicate module(s): 'balanceSheetHistoryQuarterly, Price'.", results.Error.Message);
+    }
+
+
 }

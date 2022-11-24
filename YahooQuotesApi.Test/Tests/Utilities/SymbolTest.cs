@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
+
 namespace YahooQuotesApi.Tests;
 
 public class SymbolTest : TestBase
@@ -64,9 +65,8 @@ public class SymbolTest : TestBase
     {
         var defaultSymbol = "".ToSymbol(false);
         Assert.False(defaultSymbol.IsValid);
-        Assert.Equal(Symbol.Undefined, defaultSymbol);
+        Assert.Equal(default, defaultSymbol);
     }
-
 
     [Theory]
     [InlineData("A", "")]

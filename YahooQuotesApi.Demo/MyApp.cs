@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 namespace YahooQuotesApi.Demo;
 
 public class MyApp
@@ -37,7 +38,7 @@ public class MyApp
         Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
         watch.Stop();
 
-        int n = securities.Values.Select(x => x).NotNull().Count();
+        int n = securities.Values.Select(x => x).Where(x => x is not null).Count();
         double s = watch.Elapsed.TotalSeconds;
         double rate = n / s;
         Logger.LogWarning("Rate = {N}/{S:N2} = {Rate:N2} Hz", n, s, rate);
@@ -111,5 +112,4 @@ public class MyApp
         foreach (var error in list)
             Logger.LogWarning("Unique error: {Error}", error);
     }
-
 }

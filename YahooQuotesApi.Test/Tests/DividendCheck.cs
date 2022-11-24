@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using Xunit;
 using System.Threading.Tasks;
@@ -7,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using NodaTime;
 using NodaTime.Text;
+
 namespace YahooQuotesApi.Tests;
 
 public class Rec

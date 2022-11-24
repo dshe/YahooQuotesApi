@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,12 +30,9 @@ public sealed class YahooModules
             throw new ArgumentException("No modules indicated.");
         if (modules.Any(x => string.IsNullOrEmpty(x)))
             throw new ArgumentException("Invalid module: \"\"");
-        string? invalidModule = modules.FirstOrDefault(x => x.Contains(',', StringComparison.OrdinalIgnoreCase));
-        if (invalidModule != null)
-            throw new ArgumentException($"Invalid module: {invalidModule}.");
-        var dups = modules.GroupBy(x => x).Where(x => x.Count() > 1);
+        string[] dups = modules.GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToArray();
         if (dups.Any())
-            throw new ArgumentException($"Duplicate module(s): \'{string.Join(", ", dups)}\'.");
+            return Result<JsonProperty[]>.Fail($"Duplicate module(s): \'{string.Join(", ", dups)}\'.");
 
         Result<JsonProperty[]> result = await Produce(symbol, modules, ct).ConfigureAwait(false);
         return result;
@@ -45,15 +40,14 @@ public sealed class YahooModules
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
+        Uri uri = GetUri(symbol, modulesRequested);
+
         HttpClient httpClient = HttpClientFactory.CreateClient("modules");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        Uri uri = GetUri(symbol, modulesRequested);
-
-        // Don't use httpClient.GetFromJsonAsync<JsonDocument>() because it does not allow reading json error messages like NotFound.
+        //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
+        //and not allow reading a json error messages such as NotFound.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        //if (response.StatusCode != HttpStatusCode.NotFound) // NotFound will return a json error message.
-        //    response.EnsureSuccessStatusCode();
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
 
@@ -95,10 +89,10 @@ public sealed class YahooModules
         JsonElement item = items.Single();
         JsonProperty[] modules = item.EnumerateObject().ToArray();
 
-        return VerifyModules(modulesRequested, modules);
+        return VerifiedModules(modulesRequested, modules);
     }
 
-    private static Result<JsonProperty[]> VerifyModules(string[] moduleNamesRequested, JsonProperty[] modules)
+    private static Result<JsonProperty[]> VerifiedModules(string[] moduleNamesRequested, JsonProperty[] modules)
     {
         string[] moduleNames = modules.Select(module => module.Name).ToArray();
 

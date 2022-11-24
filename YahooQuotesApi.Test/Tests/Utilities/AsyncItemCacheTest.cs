@@ -2,15 +2,13 @@
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+
 namespace YahooQuotesApi.Tests;
 
 public class AsyncItemCacheTest : TestBase
 {
     public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
-
-    private readonly ParallelProducerCache<string, string> Cache =
-        new ParallelProducerCache<string, string>(SystemClock.Instance, Duration.MaxValue);
-
+    private readonly ParallelProducerCache<string, string> Cache = new(SystemClock.Instance, Duration.MaxValue);
     private int Produces = 0;
 
     private async Task<string> Producer(string key)

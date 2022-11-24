@@ -21,25 +21,25 @@ public sealed partial class YahooQuotes : IDisposable
     public YahooQuotes(YahooQuotesBuilder builder, YahooSnapshot snapshot, YahooHistory history, YahooModules modules)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
         Clock = builder.Clock;
+        Logger = builder.Logger;
+        UseNonAdjustedClose = builder.NonAdjustedClose;
         Snapshot = snapshot;
         History = history;
         Modules = modules;
-        UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
     public async Task<Security?> GetAsync(string symbol, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default) =>
         (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default)
+    public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default)
     {
         Symbol[] syms = symbols
             .Select(s => s.ToSymbol())
             .Distinct()
             .ToArray();
 
-        Symbol? historyBaseSymbol = null;
+        Symbol historyBaseSymbol = default;
         if (!string.IsNullOrEmpty(historyBase))
         {
             if (!Symbol.TryCreate(historyBase, out Symbol hbs))
@@ -50,22 +50,22 @@ public sealed partial class YahooQuotes : IDisposable
         return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<Security?> GetAsync(Symbol symbol, Histories historyFlags = Histories.None, Symbol? historyBase = null, CancellationToken ct = default) =>
+    public async Task<Security?> GetAsync(Symbol symbol, Histories historyFlags = default, Symbol historyBase = default, CancellationToken ct = default) =>
         (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, Histories historyFlags = Histories.None, Symbol? historyBase = null, CancellationToken ct = default)
+    public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, Histories historyFlags = default, Symbol historyBase = default, CancellationToken ct = default)
     {
         HashSet<Symbol> syms = symbols.ToHashSet();
-        if (historyBase is not null)
+        if (historyBase != default)
         {
-            if (historyBase.Value.IsCurrencyRate)
+            if (historyBase.IsCurrencyRate)
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
             if (syms.Any(s => s.IsCurrencyRate))
                 throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrencyRate)}.");
             if (!historyFlags.HasFlag(Histories.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
         }
-        if (historyBase is null && syms.Any(s => s.IsCurrency))
+        if (historyBase == default && syms.Any(s => s.IsCurrency))
             throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
         try
         {
@@ -79,23 +79,23 @@ public sealed partial class YahooQuotes : IDisposable
         }
     }
 
-    private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, Histories historyFlags, Symbol? historyBase, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Security?>> GetSecuritiesAsync(HashSet<Symbol> symbols, Histories historyFlags, Symbol historyBase, CancellationToken ct)
     {
         HashSet<Symbol> stockAndCurrencyRateSymbols = symbols.Where(s => s.IsStock || s.IsCurrencyRate).ToHashSet();
-        if (historyBase is not null && historyBase.Value.IsStock)
-            stockAndCurrencyRateSymbols.Add(historyBase.Value);
+        if (historyBase != default && historyBase.IsStock)
+            stockAndCurrencyRateSymbols.Add(historyBase);
         Dictionary<Symbol, Security?> securities = await Snapshot.GetAsync(stockAndCurrencyRateSymbols, ct).ConfigureAwait(false);
 
         if (historyFlags == Histories.None)
             return securities;
 
-        if (historyBase is not null)
-            await AddCurrencies(symbols, historyBase.Value, securities, ct).ConfigureAwait(false);
+        if (historyBase != default)
+            await AddCurrencies(symbols, historyBase, securities, ct).ConfigureAwait(false);
 
         await AddHistoryToSecurities(securities, historyFlags, ct).ConfigureAwait(false);
 
-        if (historyBase is not null)
-            HistoryBaseComposer.Compose(symbols, historyBase.Value, securities);
+        if (historyBase != default)
+            HistoryBaseComposer.Compose(symbols, historyBase, securities);
 
         return securities;
     }
@@ -224,7 +224,6 @@ public sealed partial class YahooQuotes : IDisposable
         )); 
     }
 
-
     public async Task<Result<JsonProperty>> GetModulesAsync(string symbol, string module, CancellationToken ct = default)
     {
         Result<JsonProperty[]> result = await GetModulesAsync(symbol, new[] { module }, ct).ConfigureAwait(false);
@@ -232,11 +231,12 @@ public sealed partial class YahooQuotes : IDisposable
             return Result<JsonProperty>.Fail(result.Error);
         return result.Value.Single().ToResult();
     }
-    public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, string[] modules, CancellationToken ct = default)
+
+    public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, IEnumerable<string> modules, CancellationToken ct = default)
     {
         try
         {
-            Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, modules, ct).ConfigureAwait(false);
+            Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, modules.ToArray(), ct).ConfigureAwait(false);
             if (result.HasError)
                 Logger.LogWarning("GetModulesAsync error: {Message}.", result.Error);
             return result;

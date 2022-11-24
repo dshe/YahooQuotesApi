@@ -27,7 +27,7 @@ public sealed class YahooSnapshot : IDisposable
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
     {
-        Symbol currency = symbols.FirstOrDefault(s => s.IsCurrency, Symbol.Undefined);
+        Symbol currency = symbols.FirstOrDefault(s => s.IsCurrency);
         if (currency.IsValid)
             throw new ArgumentException($"Invalid symbol: {currency} (currency).");
 
@@ -87,8 +87,9 @@ public sealed class YahooSnapshot : IDisposable
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+        //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
+        //and not allow reading a json error messages such as NotFound.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        //response.EnsureSuccessStatusCode();
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
 
