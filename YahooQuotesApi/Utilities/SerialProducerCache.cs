@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
-internal class SerialProducerCache<TKey, TResult> : IDisposable where TKey : notnull
+internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKey : notnull
 {
     private readonly SemaphoreSlim Semaphore = new(1, 1);
     private readonly List<TKey> Buffer = new();

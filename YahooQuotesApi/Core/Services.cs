@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Extensions.Http;
-using Polly.Timeout;
 using Polly.Retry;
+using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
 
@@ -15,7 +15,7 @@ namespace YahooQuotesApi;
 //The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 //HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
 
-internal class Services
+internal sealed class Services
 {
     private readonly ILogger Logger;
     private readonly YahooQuotesBuilder YahooQuotesBuilder;

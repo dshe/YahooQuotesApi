@@ -10,7 +10,7 @@ namespace YahooQuotesApi.Tests;
 public class ModulesTests : TestBase
 {
     private readonly YahooQuotes YahooQuotes;
-    public ModulesTests(ITestOutputHelper output) : base(output) 
+    public ModulesTests(ITestOutputHelper output) : base(output)
     {
         YahooQuotes = new YahooQuotesBuilder()
             .WithLogger(Logger)

@@ -3,24 +3,29 @@ using System.Globalization;
 using System.Linq;
 
 namespace YahooQuotesApi;
- 
+
 public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
 {
     // The default value of a struct is the value produced by setting all fields to their default value.
-    // String is a reference type with default value of null
+    // The only firld in this strust is the string 'name'.
+    // String is a reference type with default value of null.
     private readonly string? name = null;
     private Symbol(string name) => this.name = name;
 
-    public string Name {
-        get {
+    public string Name
+    {
+        get
+        {
             if (IsValid)
                 return name!;
             throw new InvalidOperationException("Undefined symbol.");
         }
     }
 
-    public string Suffix {
-        get {
+    public string Suffix
+    {
+        get
+        {
             int pos = Name.IndexOf('.', StringComparison.Ordinal);
             if (pos == -1 || Name.EndsWith(".", StringComparison.Ordinal))
                 return "";
@@ -32,8 +37,10 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
     public bool IsCurrency => Name.Length == 5 && Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
     public bool IsCurrencyRate => Name.Length == 8 && Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
     public bool IsStock => Name.Length > 0 && !Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
-    public string Currency {
-        get {
+    public string Currency
+    {
+        get
+        {
             if (IsCurrency)
                 return Name[..3];
             if (IsCurrencyRate)

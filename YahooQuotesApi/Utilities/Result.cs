@@ -14,16 +14,20 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     public bool HasError { get; }
     public bool IsUndefined => !HasValue && !HasError;
 
-    public T Value {
-        get {
+    public T Value
+    {
+        get
+        {
             if (value is not null)
                 return value;
             throw new InvalidOperationException("Result has no value.");
         }
     }
 
-    public ErrorResult Error {
-        get {
+    public ErrorResult Error
+    {
+        get
+        {
             if (errorResult is not null)
                 return errorResult;
             throw new InvalidOperationException("Result has no error.");

@@ -10,8 +10,8 @@ namespace YahooQuotesApi;
 
 public sealed partial class YahooQuotes : IDisposable
 {
-    private readonly ILogger Logger;
     private readonly IClock Clock;
+    private readonly ILogger Logger;
     private readonly YahooSnapshot Snapshot;
     private readonly YahooHistory History;
     private readonly YahooModules Modules;
@@ -29,11 +29,14 @@ public sealed partial class YahooQuotes : IDisposable
         Modules = modules;
     }
 
-    public async Task<Security?> GetAsync(string symbol, Histories historyFlags = Histories.None, string historyBase = "", CancellationToken ct = default) =>
+    public async Task<Security?> GetAsync(string symbol, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default) =>
         (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
     public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(symbols, nameof(symbols));
+        ArgumentNullException.ThrowIfNull(historyBase, nameof(historyBase));
+
         Symbol[] syms = symbols
             .Select(s => s.ToSymbol())
             .Distinct()
@@ -55,7 +58,12 @@ public sealed partial class YahooQuotes : IDisposable
 
     public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, Histories historyFlags = default, Symbol historyBase = default, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(symbols, nameof(symbols));
+
         HashSet<Symbol> syms = symbols.ToHashSet();
+
+        if (historyBase == default && syms.Any(s => s.IsCurrency))
+            throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
         if (historyBase != default)
         {
             if (historyBase.IsCurrencyRate)
@@ -65,8 +73,7 @@ public sealed partial class YahooQuotes : IDisposable
             if (!historyFlags.HasFlag(Histories.PriceHistory))
                 throw new ArgumentException("PriceHistory must be enabled when historyBase is specified.");
         }
-        if (historyBase == default && syms.Any(s => s.IsCurrency))
-            throw new ArgumentException($"Invalid symbol: {syms.First(s => s.IsCurrency)}.");
+
         try
         {
             Dictionary<Symbol, Security?> securities = await GetSecuritiesAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
@@ -221,11 +228,16 @@ public sealed partial class YahooQuotes : IDisposable
             snapTime,
             Convert.ToDouble(security.RegularMarketPrice.Value, CultureInfo.InvariantCulture),
             security.RegularMarketVolume ?? 0
-        )); 
+        ));
     }
+
+    //////////////////////////////
 
     public async Task<Result<JsonProperty>> GetModulesAsync(string symbol, string module, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(symbol, nameof(symbol));
+        ArgumentNullException.ThrowIfNull(module, nameof(module));
+
         Result<JsonProperty[]> result = await GetModulesAsync(symbol, new[] { module }, ct).ConfigureAwait(false);
         if (result.HasError)
             return Result<JsonProperty>.Fail(result.Error);
@@ -234,6 +246,9 @@ public sealed partial class YahooQuotes : IDisposable
 
     public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, IEnumerable<string> modules, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(symbol, nameof(symbol));
+        ArgumentNullException.ThrowIfNull(modules, nameof(modules));
+
         try
         {
             Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, modules.ToArray(), ct).ConfigureAwait(false);

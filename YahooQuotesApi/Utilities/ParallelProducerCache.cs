@@ -7,7 +7,7 @@ namespace YahooQuotesApi;
  * TResult - the type of result to be cached
  * TKey - the type of the key used to identify the result
  */
-internal class ParallelProducerCache<TKey, TResult> where TKey : notnull
+internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
 {
     private readonly IClock Clock;
     private readonly Dictionary<TKey, (Task<TResult>, Instant)> TaskCache = new();

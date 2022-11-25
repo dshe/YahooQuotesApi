@@ -1,11 +1,11 @@
-﻿using System;
-using Xunit.Abstractions;
-using Xunit;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.Generic;
-using NodaTime;
+﻿using NodaTime;
 using NodaTime.Text;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 

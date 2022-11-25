@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace YahooQuotesApi;
 
-internal class Cache<TKey, TResult> where TKey : notnull
+internal sealed class Cache<TKey, TResult> where TKey : notnull
 {
     private readonly IClock Clock;
     private readonly Duration CacheDuration;

@@ -13,7 +13,7 @@ internal static class InterpolateExtensions
     private static double Interpolate<T>(this T[] list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
     {
         if (list.Length < 2)
-            throw new ArgumentException("Not enough items.", nameof(list));
+            throw new ArgumentException("BinarySearch: not enough items.", nameof(list));
 
         T firstItem = list[0];
         Instant firstDate = getDate(firstItem);
@@ -46,7 +46,7 @@ internal static class InterpolateExtensions
     internal static int BinarySearch<T>(this T[] list, IComparable searchValue, Func<T, IComparable> getComparable)
     {
         if (!list.Any())
-            throw new ArgumentException("No items.", nameof(list));
+            throw new ArgumentException("BinarySearch: no items.", nameof(list));
         int low = 0;
         int high = list.Length - 1;
         while (low <= high)

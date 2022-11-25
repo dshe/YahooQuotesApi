@@ -90,7 +90,7 @@ public class HistoryBaseTests : TestBase
         Security baseSecurity = await MyYahooQuotes.GetAsync(baseSymbol, Histories.PriceHistory)
             ?? throw new ArgumentException("Invalid symbol");
         Assert.True(baseSecurity.PriceHistory.HasValue);
-        
+
         //PriceTick baseTick = baseSecurity.PriceHistory.Value[0];
         //Write($"{symbol} + {baseSymbol} => {tick}");
 
