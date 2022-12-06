@@ -48,7 +48,7 @@ internal sealed class Services
             });
     }
 
-    internal YahooQuotes GetCompositionalRoot()
+    internal ServiceProvider GetServiceProvider()
     {
         return new ServiceCollection()
 
@@ -73,9 +73,7 @@ internal sealed class Services
             .AddSingleton<YahooHistory>()
             .AddSingleton<YahooModules>()
 
-            .BuildServiceProvider()
-
-            .GetRequiredService<YahooQuotes>();
+            .BuildServiceProvider();
     }
 }
 

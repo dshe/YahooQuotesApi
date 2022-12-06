@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace YahooQuotesApi;
@@ -53,5 +54,7 @@ public sealed class YahooQuotesBuilder
         return this;
     }
 
-    public YahooQuotes Build() => new Services(this).GetCompositionalRoot();
+    public YahooQuotes Build() => new Services(this)
+        .GetServiceProvider()
+        .GetRequiredService<YahooQuotes>();
 }

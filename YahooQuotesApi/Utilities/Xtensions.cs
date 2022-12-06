@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.Json;
 
 namespace YahooQuotesApi;
 
@@ -49,4 +51,50 @@ internal static partial class Xtensions
     }
 
     internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new(items);
+
+    internal static object? GetJsonPropertyValueOfType(this JsonProperty jproperty, Type propertyType)
+    {
+        JsonElement value = jproperty.Value;
+        JsonValueKind kind = value.ValueKind;
+
+        if (kind == JsonValueKind.String)
+            return value.GetString();
+
+        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
+            return value.GetBoolean();
+
+        if (kind == JsonValueKind.Number)
+        {
+            if (propertyType == typeof(Int64) || propertyType == typeof(Int64?))
+                return value.GetInt64();
+            if (propertyType == typeof(Double) || propertyType == typeof(Double?))
+                return value.GetDouble();
+            if (propertyType == typeof(Decimal) || propertyType == typeof(Decimal?))
+                return value.GetDecimal();
+        }
+
+        throw new InvalidDataException($"Unsupported type: {propertyType} for property: {jproperty.Name}.");
+    }
+
+    internal static object? GetJsonPropertyValue(this JsonProperty jproperty)
+    {
+        JsonElement value = jproperty.Value;
+        JsonValueKind kind = value.ValueKind;
+
+        if (kind == JsonValueKind.String)
+            return value.GetString(); // may return null
+
+        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
+            return value.GetBoolean();
+
+        if (kind == JsonValueKind.Number)
+        {
+            if (value.TryGetInt64(out long l))
+                return l;
+            if (value.TryGetDouble(out double dbl))
+                return dbl;
+        }
+        return value.GetRawText();
+    }
+
 }

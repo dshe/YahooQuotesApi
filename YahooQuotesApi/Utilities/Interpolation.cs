@@ -2,7 +2,7 @@
 
 namespace YahooQuotesApi;
 
-internal static class InterpolateExtensions
+internal static class InterpolationExtensions
 {
     private static readonly Duration FutureLimit = Duration.FromDays(4);
     private static readonly Duration PastLimit = Duration.FromDays(4);

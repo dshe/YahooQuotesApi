@@ -37,9 +37,7 @@ public sealed class YahooHistory
         try
         {
             Result<ITick[]> result = await Cache.Get(key, () => Produce<T>(uri, ct)).ConfigureAwait(false);
-            if (result.HasError)
-                return Result<T[]>.Fail(result.Error);
-            return result.Value.Cast<T>().ToArray().ToResult(); // returns an copy of an array (mutable shallow copy)
+            return result.ToResult(v => v.Cast<T>().ToArray()); // returns a copy of an array (mutable shallow copy)
         }
         catch (Exception e)
         {

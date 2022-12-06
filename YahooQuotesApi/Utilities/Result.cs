@@ -7,8 +7,11 @@ public sealed record ErrorResult(string Message, Exception? Exception = null);
 
 public readonly struct Result<T> : IEquatable<Result<T>>
 {
+    // The default value of a struct is the value produced when all fields equal their default values.
+    // The fields in this struct are T? and ErrorResult?.
+    // The default for these fields is null and IsUndefined is true.
     private readonly T? value;
-    private readonly ErrorResult? errorResult;
+    private readonly ErrorResult? errorResult = null;
 
     public bool HasValue { get; }
     public bool HasError { get; }
@@ -34,7 +37,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         }
     }
 
-    private Result(T value) // result may not be null!
+    internal Result(T value) // result may not be null!
     {
         ArgumentNullException.ThrowIfNull(value);
         this.value = value;
@@ -43,7 +46,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         HasError = false;
     }
 
-    private Result(ErrorResult errorResult)
+    internal Result(ErrorResult errorResult)
     {
         ArgumentNullException.ThrowIfNull(errorResult);
         value = default;
@@ -101,7 +104,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         ArgumentNullException.ThrowIfNull(producer);
         try
         {
-            return Result<T>.Ok(producer());
+            return new Result<T>(producer());
         }
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
@@ -115,7 +118,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         ArgumentNullException.ThrowIfNull(producer);
         try
         {
-            return Result<T>.Ok(await producer().ConfigureAwait(false));
+            return new Result<T>(await producer().ConfigureAwait(false));
         }
         catch (Exception e)
         {
@@ -126,5 +129,14 @@ public readonly struct Result<T> : IEquatable<Result<T>>
 
 public static class ResultExtensions
 {
-    public static Result<T> ToResult<T>(this T value) => Result<T>.Ok(value);
+    public static Result<T> ToResult<T>(this T value) => new(value);
+    public static Result<T2> ToResult<T1,T2>(this Result<T1> result, Func<T1,T2> projection)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        if (result.IsUndefined)
+            return new();
+        if (result.HasError)
+            return new(result.Error);
+        return new(projection(result.Value));
+    }
 }

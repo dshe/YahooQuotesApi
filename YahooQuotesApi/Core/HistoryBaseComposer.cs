@@ -112,6 +112,7 @@ internal static class HistoryBaseComposer
             .ToArray()
             .ToResult();
 
+        // local function
         double GetRate(Instant date) => 1d
                       .MultiplyByPrice(date, stockTicks)
                       .DivideByPrice(date, currencyTicks)

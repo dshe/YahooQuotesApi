@@ -22,7 +22,7 @@ public class ModulesTests : TestBase
     [InlineData("X", "AssetProfile")]
     public async Task ValidSingleModule(string symbol, string moduleName)
     {
-        Result<JsonProperty> result = await YahooQuotes.GetModulesAsync(symbol, moduleName);
+        Result<JsonProperty> result = await YahooQuotes.GetModuleAsync(symbol, moduleName);
         Assert.Equal(moduleName, result.Value.Name, true);
     }
 
@@ -40,7 +40,7 @@ public class ModulesTests : TestBase
     [Fact]
     public async Task InvalidSymbolName()
     {
-        var result = await YahooQuotes.GetModulesAsync("InvalidSymbol", "Price");
+        var result = await YahooQuotes.GetModuleAsync("InvalidSymbol", "Price");
         Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", result.Error.Message);
 
         var results = await YahooQuotes.GetModulesAsync("InvalidSymbol", new[] { "Price", "balanceSheetHistoryQuarterly" });
@@ -53,7 +53,7 @@ public class ModulesTests : TestBase
     [Fact]
     public async Task AllInvalidModuleName()
     {
-        var result = await YahooQuotes.GetModulesAsync("IBM", "InvalidModuleName");
+        var result = await YahooQuotes.GetModuleAsync("IBM", "InvalidModuleName");
         Assert.Equal("No fundamentals data found for any of the summaryTypes=", result.Error.Message);
 
         var results = await YahooQuotes.GetModulesAsync("IBM", new[] { "InvalidModuleName1", "InvalidModuleName2" });

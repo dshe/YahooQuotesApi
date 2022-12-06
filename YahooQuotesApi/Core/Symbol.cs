@@ -6,8 +6,8 @@ namespace YahooQuotesApi;
 
 public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
 {
-    // The default value of a struct is the value produced by setting all fields to their default value.
-    // The only firld in this strust is the string 'name'.
+    // The default value of a struct is the value produced when all of its fields equal their default values.
+    // This struct has only the string field 'name'.
     // String is a reference type with default value of null.
     private readonly string? name = null;
     private Symbol(string name) => this.name = name;

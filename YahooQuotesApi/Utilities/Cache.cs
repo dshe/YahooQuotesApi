@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace YahooQuotesApi;
 
@@ -33,24 +32,26 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
             Instant now = Clock.GetCurrentInstant();
             foreach (TKey key in keys)
             {
-                if (Items.TryGetValue(key, out (TResult value, Instant time) item)
-                    && (now - item.time <= CacheDuration || item.value is null))
-                    results.Add(key, item.value);
-                else
+                if (!Items.TryGetValue(key, out (TResult value, Instant time) item)
+                    || (item.value is not null && (now - item.time) > CacheDuration))
                 {
                     results.Clear();
                     return false;
                 }
+                results.Add(key, item.value);
             }
-            return true;
         }
+        return true;
     }
 
     internal Dictionary<TKey, TResult> Get(HashSet<TKey> keys)
     {
+        Dictionary<TKey, TResult> dictionary = new(keys.Count);
         lock (Items)
         {
-            return keys.ToDictionary(k => k, k => Items[k].result);
+            foreach (TKey key in keys)
+                dictionary.Add(key, Items[key].result);
         }
+        return dictionary;
     }
 }

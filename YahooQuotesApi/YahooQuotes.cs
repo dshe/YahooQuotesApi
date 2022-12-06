@@ -233,15 +233,13 @@ public sealed partial class YahooQuotes : IDisposable
 
     //////////////////////////////
 
-    public async Task<Result<JsonProperty>> GetModulesAsync(string symbol, string module, CancellationToken ct = default)
+    public async Task<Result<JsonProperty>> GetModuleAsync(string symbol, string module, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(symbol, nameof(symbol));
         ArgumentNullException.ThrowIfNull(module, nameof(module));
 
         Result<JsonProperty[]> result = await GetModulesAsync(symbol, new[] { module }, ct).ConfigureAwait(false);
-        if (result.HasError)
-            return Result<JsonProperty>.Fail(result.Error);
-        return result.Value.Single().ToResult();
+        return result.ToResult(v => v.Single());
     }
 
     public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, IEnumerable<string> modules, CancellationToken ct = default)

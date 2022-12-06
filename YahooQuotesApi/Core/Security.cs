@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text.Json;
 
@@ -33,13 +32,16 @@ public sealed class Security
             EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampStart).InUtc().LocalDateTime;
         if (EarningsTimestampEnd > 0)
             EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampEnd).InUtc().LocalDateTime;
+
         ExchangeCloseTime = Exchanges.GetCloseTimeFromSymbol(Symbol);
+
         if (ExchangeTimezoneName.Length > 0)
         {
             ExchangeTimezone = DateTimeZoneProvider.GetZoneOrNull(ExchangeTimezoneName);
             if (ExchangeTimezone is null)
                 logger.LogWarning("ExchangeTimezone not found for: '{ExchangeTimezoneName}'.", ExchangeTimezoneName);
         }
+
         if (RegularMarketTimeSeconds > 0 && ExchangeTimezone is not null)
             RegularMarketTime = Instant.FromUnixTimeSeconds(RegularMarketTimeSeconds).InZone(ExchangeTimezone);
         if (PreMarketTimeSeconds > 0 && ExchangeTimezone is not null)
@@ -64,7 +66,7 @@ public sealed class Security
         PropertyInfo? propertyInfo = GetType().GetProperty(jName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
         if (propertyInfo is not null)
         {
-            object value = GetJsonPropertyValueOfType(jproperty, propertyInfo.PropertyType) ?? throw new InvalidOperationException("GetJsonPropertyValueOfType");
+            object value = jproperty.GetJsonPropertyValueOfType(propertyInfo.PropertyType) ?? throw new InvalidOperationException("GetJsonPropertyValueOfType");
             if (propertyInfo.Name == "Symbol")
             {
                 string symbol = (string)value;
@@ -79,46 +81,10 @@ public sealed class Security
             Properties.Add(jName, value);
             return;
         }
-        object? val = GetJsonPropertyValue(jproperty);
+
+        object? val = jproperty.GetJsonPropertyValue();
         logger.LogTrace("Setting security other property: {Name} = {Value}", jName, val);
         Properties.Add(jName, val);
-    }
-    private static object? GetJsonPropertyValueOfType(JsonProperty jproperty, Type propertyType)
-    {
-        JsonElement value = jproperty.Value;
-        JsonValueKind kind = value.ValueKind;
-        if (kind == JsonValueKind.String)
-            return value.GetString();
-        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
-            return value.GetBoolean();
-        if (kind == JsonValueKind.Number)
-        {
-            if (propertyType == typeof(Int64) || propertyType == typeof(Int64?))
-                return value.GetInt64();
-            if (propertyType == typeof(Double) || propertyType == typeof(Double?))
-                return value.GetDouble();
-            if (propertyType == typeof(Decimal) || propertyType == typeof(Decimal?))
-                return value.GetDecimal();
-        }
-        throw new InvalidDataException($"Unsupported type: {propertyType} for property: {jproperty.Name}.");
-    }
-
-    private static object? GetJsonPropertyValue(JsonProperty jproperty)
-    {
-        JsonElement value = jproperty.Value;
-        JsonValueKind kind = value.ValueKind;
-        if (kind == JsonValueKind.String)
-            return value.GetString(); // may return null
-        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
-            return value.GetBoolean();
-        if (kind == JsonValueKind.Number)
-        {
-            if (value.TryGetInt64(out long l))
-                return l;
-            if (value.TryGetDouble(out double dbl))
-                return dbl;
-        }
-        return value.GetRawText();
     }
 
     public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
