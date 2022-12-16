@@ -72,6 +72,7 @@ internal sealed class Services
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<YahooHistory>()
             .AddSingleton<YahooModules>()
+            .AddSingleton<HistoryBaseComposer>()
 
             .BuildServiceProvider();
     }
@@ -85,7 +86,6 @@ internal static partial class Xtensions
 
             .AddHttpClient(name, client =>
             {
-                //client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
                 //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestVersion = new Version(2, 0);

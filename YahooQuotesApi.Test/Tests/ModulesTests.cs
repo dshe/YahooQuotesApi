@@ -83,5 +83,10 @@ public class ModulesTests : TestBase
         Assert.Equal("Duplicate module(s): 'balanceSheetHistoryQuarterly, Price'.", results.Error.Message);
     }
 
-
+    [Fact]
+    public async Task Example()
+    {
+        Result<JsonProperty[]> result = await YahooQuotes.GetModulesAsync("TSLA", new[] { "assetProfile", "defaultKeyStatistics" });
+        Assert.NotEmpty(result.Value);
+    }
 }

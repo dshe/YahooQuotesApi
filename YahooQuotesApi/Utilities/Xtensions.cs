@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -95,6 +96,20 @@ internal static partial class Xtensions
                 return dbl;
         }
         return value.GetRawText();
+    }
+
+    internal static ReadOnlySpan<char> SplitNext(this ref ReadOnlySpan<char> span, char separator)
+    {
+        int pos = span.IndexOf(separator);
+        if (pos > -1)
+        {
+            ReadOnlySpan<char> part = span[..pos];
+            span = span[(pos + 1)..];
+            return part;
+        }
+        ReadOnlySpan<char> lastPart = span;
+        span = span[span.Length..];
+        return lastPart;
     }
 
 }

@@ -33,12 +33,13 @@ public sealed class YahooSnapshot : IDisposable
 
         return await Cache.Get(symbols, ct).ConfigureAwait(false);
     }
-    private async Task<Dictionary<Symbol, Security?>> Producer(HashSet<Symbol> symbols, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Security?>> Producer(Symbol[] symbols, CancellationToken ct)
     {
         Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
         if (!symbols.Any())
             return dict;
         IEnumerable<JsonElement> elements = await GetElements(symbols, ct).ConfigureAwait(false);
+      
         foreach (JsonElement element in elements)
         {
             Security security = new(element, Logger);
@@ -47,10 +48,11 @@ public sealed class YahooSnapshot : IDisposable
                 throw new InvalidOperationException(symbol.Name);
             dict[symbol] = security;
         }
+
         return dict;
     }
 
-    private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
+    private async Task<IEnumerable<JsonElement>> GetElements(Symbol[] symbols, CancellationToken ct)
     {
         (Uri uri, List<JsonElement> elements)[] datas =
             GetUris(symbols)

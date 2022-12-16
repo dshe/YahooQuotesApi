@@ -133,10 +133,10 @@ public static class ResultExtensions
     public static Result<T2> ToResult<T1,T2>(this Result<T1> result, Func<T1,T2> projection)
     {
         ArgumentNullException.ThrowIfNull(projection);
-        if (result.IsUndefined)
-            return new();
+        if (result.HasValue)
+            return new(projection(result.Value));
         if (result.HasError)
             return new(result.Error);
-        return new(projection(result.Value));
+        return new();
     }
 }

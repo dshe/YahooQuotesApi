@@ -40,7 +40,7 @@ internal static class TickParser
 
     private static ITick? GetTick<T>(string row) where T : ITick
     {
-        // If you don't care about allocations, well, then you can just use String.Split.
+        // We don't care about allocations here, so just use String.Split().
         string[] column = row.Split(',');
 
         LocalDate date = column[0].ToDate();
@@ -64,6 +64,7 @@ internal static class TickParser
 
     internal static LocalDate ToDate(this string str)
     {
+        // NodaTime does not yet support Span<char>.
         ParseResult<LocalDate> result = DatePattern.Parse(str);
         if (result.Success)
             return result.Value;
