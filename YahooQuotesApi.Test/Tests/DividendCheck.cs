@@ -33,12 +33,12 @@ public class DividendCheck : TestBase
     [Fact]
     public async Task Test()
     {
-        //await Get("IBM");
-        //await Get("MSFT");
-        //await Get("EIMI.L"); // accumulatiung
+        //await CheckDividends("IBM");
+        //await CheckDividends("MSFT");
+        //await CheckDividends("EIMI.L"); // accumulatiung
         await CheckDividends("TUR"); // distributing
-                                     //await CheckDividends("TUR.PA"); // accumulatiung
-                                     //await CheckDividends("ITKY.AS"); // distributing but dividends missing!
+        //await CheckDividends("TUR.PA"); // accumulatiung
+        //await CheckDividends("ITKY.AS"); // distributing but dividends missing!
 
     }
 

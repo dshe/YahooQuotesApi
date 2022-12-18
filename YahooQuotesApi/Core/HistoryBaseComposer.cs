@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 
@@ -19,11 +20,11 @@ public class HistoryBaseComposer
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
-    internal void Compose(Symbol[] symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
+    internal void Compose(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
     {
         Logger.LogTrace("HistoryBaseComposer");
 
-        foreach (var security in securities.Values.NotNull())
+        foreach (Security security in securities.Values.NotNull())
             security.PriceHistoryBase = GetPriceHistoryBase(security);
 
         if (baseSymbol == default)
@@ -35,6 +36,7 @@ public class HistoryBaseComposer
         {
             Logger.LogTrace("Symbol: {Symbol}", symbol);
 
+            // currencies
             if (!securities.TryGetValue(symbol, out Security? security))
             {
                 if (!symbol.IsCurrency)
@@ -137,7 +139,7 @@ public class HistoryBaseComposer
                 throw new InvalidOperationException(nameof(stockSecurity));
             Result<ValueTick[]> res = stockSecurity.PriceHistoryBase;
             if (res.HasError)
-                return Result<ValueTick[]>.Fail(res.Error);
+                return res;
             if (res.Value.Length < 2)
                 return Result<ValueTick[]>.Fail($"Not enough history items: ({res.Value.Length}).");
             stockTicks = res.Value;
@@ -145,7 +147,6 @@ public class HistoryBaseComposer
             string c = stockSecurity.Currency;
             if (string.IsNullOrEmpty(c))
                 return Result<ValueTick[]>.Fail($"Security currency symbol not available.");
-
             if (!Symbol.TryCreate(c + "=X", out currency))
                 return Result<ValueTick[]>.Fail($"Invalid security currency symbol format: '{c}'.");
         }

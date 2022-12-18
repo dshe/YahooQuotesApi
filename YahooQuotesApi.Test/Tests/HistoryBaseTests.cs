@@ -108,9 +108,9 @@ public class HistoryBaseTests : TestBase
 
     [Theory]
     [InlineData("SPY", "USD=X")]
-    //[InlineData("SPY", "JPY=X")]
-    //[InlineData("7203.T", "JPY=X")]
-    //[InlineData("7203.T", "USD=X")]
+    [InlineData("SPY", "JPY=X")]
+    [InlineData("7203.T", "JPY=X")]
+    [InlineData("7203.T", "USD=X")]
     [InlineData("7203.T", "EUR=X")]
     public async Task Test03SecurityBaseCurrency(string symbol, string baseSymbol)
     {
@@ -198,10 +198,10 @@ public class HistoryBaseTests : TestBase
     }
 
     [Theory]
-    //[InlineData("USD=X", "SPY")]
+    [InlineData("USD=X", "SPY")]
     [InlineData("JPY=X", "SPY")]
-    //[InlineData("JPY=X", "7203.T")]
-    //[InlineData("CHF=X", "7203.T")]
+    [InlineData("JPY=X", "7203.T")]
+    [InlineData("CHF=X", "7203.T")]
     public async Task Test06CurrencyBaseSecurity(string symbol, string baseSymbol)
     {
         var security = await MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol) ?? throw new Exception($"Unknown symbol: {symbol}.");
