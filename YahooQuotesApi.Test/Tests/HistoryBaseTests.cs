@@ -228,6 +228,6 @@ public class HistoryBaseTests : TestBase
             price *= rate;
         }
 
-        Assert.Equal(security.PriceHistoryBase.Value[0].Value, price);
+        Assert.Equal(security.PriceHistoryBase.Value[0].Value, price, 4);
     }
 }
