@@ -69,10 +69,11 @@ internal sealed class Services
 
             .AddSingleton(YahooQuotesBuilder)
             .AddSingleton<YahooQuotes>()
+            .AddSingleton<Quotes>()
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<YahooHistory>()
-            .AddSingleton<YahooModules>()
             .AddSingleton<HistoryBaseComposer>()
+            .AddSingleton<YahooModules>()
 
             .BuildServiceProvider();
     }
