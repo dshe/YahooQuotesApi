@@ -19,7 +19,7 @@ public class HistoryBaseComposer
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
-    internal void Compose(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
+    internal void ComposeSecurities(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Security?> securities)
     {
         Logger.LogTrace("HistoryBaseComposer");
 

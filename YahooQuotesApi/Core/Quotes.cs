@@ -64,7 +64,7 @@ public class Quotes
         await AddHistoryToSecurities(securities, historyFlags, ct).ConfigureAwait(false);
 
         if (historyFlags.HasFlag(Histories.PriceHistory))
-            HistoryBaseComposer.Compose(symbols, historyBase, securities);
+            HistoryBaseComposer.ComposeSecurities(symbols, historyBase, securities);
 
         return securities;
     }
