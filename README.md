@@ -56,6 +56,7 @@ Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory
 
 Assert.Equal("NasdaqGS", security.FullExchangeName);
 
+Assert.False(security.PriceHistory.HasError);
 CandleTick[] priceHistory = security.PriceHistory.Value;
 CandleTick tick = priceHistory[0];
 
