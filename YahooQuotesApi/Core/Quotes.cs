@@ -1,10 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 public class Quotes
 {
@@ -14,10 +8,9 @@ public class Quotes
     private readonly HistoryBaseComposer HistoryBaseComposer;
 
     // must be public to support dependency injection
-    public Quotes(YahooQuotesBuilder builder, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
+    public Quotes(ILogger logger, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
     {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         Snapshot = snapshot;
         History = history;
         HistoryBaseComposer = hbc;

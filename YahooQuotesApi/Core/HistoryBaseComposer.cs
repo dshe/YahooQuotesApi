@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 
 namespace YahooQuotesApi;
 
@@ -11,11 +8,11 @@ public class HistoryBaseComposer
     private readonly ILogger Logger;
     private readonly bool UseNonAdjustedClose;
 
-    public HistoryBaseComposer(YahooQuotesBuilder builder)
+    public HistoryBaseComposer(IClock clock, ILogger logger, YahooQuotesBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Clock = builder.Clock;
-        Logger = builder.Logger;
+        Clock = clock;
+        Logger = logger;
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
@@ -40,7 +37,7 @@ public class HistoryBaseComposer
             {
                 if (!symbol.IsCurrency)
                     throw new InvalidOperationException("IsCurrency");
-                security = new Security(symbol);
+                security = new Security(symbol, Logger);
                 securities.Add(symbol, security);
                 Logger.LogTrace(" added currency");
             }

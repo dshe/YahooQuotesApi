@@ -1,10 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using NodaTime.Text;
-using System.Collections.Generic;
+﻿using NodaTime.Text;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 public sealed record ErrorResult(string Message, Exception? Exception = null);
 
@@ -108,6 +105,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         }
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
+#pragma warning restore CA1031
         {
             return Result<T>.Fail(e);
         }
@@ -120,12 +118,16 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         {
             return new Result<T>(await producer().ConfigureAwait(false));
         }
+#pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
+#pragma warning restore CA1031
         {
             return Result<T>.Fail(e);
         }
     }
 }
+
+#pragma warning restore CA1000
 
 public static class ResultExtensions
 {
@@ -134,9 +136,9 @@ public static class ResultExtensions
     {
         ArgumentNullException.ThrowIfNull(projection);
         if (result.HasValue)
-            return new(projection(result.Value));
+            return new Result<T2>(projection(result.Value));
         if (result.HasError)
-            return new(result.Error);
-        return new();
+            return new Result<T2>(result.Error);
+        return new Result<T2>();
     }
 }

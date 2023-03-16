@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 internal sealed class Cache<TKey, TResult> where TKey : notnull
 {

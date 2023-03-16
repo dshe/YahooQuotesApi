@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
@@ -11,12 +10,13 @@ namespace YahooQuotesApi;
 
 //Microsoft.Extensions.Http.Polly
 //https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
-//Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection
+//Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection.
 //The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 //HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
 
 internal sealed class Services
 {
+    private readonly IClock Clock;
     private readonly ILogger Logger;
     private readonly YahooQuotesBuilder YahooQuotesBuilder;
     private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy;
@@ -25,6 +25,7 @@ internal sealed class Services
     internal Services(YahooQuotesBuilder yahooQuotesBuilder)
     {
         YahooQuotesBuilder = yahooQuotesBuilder;
+        Clock = yahooQuotesBuilder.Clock;
         Logger = yahooQuotesBuilder.Logger;
 
         TimeoutPolicy = Policy.
@@ -67,6 +68,8 @@ internal sealed class Services
             .AddPolicyHandler(RetryPolicy)
             .Services
 
+            .AddSingleton(Clock)
+            .AddSingleton(Logger)
             .AddSingleton(YahooQuotesBuilder)
             .AddSingleton<YahooQuotes>()
             .AddSingleton<Quotes>()
@@ -75,7 +78,7 @@ internal sealed class Services
             .AddSingleton<HistoryBaseComposer>()
             .AddSingleton<YahooModules>()
 
-            .BuildServiceProvider();
+            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
 }
 

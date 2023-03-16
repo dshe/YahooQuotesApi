@@ -1,11 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
@@ -14,10 +10,9 @@ public sealed class YahooModules
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
 
-    public YahooModules(YahooQuotesBuilder builder, IHttpClientFactory factory)
+    public YahooModules(ILogger logger, IHttpClientFactory factory)
     {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         HttpClientFactory = factory;
     }
 
@@ -28,7 +23,7 @@ public sealed class YahooModules
 
         if (!modules.Any())
             throw new ArgumentException("No modules indicated.");
-        if (modules.Any(x => string.IsNullOrEmpty(x)))
+        if (modules.Any(string.IsNullOrEmpty))
             throw new ArgumentException("Invalid module: \"\"");
         string[] dups = modules.GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToArray();
         if (dups.Any())
@@ -48,9 +43,9 @@ public sealed class YahooModules
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         //and not allow reading a json error messages such as NotFound.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        // await using?
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
-
         return GetModules(modulesRequested, jsonDocument);
     }
 

@@ -1,13 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
@@ -17,12 +12,12 @@ public sealed class YahooSnapshot : IDisposable
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    public YahooSnapshot(YahooQuotesBuilder builder, IHttpClientFactory factory)
+    public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         HttpClientFactory = factory;
-        Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
+        Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
     }
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)

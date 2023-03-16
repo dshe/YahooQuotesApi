@@ -1,13 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace YahooQuotesApi;
 
 public sealed class YahooQuotesBuilder
 {
-    public YahooQuotesBuilder() { }
-
     internal IClock Clock { get; private set; } = SystemClock.Instance;
     internal YahooQuotesBuilder WithClock(IClock clock) // for testing
     {
@@ -22,14 +19,14 @@ public sealed class YahooQuotesBuilder
         return this;
     }
 
-    public Instant HistoryStartDate { get; private set; } = Instant.MinValue;
+    internal Instant HistoryStartDate { get; private set; } = Instant.MinValue;
     public YahooQuotesBuilder WithHistoryStartDate(Instant start)
     {
         HistoryStartDate = start;
         return this;
     }
 
-    public Frequency PriceHistoryFrequency { get; private set; } = Frequency.Daily;
+    internal Frequency PriceHistoryFrequency { get; private set; } = Frequency.Daily;
     public YahooQuotesBuilder WithPriceHistoryFrequency(Frequency frequency)
     {
         PriceHistoryFrequency = frequency;

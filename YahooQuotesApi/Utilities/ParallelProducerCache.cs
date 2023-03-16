@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 /*
  * TResult - the type of result to be cached

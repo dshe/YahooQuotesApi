@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 
 namespace YahooQuotesApi.Demo;
 
-class Program
+public static class Program
 {
-    static async Task Main()
+    public static async Task Main()
     {
         Console.WriteLine("Please wait...");
 

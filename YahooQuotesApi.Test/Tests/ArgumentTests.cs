@@ -25,8 +25,8 @@ public class ArgumentTests : TestBase
         //_ = await Assert.ThrowsAsync<NullReferenceException>(async () => await YahooQuotes.GetAsync((string[])null));
         _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync(new string[] { null }));
         _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(new string[] { "" }));
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning restore CS8625
+#pragma warning restore CS8600
     }
 
     [Theory]

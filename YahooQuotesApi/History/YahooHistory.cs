@@ -1,10 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace YahooQuotesApi;
 
@@ -16,10 +12,10 @@ public sealed class YahooHistory
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
 
-    public YahooHistory(YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
+    public YahooHistory(ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         Start = builder.HistoryStartDate;
         PriceHistoryFrequency = builder.PriceHistoryFrequency;
         HttpClientFactory = httpClientFactory;
@@ -80,6 +76,7 @@ public sealed class YahooHistory
         }
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
+#pragma warning restore CA1031
         {
             return Result<ITick[]>.Fail(e);
         }

@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKey : notnull
 {

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
@@ -53,15 +50,15 @@ internal static partial class Xtensions
 
     internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new(items);
 
-    internal static object? GetJsonPropertyValueOfType(this JsonProperty jproperty, Type propertyType)
+    internal static object? GetJsonPropertyValueOfType(this JsonProperty property, Type propertyType)
     {
-        JsonElement value = jproperty.Value;
+        JsonElement value = property.Value;
         JsonValueKind kind = value.ValueKind;
 
         if (kind == JsonValueKind.String)
             return value.GetString();
 
-        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
+        if (kind is JsonValueKind.True or JsonValueKind.False)
             return value.GetBoolean();
 
         if (kind == JsonValueKind.Number)
@@ -74,18 +71,18 @@ internal static partial class Xtensions
                 return value.GetDecimal();
         }
 
-        throw new InvalidDataException($"Unsupported type: {propertyType} for property: {jproperty.Name}.");
+        throw new InvalidDataException($"Unsupported type: {propertyType} for property: {property.Name}.");
     }
 
-    internal static object? GetJsonPropertyValue(this JsonProperty jproperty)
+    internal static object? GetJsonPropertyValue(this JsonProperty property)
     {
-        JsonElement value = jproperty.Value;
+        JsonElement value = property.Value;
         JsonValueKind kind = value.ValueKind;
 
         if (kind == JsonValueKind.String)
             return value.GetString(); // may return null
 
-        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
+        if (kind is JsonValueKind.True or JsonValueKind.False)
             return value.GetBoolean();
 
         if (kind == JsonValueKind.Number)
@@ -97,19 +94,4 @@ internal static partial class Xtensions
         }
         return value.GetRawText();
     }
-
-    internal static ReadOnlySpan<char> SplitNext(this ref ReadOnlySpan<char> span, char separator)
-    {
-        int pos = span.IndexOf(separator);
-        if (pos > -1)
-        {
-            ReadOnlySpan<char> part = span[..pos];
-            span = span[(pos + 1)..];
-            return part;
-        }
-        ReadOnlySpan<char> lastPart = span;
-        span = span[span.Length..];
-        return lastPart;
-    }
-
 }

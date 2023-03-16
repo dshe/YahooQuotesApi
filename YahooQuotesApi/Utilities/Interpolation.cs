@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 internal static class InterpolationExtensions
 {
@@ -42,7 +40,7 @@ internal static class InterpolationExtensions
         return rate;
     }
 
-    // This method is interal to allow testing
+    // This method is internal to allow testing
     internal static int BinarySearch<T>(this T[] list, IComparable searchValue, Func<T, IComparable> getComparable)
     {
         if (!list.Any())

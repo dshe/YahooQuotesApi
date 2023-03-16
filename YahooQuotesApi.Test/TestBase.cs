@@ -6,14 +6,17 @@ namespace YahooQuotesApi.Tests;
 
 public abstract class TestBase
 {
-    protected readonly Action<string> Write;
     protected readonly ILogger Logger;
+    protected readonly Action<string> Write;
 
     protected TestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Debug)
     {
-        Write = output.WriteLine;
-        Logger = new LoggerFactory()
-            .AddMXLogger(Write, logLevel)
+        Logger = LoggerFactory
+            .Create(builder => builder
+                .AddMXLogger(output.WriteLine)
+                .SetMinimumLevel(logLevel))
             .CreateLogger("Test");
+
+        Write = (s) => output.WriteLine(s + "\r\n");
     }
 }

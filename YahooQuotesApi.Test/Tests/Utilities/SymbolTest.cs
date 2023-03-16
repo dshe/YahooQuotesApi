@@ -15,7 +15,7 @@ public class SymbolTest : TestBase
     {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         Assert.Throws<ArgumentNullException>(() => ((string?)null).ToSymbol());
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning restore CS8625
 
         Assert.Throws<ArgumentException>(() => "with space".ToSymbol());
 
