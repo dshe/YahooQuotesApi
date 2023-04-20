@@ -13,11 +13,8 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-        Security? security = await yahooQuotes.GetAsync("AAPL");
-
-        if (security is null)
-            throw new ArgumentException("Unknown symbol: AAPL.");
-
+        Security security = await yahooQuotes.GetAsync("AAPL") 
+            ?? throw new ArgumentException("Unknown symbol: AAPL.");
         Assert.Equal("Apple Inc.", security.LongName);
         Assert.True(security.RegularMarketPrice > 0);
     }
@@ -49,6 +46,7 @@ public class Examples
 
         Assert.Equal("NasdaqGS", security.FullExchangeName);
 
+        Assert.False(security.PriceHistory.HasError);
         PriceTick[] priceHistory = security.PriceHistory.Value;
 
         PriceTick tick = priceHistory[0];
