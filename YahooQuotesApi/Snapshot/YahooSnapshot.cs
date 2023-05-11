@@ -10,11 +10,13 @@ public sealed class YahooSnapshot : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
+    private readonly YahooQuotesBuilder YahooQuotesBuilder;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
     public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        YahooQuotesBuilder = builder;
         Logger = logger;
         HttpClientFactory = factory;
         Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
@@ -50,7 +52,7 @@ public sealed class YahooSnapshot : IDisposable
     private async Task<IEnumerable<JsonElement>> GetElements(Symbol[] symbols, CancellationToken ct)
     {
         (Uri uri, List<JsonElement> elements)[] datas =
-            GetUris(symbols)
+            GetUris(YahooQuotesBuilder.BaseUrl, symbols)
                 .Select(uri => (uri, elements: new List<JsonElement>()))
                 .ToArray();
 
@@ -66,10 +68,8 @@ public sealed class YahooSnapshot : IDisposable
         return datas.Select(x => x.elements).SelectMany(x => x);
     }
 
-    private static IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols)
+    private IEnumerable<Uri> GetUris(string baseUrl, IEnumerable<Symbol> symbols)
     {
-        const string baseUrl = "https://query2.finance.yahoo.com/v7/finance/quote?symbols=";
-
         return symbols
             .Select(symbol => WebUtility.UrlEncode(symbol.Name))
             .Chunk(100)
