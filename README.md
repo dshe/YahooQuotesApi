@@ -79,7 +79,7 @@ Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
 Assert.Equal("America/New_York", security.ExchangeTimezone?.Id);
 
-CandleTick tick = security.PriceHistory.Value[0];
+PriceTick tick = security.PriceHistory.Value[0];
 Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
 Assert.Equal(103.0673, tick.Close); // in USD
 
