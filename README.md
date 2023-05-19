@@ -51,14 +51,14 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
     .Build();
 
-Security security = await yahooQuotes.GetAsync("MSFT", HistoryFlags.PriceHistory)
+Security security = await yahooQuotes.GetAsync("MSFT", Histories.PriceHistory)
     ?? throw new ArgumentException("Unknown symbol.");
 
 Assert.Equal("NasdaqGS", security.FullExchangeName);
 
 Assert.False(security.PriceHistory.HasError);
-CandleTick[] priceHistory = security.PriceHistory.Value;
-CandleTick tick = priceHistory[0];
+PriceTick[] priceHistory = security.PriceHistory.Value;
+PriceTick tick = priceHistory[0];
 
 Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
 Assert.Equal(160.62, tick.Close);
@@ -68,7 +68,7 @@ Assert.Equal(160.62, tick.Close);
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .WithHistoryStartDate(Instant.FromUtc(2020, 7, 15, 0, 0))
-    .WithCacheDuration(snapshotDuration: Duration.FromMinutes(30), historyDuration: Duration.FromHours(6))
+    .WithCacheDuration(snapshotCacheDuration: Duration.FromMinutes(30), historyCacheDuration: Duration.FromHours(6))
     .Build();
 
 Security security = await yahooQuotes
