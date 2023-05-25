@@ -58,13 +58,14 @@ public sealed class YahooSnapshot : IDisposable
     {
         // get cookie and crumb value and send it to get uri?
 
-        HttpClient httpClient = HttpClientFactory.CreateClient();
+        HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
         Uri fcUrl = new("https://fc.yahoo.com/");
         using HttpResponseMessage response1 = await httpClient.GetAsync(fcUrl, ct).ConfigureAwait(false);
         response1.Headers.TryGetValues("Set-Cookie", out var cookieValue);
 
         Uri crumbUrl = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
         using HttpRequestMessage request = new(HttpMethod.Get, crumbUrl);
+        httpClient.DefaultRequestHeaders.Add("cookie", cookieValue);
         request.Headers.Add("cookie", cookieValue);
         using HttpResponseMessage response = await httpClient.GetAsync(crumbUrl, ct).ConfigureAwait(false);
 

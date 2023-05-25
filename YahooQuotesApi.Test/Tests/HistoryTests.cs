@@ -21,8 +21,6 @@ public class HistoryTests : TestBase
 
         var security = await yahooQuotes.GetAsync("IBM", Histories.PriceHistory) ?? throw new ArgumentNullException();
 
-        security = await yahooQuotes.GetAsync("IBM", Histories.PriceHistory) ?? throw new ArgumentNullException();
-
         Assert.NotEmpty(security.PriceHistory.Value);
     }
 
