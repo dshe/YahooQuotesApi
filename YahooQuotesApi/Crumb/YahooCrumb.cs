@@ -40,12 +40,12 @@ public class YahooCrumb
             return StoredCookieAndCrumb;
 
         // Not in cache, request it from Yahoo
-        HttpClient httpClient = _httpClientFactory.CreateClient("crumb");
+        HttpClient httpClient = _httpClientFactory.CreateClient();
 
         // FC
         Uri fcUrl = new(YahooFcUrl);
 
-        using HttpResponseMessage fcResponse = await httpClient.GetAsync(fcUrl, ct).ConfigureAwait(false); //Response could be 404, but we need the cookie (we need a special policy for this, allow 404 for fc.yahoo and do not retry)
+        using HttpResponseMessage fcResponse = await httpClient.GetAsync(fcUrl, ct).ConfigureAwait(false);
 
         if (!fcResponse.Headers.TryGetValues("Set-Cookie", out var cookie))
             throw new InvalidOperationException("Set-Cookie header was not present in the response from " + fcUrl);
@@ -60,6 +60,8 @@ public class YahooCrumb
         response.EnsureSuccessStatusCode();
 
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+        httpClient.Dispose();
 
         if (string.IsNullOrEmpty(crumb))
             throw new HttpRequestException($"Could not generate crumb from {YahooGetCrumbUrl} for cookie {cookie.First(x => x.StartsWith("A3", StringComparison.OrdinalIgnoreCase))}");
