@@ -5,6 +5,7 @@ using Polly.Retry;
 using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
+using YahooQuotesApi.Crumb;
 
 namespace YahooQuotesApi;
 
@@ -77,6 +78,7 @@ internal sealed class Services
             .AddSingleton<YahooHistory>()
             .AddSingleton<HistoryBaseComposer>()
             .AddSingleton<YahooModules>()
+            .AddSingleton<YahooCrumb>()
 
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
@@ -102,7 +104,7 @@ internal static partial class Xtensions
                 AllowAutoRedirect = false,
                 //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
                 //CookieContainer = new CookieContainer(),
-                UseCookies = false // manual cookie handling, if any
+                UseCookies = false
             });
     }
 }
