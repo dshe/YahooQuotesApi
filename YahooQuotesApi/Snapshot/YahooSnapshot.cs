@@ -1,9 +1,10 @@
-﻿using System;
+﻿using System.Data;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using YahooQuotesApi.Crumb;
 
 namespace YahooQuotesApi;
 
@@ -12,12 +13,14 @@ public sealed class YahooSnapshot : IDisposable
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly YahooQuotesBuilder YahooQuotesBuilder;
+    private readonly YahooCrumb YahooCrumbService;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory factory)
+    public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         YahooQuotesBuilder = builder;
+        YahooCrumbService = crumbService;
         Logger = logger;
         HttpClientFactory = factory;
         Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
@@ -31,6 +34,7 @@ public sealed class YahooSnapshot : IDisposable
 
         return await Cache.Get(symbols, ct).ConfigureAwait(false);
     }
+
     private async Task<Dictionary<Symbol, Security?>> Producer(Symbol[] symbols, CancellationToken ct)
     {
         Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
@@ -56,23 +60,7 @@ public sealed class YahooSnapshot : IDisposable
 
     private async Task<IEnumerable<JsonElement>> GetElements(Symbol[] symbols, CancellationToken ct)
     {
-        // get cookie and crumb value and send it to get uri?
-
-        HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
-        Uri fcUrl = new("https://fc.yahoo.com/");
-        using HttpResponseMessage response1 = await httpClient.GetAsync(fcUrl, ct).ConfigureAwait(false);
-        response1.Headers.TryGetValues("Set-Cookie", out var cookieValue);
-
-        Uri crumbUrl = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
-        using HttpRequestMessage request = new(HttpMethod.Get, crumbUrl);
-        httpClient.DefaultRequestHeaders.Add("cookie", cookieValue);
-        request.Headers.Add("cookie", cookieValue);
-        using HttpResponseMessage response = await httpClient.GetAsync(crumbUrl, ct).ConfigureAwait(false);
-
-        response.EnsureSuccessStatusCode();
-        string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-
-        //
+        var (cookieValue, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 
         (Uri uri, List<JsonElement> elements)[] datas =
             GetUris(YahooQuotesBuilder.BaseUrl, symbols, crumb)
