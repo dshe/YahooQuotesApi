@@ -40,7 +40,9 @@ public class YahooCrumb
             return StoredCookieAndCrumb;
 
         // Not in cache, request it from Yahoo
+#pragma warning disable CA2000 // Dispose objects before losing scope, HttpClientFactory takes care of managing HttpClient instances
         HttpClient httpClient = _httpClientFactory.CreateClient();
+#pragma warning restore CA2000 
 
         // FC
         Uri fcUrl = new(YahooFcUrl);
@@ -60,8 +62,6 @@ public class YahooCrumb
         response.EnsureSuccessStatusCode();
 
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-
-        httpClient.Dispose();
 
         if (string.IsNullOrEmpty(crumb))
             throw new HttpRequestException($"Could not generate crumb from {YahooGetCrumbUrl} for cookie {cookie.First(x => x.StartsWith("A3", StringComparison.OrdinalIgnoreCase))}");
