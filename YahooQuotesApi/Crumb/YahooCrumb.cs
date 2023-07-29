@@ -1,4 +1,5 @@
 ﻿using System.Net.Http;
+using YahooQuotesApi.Utilities;
 
 namespace YahooQuotesApi.Crumb;
 
@@ -41,8 +42,9 @@ public class YahooCrumb
 
         // Not in cache, request it from Yahoo
 #pragma warning disable CA2000 // Dispose objects before losing scope, HttpClientFactory takes care of managing HttpClient instances
-        HttpClient httpClient = _httpClientFactory.CreateClient();
-#pragma warning restore CA2000 
+        HttpClient httpClient = _httpClientFactory.CreateClient("crumb");
+        httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgentGenerator.GetRandomUserAgent());
+#pragma warning restore CA2000
 
         // FC
         Uri fcUrl = new(YahooFcUrl);
