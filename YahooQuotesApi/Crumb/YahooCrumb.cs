@@ -68,8 +68,6 @@ public class YahooCrumb
         if (string.IsNullOrEmpty(crumb))
             throw new HttpRequestException($"Could not generate crumb from {YahooGetCrumbUrl} for cookie {cookie.First(x => x.StartsWith("A3", StringComparison.OrdinalIgnoreCase))}");
 
-        StoredCookieAndCrumb = (cookie, crumb);
-
-        return StoredCookieAndCrumb;
+        return (cookie, crumb);
     }
 }

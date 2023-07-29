@@ -2,17 +2,20 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using YahooQuotesApi.Crumb;
 
 namespace YahooQuotesApi;
 
 public sealed class YahooModules
 {
     private readonly ILogger Logger;
+    private readonly YahooCrumb YahooCrumbService;
     private readonly IHttpClientFactory HttpClientFactory;
 
-    public YahooModules(ILogger logger, IHttpClientFactory factory)
+    public YahooModules(ILogger logger, YahooCrumb crumbService, IHttpClientFactory factory)
     {
         Logger = logger;
+        YahooCrumbService = crumbService;
         HttpClientFactory = factory;
     }
 
@@ -35,10 +38,13 @@ public sealed class YahooModules
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        Uri uri = GetUri(symbol, modulesRequested);
+        var (cookieValue, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
+
+        Uri uri = GetUri(symbol, crumb, modulesRequested);
 
         HttpClient httpClient = HttpClientFactory.CreateClient("modules");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        httpClient.DefaultRequestHeaders.Add("Cookie", cookieValue);
 
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         //and not allow reading a json error messages such as NotFound.
@@ -49,10 +55,10 @@ public sealed class YahooModules
         return GetModules(modulesRequested, jsonDocument);
     }
 
-    private Uri GetUri(string symbol, string[] modules)
+    private Uri GetUri(string symbol, string crumb, string[] modules)
     {
-        const string address = "https://query2.finance.yahoo.com/v11/finance/quoteSummary";
-        string url = $"{address}/{symbol}?modules={string.Join(",", modules)}";
+        const string address = "https://query2.finance.yahoo.com/v10/finance/quoteSummary";
+        string url = $"{address}/{symbol}?crumb={crumb}&modules={string.Join(",", modules)}";
 
         Logger.LogInformation("{Url}", url);
 
