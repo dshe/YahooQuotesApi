@@ -53,6 +53,8 @@ internal sealed class Services
     internal ServiceProvider GetServiceProvider()
     {
         return new ServiceCollection()
+            .AddNamedHttpClient("crumb")
+            .Services
 
             .AddNamedHttpClient("snapshot")
             .AddPolicyHandler(TimeoutPolicy)
