@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -12,17 +13,17 @@ public sealed class YahooSnapshot : IDisposable
 {
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
-    private readonly YahooQuotesBuilder YahooQuotesBuilder;
+    private readonly string ApiVersion;
     private readonly YahooCrumb YahooCrumbService;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
     public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        YahooQuotesBuilder = builder;
-        YahooCrumbService = crumbService;
         Logger = logger;
         HttpClientFactory = factory;
+        ApiVersion = builder.SnapshotApiVersion;
+        YahooCrumbService = crumbService;
         Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
     }
 
@@ -62,8 +63,11 @@ public sealed class YahooSnapshot : IDisposable
     {
         var (cookieValue, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 
+        const string format = "https://query2.finance.yahoo.com/{0}/finance/quote?symbols=";
+        string baseUrl = string.Format(CultureInfo.InvariantCulture, format, ApiVersion);
+
         (Uri uri, List<JsonElement> elements)[] datas =
-            GetUris(YahooQuotesBuilder.BaseUrl, symbols, crumb)
+            GetUris(baseUrl, symbols, crumb)
                 .Select(uri => (uri, elements: new List<JsonElement>()))
                 .ToArray();
 
@@ -79,7 +83,7 @@ public sealed class YahooSnapshot : IDisposable
         return datas.Select(x => x.elements).SelectMany(x => x);
     }
 
-    private IEnumerable<Uri> GetUris(string baseUrl, IEnumerable<Symbol> symbols, string crumb)
+    private static IEnumerable<Uri> GetUris(string baseUrl, IEnumerable<Symbol> symbols, string crumb)
     {
         return symbols
             .Select(symbol => WebUtility.UrlEncode(symbol.Name))

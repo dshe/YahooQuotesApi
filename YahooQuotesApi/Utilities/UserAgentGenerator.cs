@@ -27,5 +27,7 @@ internal static class UserAgentGenerator
 
     private static readonly Random random = new();
 
+#pragma warning disable CA5394
+
     public static string GetRandomUserAgent() => UserAgents[random.Next(UserAgents.Length)];
 }

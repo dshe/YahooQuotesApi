@@ -5,22 +5,21 @@ namespace YahooQuotesApi;
 
 public sealed class YahooQuotesBuilder
 {
+    public YahooQuotesBuilder() {}
+
     internal IClock Clock { get; private set; } = SystemClock.Instance;
-
-    private const string ApiDefaultVersion = "v7";
-    private string ApiVersion = "";
-    internal string BaseUrl { get; private set; }
-    private string BaseUrlPattern = "https://query2.finance.yahoo.com/{0}/finance/quote?symbols=";
-
-    public YahooQuotesBuilder(string apiVersion = ApiDefaultVersion)
-    {
-        ApiVersion = apiVersion;
-        BaseUrl = string.Format(BaseUrlPattern, apiVersion);
-    }
-
     internal YahooQuotesBuilder WithClock(IClock clock) // for testing
     {
         Clock = clock;
+        return this;
+    }
+
+    internal string SnapshotApiVersion { get; private set; } = "v7";
+    public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion)
+    {
+        if (string.IsNullOrWhiteSpace(snapshotApiVersion))
+            throw new ArgumentNullException(nameof(snapshotApiVersion));
+        SnapshotApiVersion = snapshotApiVersion;
         return this;
     }
 

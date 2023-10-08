@@ -8,9 +8,9 @@
     <PackageTags>yahoo finance api quotes dividends splits modules</PackageTags>
     <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
     <Authors>DavidS</Authors>
-    <Version>5.3.7</Version>
-    <AssemblyVersion>5.3.7</AssemblyVersion>
-    <FileVersion>5.3.7</FileVersion>
+    <Version>5.3.8</Version>
+    <AssemblyVersion>5.3.8</AssemblyVersion>
+    <FileVersion>5.3.8</FileVersion>
     <PackageIcon>worm64.png</PackageIcon>
     <RepositoryUrl>https://github.com/dshe/YahooQuotesApi</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
@@ -23,9 +23,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.11" />
     <PackageReference Include="NodaTime" Version="3.1.9" />
-    <PackageReference Include="System.Text.Json" Version="7.0.2" />
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
     <None Include="worm64.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 

@@ -76,7 +76,6 @@ public sealed class YahooHistory
         }
 #pragma warning disable CA1031 // catch a more specific allowed exception type 
         catch (Exception e)
-#pragma warning restore CA1031
         {
             return Result<ITick[]>.Fail(e);
         }
