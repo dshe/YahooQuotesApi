@@ -29,32 +29,34 @@ public sealed class Security
                 logger.LogWarning("Invalid currency symbol: '{Currency}'.", Currency);
         }
 
-        if (DividendDateSeconds > 0)
-            DividendDate = Instant.FromUnixTimeSeconds(DividendDateSeconds).InUtc().LocalDateTime;
-        if (EarningsTimestamp > 0)
-            EarningsTime = Instant.FromUnixTimeSeconds(EarningsTimestamp).InUtc().LocalDateTime;
-        if (EarningsTimestampStart > 0)
-            EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampStart).InUtc().LocalDateTime;
-        if (EarningsTimestampEnd > 0)
-            EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampEnd).InUtc().LocalDateTime;
+        if (DividendDateSeconds.HasValue && DividendDateSeconds > 0)
+            DividendDate = Instant.FromUnixTimeSeconds(DividendDateSeconds.Value).InUtc().LocalDateTime;
 
         ExchangeCloseTime = Exchanges.GetCloseTimeFromSymbol(Symbol);
 
-        if (ExchangeTimezoneName.Length > 0)
+        if (!string.IsNullOrEmpty(ExchangeTimezoneName))
         {
             ExchangeTimezone = DateTimeZoneProvider.GetZoneOrNull(ExchangeTimezoneName);
-            if (ExchangeTimezone is null)
+            if (ExchangeTimezone is not null)
+            {
+                if (EarningsTimestamp.HasValue && EarningsTimestamp > 0)
+                    EarningsTime = Instant.FromUnixTimeSeconds(EarningsTimestamp.Value).InZone(ExchangeTimezone);
+                if (EarningsTimestampStart.HasValue && EarningsTimestampStart > 0)
+                    EarningsTimeStart = Instant.FromUnixTimeSeconds(EarningsTimestampStart.Value).InZone(ExchangeTimezone);
+                if (EarningsTimestampEnd.HasValue && EarningsTimestampEnd > 0)
+                    EarningsTimeEnd = Instant.FromUnixTimeSeconds(EarningsTimestampEnd.Value).InZone(ExchangeTimezone);
+                if (RegularMarketTimeSeconds.HasValue && RegularMarketTimeSeconds > 0)
+                    RegularMarketTime = Instant.FromUnixTimeSeconds(RegularMarketTimeSeconds.Value).InZone(ExchangeTimezone);
+                if (PreMarketTimeSeconds.HasValue && PreMarketTimeSeconds > 0)
+                    PreMarketTime = Instant.FromUnixTimeSeconds(PreMarketTimeSeconds.Value).InZone(ExchangeTimezone);
+                if (PostMarketTimeSeconds.HasValue && PostMarketTimeSeconds > 0)
+                    PostMarketTime = Instant.FromUnixTimeSeconds(PostMarketTimeSeconds.Value).InZone(ExchangeTimezone);
+                if (FirstTradeDateMilliseconds.HasValue && FirstTradeDateMilliseconds > 0)
+                    FirstTradeDate = Instant.FromUnixTimeMilliseconds(FirstTradeDateMilliseconds.Value).InZone(ExchangeTimezone);
+            }
+            else
                 logger.LogWarning("ExchangeTimezone not found for: '{ExchangeTimezoneName}'.", ExchangeTimezoneName);
         }
-
-        if (RegularMarketTimeSeconds > 0 && ExchangeTimezone is not null)
-            RegularMarketTime = Instant.FromUnixTimeSeconds(RegularMarketTimeSeconds).InZone(ExchangeTimezone);
-        if (PreMarketTimeSeconds > 0 && ExchangeTimezone is not null)
-            PreMarketTime = Instant.FromUnixTimeSeconds(PreMarketTimeSeconds).InZone(ExchangeTimezone);
-        if (PostMarketTimeSeconds > 0 && ExchangeTimezone is not null)
-            PostMarketTime = Instant.FromUnixTimeSeconds(PostMarketTimeSeconds).InZone(ExchangeTimezone);
-        if (FirstTradeDateMilliseconds > 0)
-            FirstTradeDate = Instant.FromUnixTimeMilliseconds(FirstTradeDateMilliseconds).InUtc().LocalDateTime;
     }
 
     private void SetProperty(JsonProperty property)
@@ -79,6 +81,7 @@ public sealed class Security
                     symbol = "USD" + symbol;
                 Logger.LogTrace("Setting security property: Symbol = {Symbol}", symbol);
                 Symbol = symbol.ToSymbol();
+                Properties.Add(jName, Symbol);
                 return;
             }
             Logger.LogTrace("Setting security property: {Name} = {Value}", propertyInfo.Name, value);
@@ -90,34 +93,37 @@ public sealed class Security
         }
 
         object? val = property.GetJsonPropertyValue();
-        Logger.LogTrace("Setting security other property: {Name} = {Value}", jName, val);
+        Logger.LogTrace("Setting security new property: {Name} = {Value}", jName, val);
         Properties.Add(jName, val);
     }
 
     public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
-    public Decimal Ask { get; private set; }
-    public Int64 AskSize { get; private set; }
+    // Security.cs: 104. This list was generated automatically, from names defined by Yahoo, mostly.
+    public Decimal? Ask { get; private set; }
+    public Int64? AskSize { get; private set; }
     public String AverageAnalystRating { get; private set; } = "";
-    public Int64 AverageDailyVolume10Day { get; private set; }
-    public Int64 AverageDailyVolume3Month { get; private set; }
-    public Decimal Bid { get; internal set; }
-    public Int64 BidSize { get; private set; }
-    public Decimal BookValue { get; private set; }
-    public Boolean? CryptoTradable { get; private set; }
-    public String Currency { get; internal set; } = "";
+    public Int64? AverageDailyVolume10Day { get; private set; }
+    public Int64? AverageDailyVolume3Month { get; private set; }
+    public Decimal? Bid { get; private set; }
+    public Int64? BidSize { get; private set; }
+    public Decimal? BookValue { get; private set; }
+    public Boolean? CryptoTradeable { get; private set; }
+    public String Currency { get; private set; } = "";
     public String CustomPriceAlertConfidence { get; private set; } = "";
     public String DisplayName { get; private set; } = "";
     public LocalDateTime DividendDate { get; private set; }
-    public Int64 DividendDateSeconds { get; private set; }
+    public Int64? DividendDateSeconds { get; private set; }
     public Result<DividendTick[]> DividendHistory { get; internal set; }
-    public LocalDateTime EarningsTime { get; private set; }
-    public LocalDateTime EarningsTimeEnd { get; private set; }
-    public Int64 EarningsTimestamp { get; private set; }
-    public Int64 EarningsTimestampEnd { get; private set; }
-    public Int64 EarningsTimestampStart { get; private set; }
-    public LocalDateTime EarningsTimeStart { get; private set; }
-    public Decimal? EpsCurrentYear { get; private set;  }
+    public Double? DividendRate { get; private set; }
+    public Double? DividendYield { get; private set; }
+    public ZonedDateTime EarningsTime { get; private set; }
+    public ZonedDateTime EarningsTimeEnd { get; private set; }
+    public Int64? EarningsTimestamp { get; private set; }
+    public Int64? EarningsTimestampEnd { get; private set; }
+    public Int64? EarningsTimestampStart { get; private set; }
+    public ZonedDateTime EarningsTimeStart { get; private set; }
+    public Decimal? EpsCurrentYear { get; private set; }
     public Decimal? EpsForward { get; private set; }
     public Decimal? EpsTrailingTwelveMonths { get; private set; }
     public Boolean? EsgPopulated { get; private set; }
@@ -130,6 +136,7 @@ public sealed class Security
     public Decimal? FiftyDayAverage { get; private set; }
     public Decimal? FiftyDayAverageChange { get; private set; }
     public Decimal? FiftyDayAverageChangePercent { get; private set; }
+    public Double? FiftyTwoWeekChangePercent { get; private set; }
     public Decimal? FiftyTwoWeekHigh { get; private set; }
     public Decimal? FiftyTwoWeekHighChange { get; private set; }
     public Decimal? FiftyTwoWeekHighChangePercent { get; private set; }
@@ -138,8 +145,8 @@ public sealed class Security
     public Decimal? FiftyTwoWeekLowChangePercent { get; private set; }
     public String FiftyTwoWeekRange { get; private set; } = "";
     public String FinancialCurrency { get; private set; } = "";
-    public LocalDateTime FirstTradeDate { get; private set; }
-    public Int64 FirstTradeDateMilliseconds { get; private set; }
+    public ZonedDateTime FirstTradeDate { get; private set; }
+    public Int64? FirstTradeDateMilliseconds { get; private set; }
     public Decimal? ForwardPE { get; private set; }
     public String FullExchangeName { get; private set; } = "";
     public Int64? GmtOffSetMilliseconds { get; private set; }
@@ -149,16 +156,18 @@ public sealed class Security
     public Int64? MarketCap { get; private set; }
     public String MarketState { get; private set; } = "";
     public String MessageBoardId { get; private set; } = "";
+    public Double? NetAssets { get; private set; }
+    public Double? NetExpenseRatio { get; private set; }
     public Decimal? PostMarketChange { get; private set; }
     public Decimal? PostMarketChangePercent { get; private set; }
     public Decimal? PostMarketPrice { get; private set; }
     public ZonedDateTime PostMarketTime { get; private set; }
-    public Int64 PostMarketTimeSeconds { get; private set; }
+    public Int64? PostMarketTimeSeconds { get; private set; }
     public Decimal? PreMarketChange { get; private set; }
     public Decimal? PreMarketChangePercent { get; private set; }
     public Decimal? PreMarketPrice { get; private set; }
     public ZonedDateTime PreMarketTime { get; private set; }
-    public Int64 PreMarketTimeSeconds { get; private set; }
+    public Int64? PreMarketTimeSeconds { get; private set; }
     public Decimal? PriceEpsCurrentYear { get; private set; }
     public Int64? PriceHint { get; private set; }
     public Result<PriceTick[]> PriceHistory { get; internal set; }
@@ -176,9 +185,9 @@ public sealed class Security
     public Decimal? RegularMarketPreviousClose { get; private set; }
     public Decimal? RegularMarketPrice { get; private set; }
     public ZonedDateTime RegularMarketTime { get; private set; }
-    public Int64 RegularMarketTimeSeconds { get; private set; }
+    public Int64? RegularMarketTimeSeconds { get; private set; }
     public Int64? RegularMarketVolume { get; private set; }
-    public Int64 SharesOutstanding { get; private set; }
+    public Int64? SharesOutstanding { get; private set; }
     public String ShortName { get; private set; } = "";
     public Int64? SourceInterval { get; private set; }
     public Result<SplitTick[]> SplitHistory { get; internal set; }

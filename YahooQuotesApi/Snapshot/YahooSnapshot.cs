@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -61,13 +60,10 @@ public sealed class YahooSnapshot : IDisposable
 
     private async Task<IEnumerable<JsonElement>> GetElements(Symbol[] symbols, CancellationToken ct)
     {
-        var (cookieValue, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
-
-        const string format = "https://query2.finance.yahoo.com/{0}/finance/quote?symbols=";
-        string baseUrl = string.Format(CultureInfo.InvariantCulture, format, ApiVersion);
+        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 
         (Uri uri, List<JsonElement> elements)[] datas =
-            GetUris(baseUrl, symbols, crumb)
+            GetUris(symbols, crumb)
                 .Select(uri => (uri, elements: new List<JsonElement>()))
                 .ToArray();
 
@@ -78,13 +74,15 @@ public sealed class YahooSnapshot : IDisposable
         };
 
         await Parallel.ForEachAsync(datas, parallelOptions, async (data, ct) =>
-            data.elements.AddRange(await MakeRequest(data.uri, cookieValue, ct).ConfigureAwait(false))).ConfigureAwait(false);
+            data.elements.AddRange(await MakeRequest(data.uri, cookie, ct).ConfigureAwait(false))).ConfigureAwait(false);
 
         return datas.Select(x => x.elements).SelectMany(x => x);
     }
 
-    private static IEnumerable<Uri> GetUris(string baseUrl, IEnumerable<Symbol> symbols, string crumb)
+    private IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols, string crumb)
     {
+        string baseUrl = $"https://query2.finance.yahoo.com/{ApiVersion}/finance/quote?symbols=";
+
         return symbols
             .Select(symbol => WebUtility.UrlEncode(symbol.Name))
             .Chunk(100)
@@ -92,13 +90,12 @@ public sealed class YahooSnapshot : IDisposable
             .Select(s => new Uri(s));
     }
 
-    private async Task<JsonElement[]> MakeRequest(Uri uri, IEnumerable<string> cookieValue, CancellationToken ct)
+    private async Task<JsonElement[]> MakeRequest(Uri uri, IEnumerable<string> cookie, CancellationToken ct)
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        httpClient.DefaultRequestHeaders.Add("Cookie", cookieValue);
+        httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         //and not allow reading a json error messages such as NotFound.

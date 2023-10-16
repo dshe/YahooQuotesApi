@@ -38,16 +38,14 @@ public sealed class YahooModules
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        var (cookieValue, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
-
-        Uri uri = GetUri(symbol, crumb, modulesRequested);
+        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 
         HttpClient httpClient = HttpClientFactory.CreateClient("modules");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        httpClient.DefaultRequestHeaders.Add("Cookie", cookieValue);
+        httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
-        //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
-        //and not allow reading a json error messages such as NotFound.
+        // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
+        // and not allow reading a json error messages such as NotFound.
+        Uri uri = GetUri(symbol, crumb, modulesRequested);
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         // await using?
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

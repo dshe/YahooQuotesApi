@@ -5,15 +5,18 @@ using Polly.Retry;
 using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
 using YahooQuotesApi.Crumb;
+using YahooQuotesApi.Utilities;
 
 namespace YahooQuotesApi;
 
-//Microsoft.Extensions.Http.Polly
-//https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
-//Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection.
-//The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
-//HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
+// Microsoft.Extensions.Http.Polly
+// https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-5.0
+// Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection.
+// The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
+// HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
 
 internal sealed class Services
 {
@@ -52,21 +55,25 @@ internal sealed class Services
 
     internal ServiceProvider GetServiceProvider()
     {
+        string httpUserAgent = YahooQuotesBuilder.HttpUserAgent;
+
         return new ServiceCollection()
-            .AddNamedHttpClient("crumb")
-            .Services
-
-            .AddNamedHttpClient("snapshot")
+            .AddNamedHttpClient("crumb", httpUserAgent)
             .AddPolicyHandler(TimeoutPolicy)
             .AddPolicyHandler(RetryPolicy)
             .Services
 
-            .AddNamedHttpClient("history")
+            .AddNamedHttpClient("snapshot", httpUserAgent)
             .AddPolicyHandler(TimeoutPolicy)
             .AddPolicyHandler(RetryPolicy)
             .Services
 
-            .AddNamedHttpClient("modules")
+            .AddNamedHttpClient("history", httpUserAgent)
+            .AddPolicyHandler(TimeoutPolicy)
+            .AddPolicyHandler(RetryPolicy)
+            .Services
+
+            .AddNamedHttpClient("modules", httpUserAgent)
             .AddPolicyHandler(TimeoutPolicy)
             .AddPolicyHandler(RetryPolicy)
             .Services
@@ -88,7 +95,7 @@ internal sealed class Services
 
 internal static partial class Xtensions
 {
-    internal static IHttpClientBuilder AddNamedHttpClient(this IServiceCollection serviceCollection, string name)
+    internal static IHttpClientBuilder AddNamedHttpClient(this IServiceCollection serviceCollection, string name, string httpUserAgent)
     {
         return serviceCollection
 
@@ -98,6 +105,14 @@ internal static partial class Xtensions
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
                 client.DefaultRequestVersion = new Version(2, 0);
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+
+                if (!string.IsNullOrEmpty(httpUserAgent))
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(httpUserAgent);
+                else if (name == "crumb")
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandomUserAgent()); // ???
+
+                if (name == "snapshot" || name == "modules")
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
 
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()

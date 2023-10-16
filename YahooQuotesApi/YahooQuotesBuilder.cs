@@ -14,19 +14,28 @@ public sealed class YahooQuotesBuilder
         return this;
     }
 
-    internal string SnapshotApiVersion { get; private set; } = "v7";
-    public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion)
-    {
-        if (string.IsNullOrWhiteSpace(snapshotApiVersion))
-            throw new ArgumentNullException(nameof(snapshotApiVersion));
-        SnapshotApiVersion = snapshotApiVersion;
-        return this;
-    }
-
     internal ILogger Logger { get; private set; } = NullLogger.Instance;
     public YahooQuotesBuilder WithLogger(ILogger logger)
     {
         Logger = logger;
+        return this;
+    }
+
+    internal string SnapshotApiVersion { get; private set; } = "v7";
+    public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion)
+    {
+        if (string.IsNullOrWhiteSpace(snapshotApiVersion))
+            throw new ArgumentException("invalid argument", nameof(snapshotApiVersion));
+        SnapshotApiVersion = snapshotApiVersion;
+        return this;
+    }
+
+    internal string HttpUserAgent { get; private set; } = "";
+    public YahooQuotesBuilder WithHttpUserAgent(string httpUserAgent)
+    {
+        if (string.IsNullOrWhiteSpace(httpUserAgent))
+            throw new ArgumentException("invalid argument", nameof(httpUserAgent));
+        HttpUserAgent = httpUserAgent;
         return this;
     }
 
