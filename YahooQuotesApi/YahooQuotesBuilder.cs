@@ -5,7 +5,7 @@ namespace YahooQuotesApi;
 
 public sealed class YahooQuotesBuilder
 {
-    public YahooQuotesBuilder() {}
+    public YahooQuotesBuilder() { }
 
     internal IClock Clock { get; private set; } = SystemClock.Instance;
     internal YahooQuotesBuilder WithClock(IClock clock) // for testing
@@ -59,6 +59,13 @@ public sealed class YahooQuotesBuilder
     internal YahooQuotesBuilder WithNonAdjustedClose() // for testing
     {
         NonAdjustedClose = true;
+        return this;
+    }
+
+    internal string SpecificUserAgent { get; private set; } = string.Empty;
+    public YahooQuotesBuilder WithSpecificUserAgent(string specificUserAgent)
+    {
+        SpecificUserAgent = specificUserAgent;
         return this;
     }
 

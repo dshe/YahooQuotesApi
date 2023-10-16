@@ -16,6 +16,7 @@ public sealed class YahooSnapshot : IDisposable
     private readonly string ApiVersion;
     private readonly YahooCrumb YahooCrumbService;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
+    private readonly string SpecificUserAgent;
 
     public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
@@ -25,6 +26,7 @@ public sealed class YahooSnapshot : IDisposable
         ApiVersion = builder.SnapshotApiVersion;
         YahooCrumbService = crumbService;
         Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
+        SpecificUserAgent = builder.SpecificUserAgent;
     }
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
@@ -99,6 +101,8 @@ public sealed class YahooSnapshot : IDisposable
         HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookieValue);
+        if (!string.IsNullOrEmpty(SpecificUserAgent))
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(SpecificUserAgent);
 
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         //and not allow reading a json error messages such as NotFound.
