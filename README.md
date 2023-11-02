@@ -77,7 +77,8 @@ Security security = await yahooQuotes
 
 Assert.Equal("Tesla, Inc.", security.ShortName);
 Assert.Equal("USD", security.Currency);
-Assert.Equal("America/New_York", security.ExchangeTimezone?.Id);
+Assert.Equal("America/New_York", security.ExchangeTimezoneName);
+DateTimeZone exchangeTimeZone = Helpers.GetTimeZone(security.ExchangeTimezoneName);
 
 PriceTick tick = security.PriceHistory.Value[0];
 Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
