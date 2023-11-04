@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class AsyncItemsCacheTests : TestBase
+public class AsyncItemsCacheTests : XunitTestBase
 {
     private readonly SerialProducerCache<int, string> Cache;
     private readonly List<string> RequestHistory = new();

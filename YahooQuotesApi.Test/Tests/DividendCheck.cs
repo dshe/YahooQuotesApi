@@ -23,7 +23,7 @@ public class Rec
     public override string ToString() => $"{LocalDatePattern.Iso.Format(Date)}, {Close}, {AdjustedClose}, {Dividend}, {Adjustment}, {AdjustmentUsingDividend}";
 }
 
-public class DividendCheck : TestBase
+public class DividendCheck : XunitTestBase
 {
     private readonly YahooQuotes YahooQuotes;
 

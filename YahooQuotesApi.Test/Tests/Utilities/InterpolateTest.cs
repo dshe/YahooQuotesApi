@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class InterpolateTest : TestBase
+public class InterpolateTest : XunitTestBase
 {
     public InterpolateTest(ITestOutputHelper output) : base(output) { }
 

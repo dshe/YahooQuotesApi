@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class ArgumentTests : TestBase
+public class ArgumentTests : XunitTestBase
 {
     private readonly YahooQuotes YahooQuotes;
 
@@ -19,12 +19,12 @@ public class ArgumentTests : TestBase
     {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync((string)null));
-        _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(""));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetAsync((string)null));
+        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetAsync(""));
         _ = await YahooQuotes.GetAsync(Array.Empty<string>());
         //_ = await Assert.ThrowsAsync<NullReferenceException>(async () => await YahooQuotes.GetAsync((string[])null));
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetAsync(new string[] { null }));
-        _ = await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(new string[] { "" }));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetAsync(new string[] { null }));
+        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetAsync(new string[] { "" }));
 #pragma warning restore CS8625
 #pragma warning restore CS8600
     }
@@ -37,7 +37,7 @@ public class ArgumentTests : TestBase
     //[InlineData("YNDX")]
     public async Task TestInvalidSymbols(string symbol)
     {
-        await Assert.ThrowsAsync<ArgumentException>(async () => await YahooQuotes.GetAsync(symbol));
+        await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetAsync(symbol));
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class ArgumentTests : TestBase
     {
         var ct = new CancellationToken(true);
         var task1 = YahooQuotes.GetAsync("IBM", ct: ct);
-        var e1 = await Assert.ThrowsAnyAsync<Exception>(async () => await task1);
+        var e1 = await Assert.ThrowsAnyAsync<Exception>(() => task1);
         Assert.True(e1 is OperationCanceledException);
     }
 }

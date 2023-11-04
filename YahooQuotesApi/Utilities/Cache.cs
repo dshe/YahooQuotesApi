@@ -30,6 +30,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
             Instant now = Clock.GetCurrentInstant();
             foreach (TKey key in keys)
             {
+                // Return false if any key not found, or if any value not null and expired.
                 if (!Items.TryGetValue(key, out (TResult value, Instant time) item)
                     || (item.value is not null && (now - item.time) > CacheDuration))
                 {

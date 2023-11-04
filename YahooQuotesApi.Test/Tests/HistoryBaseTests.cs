@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class HistoryBaseTests : TestBase
+public class HistoryBaseTests : XunitTestBase
 {
     private readonly YahooQuotes MyYahooQuotes;
     public HistoryBaseTests(ITestOutputHelper output) : base(output)
@@ -46,7 +46,8 @@ public class HistoryBaseTests : TestBase
         var task = MyYahooQuotes.GetAsync(symbol, Histories.PriceHistory, baseSymbol);
         if (error == 1)
         {
-            await Assert.ThrowsAsync<ArgumentException>(async () => await task);
+            //object value = await Assert.ThrowsAsync<ArgumentException>(async () => await task);
+            object value = await Assert.ThrowsAsync<ArgumentException>(() => task);
             return;
         }
 

@@ -9,9 +9,10 @@ public sealed class YahooQuotes
     private readonly YahooModules Modules;
 
     // must be public to support dependency injection
-    public YahooQuotes(ILogger logger, YahooModules modules, Quotes quotes)
+    public YahooQuotes(YahooQuotesBuilder builder, YahooModules modules, Quotes quotes)
     {
-        Logger = logger;
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        Logger = builder.Logger;
         Quotes = quotes;
         Modules = modules;
     }

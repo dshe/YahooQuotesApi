@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using YahooQuotesApi.Crumb;
 
@@ -12,9 +11,10 @@ public sealed class YahooModules
     private readonly YahooCrumb YahooCrumbService;
     private readonly IHttpClientFactory HttpClientFactory;
 
-    public YahooModules(ILogger logger, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooModules(YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
-        Logger = logger;
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        Logger = builder.Logger;
         YahooCrumbService = crumbService;
         HttpClientFactory = factory;
     }

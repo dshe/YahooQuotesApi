@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class ModulesTests : TestBase
+public class ModulesTests : XunitTestBase
 {
     private readonly YahooQuotes YahooQuotes;
     public ModulesTests(ITestOutputHelper output) : base(output)
@@ -76,9 +76,6 @@ public class ModulesTests : TestBase
     [Fact]
     public async Task DuplicateModuleName()
     {
-        //var results = await YahooQuotes.GetModulesAsync("IBM", new[] { "Price", "Price" });
-        //Assert.Equal("Duplicate module(s): 'Price'.", results.Error.Message);
-
         var results = await YahooQuotes.GetModulesAsync("IBM", new[] { "balanceSheetHistoryQuarterly", "Price", "Price", "balanceSheetHistoryQuarterly" });
         Assert.Equal("Duplicate module(s): 'balanceSheetHistoryQuarterly, Price'.", results.Error.Message);
     }
@@ -87,6 +84,8 @@ public class ModulesTests : TestBase
     public async Task Example()
     {
         Result<JsonProperty[]> result = await YahooQuotes.GetModulesAsync("TSLA", new[] { "assetProfile", "defaultKeyStatistics" });
-        Assert.NotEmpty(result.Value);
+        Assert.True(result.HasValue);
+        JsonProperty[] properties = result.Value;
+        Assert.NotEmpty(properties);
     }
 }

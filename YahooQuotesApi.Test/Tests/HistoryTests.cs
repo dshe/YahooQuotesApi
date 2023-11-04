@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class HistoryTests : TestBase
+public class HistoryTests : XunitTestBase
 {
     public HistoryTests(ITestOutputHelper output) : base(output) { }
 

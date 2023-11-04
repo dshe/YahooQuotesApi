@@ -14,7 +14,7 @@ public static class Program
             .Create(x => x
                 .AddSimpleConsole(x => x.SingleLine = true)
                 .SetMinimumLevel(LogLevel.Warning))
-            .CreateLogger("Logger");
+            .CreateLogger("Demo");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
         await new MyApp(logger).Run(100, Histories.All, "JPY=X");

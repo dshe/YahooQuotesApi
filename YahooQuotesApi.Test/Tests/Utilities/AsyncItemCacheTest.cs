@@ -5,7 +5,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class AsyncItemCacheTest : TestBase
+public class AsyncItemCacheTest : XunitTestBase
 {
     public AsyncItemCacheTest(ITestOutputHelper output) : base(output) { }
     private readonly ParallelProducerCache<string, string> Cache = new(SystemClock.Instance, Duration.MaxValue);

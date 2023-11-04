@@ -8,26 +8,11 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class SnapshotTests : TestBase
+public class SnapshotTests : XunitTestBase
 {
     private readonly YahooQuotes YahooQuotes;
     public SnapshotTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
         YahooQuotes = new YahooQuotesBuilder().WithLogger(Logger).Build();
-
-    [Fact]
-    public async Task TestTimeZone()
-    {
-        Security security = await YahooQuotes.GetAsync("C") ?? throw new ArgumentException();
-
-        string exchangeTimezoneName = security.ExchangeTimezoneName!;
-        var tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(exchangeTimezoneName);
-        Assert.Equal(tz, security.ExchangeTimezone);
-
-        long? seconds = security.RegularMarketTimeSeconds;
-        var instant = Instant.FromUnixTimeSeconds(seconds.GetValueOrDefault());
-        var zdt = instant.InZone(tz!);
-        Assert.Equal(zdt, security.RegularMarketTime);
-    }
 
     [Fact]
     public async Task TestInternationalStocks()
@@ -60,18 +45,20 @@ public class SnapshotTests : TestBase
         foreach (var kvp in securities)
         {
             var symbol = kvp.Key;
-            var security = kvp.Value;
-            if (security is null)
-                throw new Exception($"Unknown Symbol: {symbol}.");
+            var security = kvp.Value ?? throw new Exception($"Unknown Symbol: {symbol}.");
             Assert.Equal(symbol, security.Symbol.Name);
+
+            DateTimeZone exchangeTimeZone = Helpers.GetTimeZone(security.ExchangeTimezoneName);
+            LocalTime exchangeCloseTime = Helpers.GetExchangeCloseTimeFromSymbol(security.Symbol);
+
             Write($"Symbol:            {symbol}");
-            Write($"TimeZone:          {security.ExchangeTimezone}");
-            Write($"ExchangeCloseTime: {security.ExchangeCloseTime}");
-            Write($"RegularMarketTime: {security.RegularMarketTime}");
+            Write($"TimeZone:          {exchangeTimeZone}");
+            Write($"ExchangeCloseTime: {exchangeCloseTime}");
+            Write($"RegularMarketTime: {Instant.FromUnixTimeSeconds(security.RegularMarketTimeSeconds)}");
 
             var date = new LocalDate(2020, 7, 17)
-                .At(security?.ExchangeCloseTime ?? throw new ArgumentException())
-                .InZoneStrictly(security.ExchangeTimezone ?? throw new ArgumentException())
+                .At(exchangeCloseTime)
+                .InZoneStrictly(exchangeTimeZone ?? throw new ArgumentException())
                 .ToInstant();
 
 
@@ -102,7 +89,9 @@ public class SnapshotTests : TestBase
 
         var security = await yahooQuotes.GetAsync(symbol, Histories.PriceHistory)
             ?? throw new ArgumentException();
-        Assert.Equal(timeZone, security.ExchangeTimezone);
+
+        DateTimeZone exchangeTimeZone = Helpers.GetTimeZone(security.ExchangeTimezoneName);
+        Assert.Equal(timeZone, exchangeTimeZone);
 
         var ticks = security.PriceHistoryBase.Value;
         Assert.Equal(date, ticks[0].Date);

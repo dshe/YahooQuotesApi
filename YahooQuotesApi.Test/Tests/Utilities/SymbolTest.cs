@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace YahooQuotesApi.Tests;
 
-public class SymbolTest : TestBase
+public class SymbolTest : XunitTestBase
 {
     public SymbolTest(ITestOutputHelper output) : base(output) { }
 

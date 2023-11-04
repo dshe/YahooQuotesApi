@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
@@ -48,33 +47,21 @@ internal static partial class Xtensions
         return shifted / magnitude;
     }
 
-    internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> items) => new(items);
-
-    internal static object? GetJsonPropertyValueOfType(this JsonProperty property, Type propertyType)
+    internal static object? GetValue(this JsonProperty property, Type propertyType, ILogger logger)
     {
         JsonElement value = property.Value;
-        JsonValueKind kind = value.ValueKind;
-
-        if (kind == JsonValueKind.String)
-            return value.GetString();
-
-        if (kind is JsonValueKind.True or JsonValueKind.False)
-            return value.GetBoolean();
-
-        if (kind == JsonValueKind.Number)
+        try
         {
-            if (propertyType == typeof(Int64) || propertyType == typeof(Int64?))
-                return value.GetInt64();
-            if (propertyType == typeof(Double) || propertyType == typeof(Double?))
-                return value.GetDouble();
-            if (propertyType == typeof(Decimal) || propertyType == typeof(Decimal?))
-                return value.GetDecimal();
+            return value.Deserialize(propertyType);
         }
-
-        throw new InvalidDataException($"Unsupported type: {propertyType} for property: {property.Name}.");
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not parse json property '{Name}' = '{RawText}', {JsonType} -> {PropertyType}.", property.Name, value.GetRawText(), value.ValueKind, propertyType);
+            throw;
+        }
     }
 
-    internal static object? GetJsonPropertyValue(this JsonProperty property)
+    internal static object? DeserializeNewValue(this JsonProperty property)
     {
         JsonElement value = property.Value;
         JsonValueKind kind = value.ValueKind;
@@ -87,11 +74,19 @@ internal static partial class Xtensions
 
         if (kind == JsonValueKind.Number)
         {
-            if (value.TryGetInt64(out long l))
-                return l;
             if (value.TryGetDouble(out double dbl))
                 return dbl;
         }
         return value.GetRawText();
+        //Array, Object, Undefined, Null
+    }
+
+    internal static bool IsCalculated(this PropertyInfo pi)
+    {
+        if (!pi.CanWrite)
+            return true;
+        Type type = pi.PropertyType;
+        return type.IsGenericType && type.Name.StartsWith("Result", StringComparison.Ordinal);
     }
 }
+

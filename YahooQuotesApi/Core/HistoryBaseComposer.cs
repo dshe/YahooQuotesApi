@@ -2,17 +2,17 @@
 
 namespace YahooQuotesApi;
 
-public class HistoryBaseComposer
+public sealed class HistoryBaseComposer
 {
     private readonly IClock Clock;
     private readonly ILogger Logger;
     private readonly bool UseNonAdjustedClose;
 
-    public HistoryBaseComposer(IClock clock, ILogger logger, YahooQuotesBuilder builder)
+    public HistoryBaseComposer(YahooQuotesBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Clock = clock;
-        Logger = logger;
+        Clock = builder.Clock;
+        Logger = builder.Logger;
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 
@@ -64,13 +64,14 @@ public class HistoryBaseComposer
             return Result<ValueTick[]>.Fail(priceHistory.Error);
         if (!priceHistory.Value.Any())
             return Result<ValueTick[]>.Fail("No history available.");
-        if (security.ExchangeTimezone is null)
+        if (security.ExchangeTimezoneName is null)
             return Result<ValueTick[]>.Fail("ExchangeTimezone not found.");
-        if (security.ExchangeCloseTime == default)
-            return Result<ValueTick[]>.Fail("ExchangeCloseTime not found.");
+
+        LocalTime exchangeCloseTime = Helpers.GetExchangeCloseTimeFromSymbol(security.Symbol);
+        DateTimeZone exchangeTimeZone = Helpers.GetTimeZone(security.ExchangeTimezoneName);
 
         List<ValueTick> ticks = priceHistory.Value.Select(priceTick => new ValueTick(
-            priceTick.Date.At(security.ExchangeCloseTime).InZoneLeniently(security.ExchangeTimezone!).ToInstant(),
+            priceTick.Date.At(exchangeCloseTime).InZoneLeniently(exchangeTimeZone).ToInstant(),
             UseNonAdjustedClose ? priceTick.Close : priceTick.AdjustedClose,
             priceTick.Volume
         )).ToList();
@@ -88,14 +89,14 @@ public class HistoryBaseComposer
             return;
         }
 
-        if (security.RegularMarketTime == default)
+        if (security.RegularMarketTimeSeconds == 0)
         {
-            Logger.LogDebug("RegularMarketTime unavailable for symbol: {Symbol}.", security.Symbol);
+            Logger.LogDebug("RegularMarketTimeSeconds unavailable for symbol: {Symbol}.", security.Symbol);
             return;
         }
 
         Instant now = Clock.GetCurrentInstant();
-        Instant snapTime = security.RegularMarketTime.ToInstant();
+        Instant snapTime = Instant.FromUnixTimeSeconds(security.RegularMarketTimeSeconds);
         if (snapTime > now)
         {
             if ((snapTime - now) > Duration.FromSeconds(20))

@@ -6,7 +6,6 @@ using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Reflection;
 using YahooQuotesApi.Crumb;
 using YahooQuotesApi.Utilities;
 
@@ -20,7 +19,6 @@ namespace YahooQuotesApi;
 
 internal sealed class Services
 {
-    private readonly IClock Clock;
     private readonly ILogger Logger;
     private readonly YahooQuotesBuilder YahooQuotesBuilder;
     private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy;
@@ -29,7 +27,6 @@ internal sealed class Services
     internal Services(YahooQuotesBuilder yahooQuotesBuilder)
     {
         YahooQuotesBuilder = yahooQuotesBuilder;
-        Clock = yahooQuotesBuilder.Clock;
         Logger = yahooQuotesBuilder.Logger;
 
         TimeoutPolicy = Policy.
@@ -78,8 +75,6 @@ internal sealed class Services
             .AddPolicyHandler(RetryPolicy)
             .Services
 
-            .AddSingleton(Clock)
-            .AddSingleton(Logger)
             .AddSingleton(YahooQuotesBuilder)
             .AddSingleton<YahooQuotes>()
             .AddSingleton<Quotes>()

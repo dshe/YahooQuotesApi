@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using YahooQuotesApi.Crumb;
 
@@ -16,14 +15,14 @@ public sealed class YahooSnapshot : IDisposable
     private readonly YahooCrumb YahooCrumbService;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    public YahooSnapshot(IClock clock, ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooSnapshot(YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = logger;
+        Logger = builder.Logger;
         HttpClientFactory = factory;
         ApiVersion = builder.SnapshotApiVersion;
         YahooCrumbService = crumbService;
-        Cache = new SerialProducerCache<Symbol, Security?>(clock, builder.SnapshotCacheDuration, Producer);
+        Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
     }
 
     internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
@@ -35,7 +34,7 @@ public sealed class YahooSnapshot : IDisposable
         return await Cache.Get(symbols, ct).ConfigureAwait(false);
     }
 
-    private async Task<Dictionary<Symbol, Security?>> Producer(Symbol[] symbols, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
     {
         Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
 
@@ -58,7 +57,7 @@ public sealed class YahooSnapshot : IDisposable
         return dict;
     }
 
-    private async Task<IEnumerable<JsonElement>> GetElements(Symbol[] symbols, CancellationToken ct)
+    private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
     {
         var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 

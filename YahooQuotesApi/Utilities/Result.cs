@@ -8,7 +8,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     // The fields in this struct are T? and ErrorResult?.
     // The default for these fields is null and IsUndefined is true.
     private readonly T? value;
-    private readonly ErrorResult? errorResult = null;
+    private readonly ErrorResult? errorResult;
 
     public bool HasValue { get; }
     public bool HasError { get; }

@@ -1,6 +1,6 @@
 ﻿namespace YahooQuotesApi;
 
-public class Quotes
+public sealed class Quotes
 {
     private readonly ILogger Logger;
     private readonly YahooSnapshot Snapshot;
@@ -8,9 +8,10 @@ public class Quotes
     private readonly HistoryBaseComposer HistoryBaseComposer;
 
     // must be public to support dependency injection
-    public Quotes(ILogger logger, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
+    public Quotes(YahooQuotesBuilder builder, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
     {
-        Logger = logger;
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
+        Logger = builder.Logger;
         Snapshot = snapshot;
         History = history;
         HistoryBaseComposer = hbc;
