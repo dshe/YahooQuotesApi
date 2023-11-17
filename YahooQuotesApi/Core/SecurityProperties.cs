@@ -4,6 +4,8 @@
 public sealed partial class Security
 #pragma warning restore CA1724
 {
+    public Dictionary<string, Prop> Props { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public Symbol Symbol { get; private set; }
     public string UnderlyingSymbol { get; private set; } = "";
     public string UnderlyingExchangeSymbol { get; private set; } = "";
@@ -113,7 +115,7 @@ public sealed partial class Security
     public double? FiftyTwoWeekLowChangePercent { get; private set; }
     public string FiftyTwoWeekRange { get; private set; } = "";
     public string AverageAnalystRating { get; private set; } = "";
-    //public string CustomPriceAlertConfidence { get; private set; } = ""; // testing
+    public string CustomPriceAlertConfidence { get; private set; } = ""; // testing
     public Result<PriceTick[]> PriceHistory { get; internal set; }
     public Result<ValueTick[]> PriceHistoryBase { get; internal set; }
     public Result<DividendTick[]> DividendHistory { get; internal set; }

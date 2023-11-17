@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
-using Polly.Extensions.Http;
-using Polly.Retry;
-using Polly.Timeout;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -19,70 +16,33 @@ namespace YahooQuotesApi;
 
 internal sealed class Services
 {
-    private readonly ILogger Logger;
     private readonly YahooQuotesBuilder YahooQuotesBuilder;
-    private readonly AsyncTimeoutPolicy<HttpResponseMessage> TimeoutPolicy;
-    private readonly AsyncRetryPolicy<HttpResponseMessage> RetryPolicy;
-
-    internal Services(YahooQuotesBuilder yahooQuotesBuilder)
-    {
+    internal Services(YahooQuotesBuilder yahooQuotesBuilder) =>
         YahooQuotesBuilder = yahooQuotesBuilder;
-        Logger = yahooQuotesBuilder.Logger;
-
-        TimeoutPolicy = Policy.
-            TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(20)); // Timeout for an individual try
-
-        RetryPolicy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .Or<TimeoutRejectedException>() // thrown by TimeoutPolicy
-            .WaitAndRetryAsync(new[]
-            {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(3),
-                    TimeSpan.FromSeconds(10)
-            },
-            onRetry: (r, ts, n, ctx) =>
-            {
-                if (r.Result == default) // no result, an exception was thrown
-                    Logger.LogError(r.Exception, "Retry[{N}]: {Message}", n, r.Exception.Message);
-                else
-                    Logger.LogError("Retry[{N}]: ({StatusCode}) {ReasonPhrase}", n, r.Result.StatusCode, r.Result.ReasonPhrase);
-            });
-    }
 
     internal ServiceProvider GetServiceProvider()
     {
         string httpUserAgent = YahooQuotesBuilder.HttpUserAgent;
 
         return new ServiceCollection()
-            .AddNamedHttpClient("crumb", httpUserAgent)
-            .AddPolicyHandler(TimeoutPolicy)
-            .AddPolicyHandler(RetryPolicy)
-            .Services
 
+            .AddNamedHttpClient("crumb",    httpUserAgent)
             .AddNamedHttpClient("snapshot", httpUserAgent)
-            .AddPolicyHandler(TimeoutPolicy)
-            .AddPolicyHandler(RetryPolicy)
-            .Services
+            .AddNamedHttpClient("history",  httpUserAgent)
+            .AddNamedHttpClient("modules",  httpUserAgent)
 
-            .AddNamedHttpClient("history", httpUserAgent)
-            .AddPolicyHandler(TimeoutPolicy)
-            .AddPolicyHandler(RetryPolicy)
-            .Services
-
-            .AddNamedHttpClient("modules", httpUserAgent)
-            .AddPolicyHandler(TimeoutPolicy)
-            .AddPolicyHandler(RetryPolicy)
-            .Services
+            .AddLogging(configure => configure
+                .ClearProviders()
+                .AddProvider(new CustomLoggerProvider(YahooQuotesBuilder.Logger)))
 
             .AddSingleton(YahooQuotesBuilder)
             .AddSingleton<YahooQuotes>()
             .AddSingleton<Quotes>()
+            .AddSingleton<YahooCrumb>()
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<YahooHistory>()
             .AddSingleton<HistoryBaseComposer>()
             .AddSingleton<YahooModules>()
-            .AddSingleton<YahooCrumb>()
 
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
@@ -90,7 +50,7 @@ internal sealed class Services
 
 internal static partial class Xtensions
 {
-    internal static IHttpClientBuilder AddNamedHttpClient(this IServiceCollection serviceCollection, string name, string httpUserAgent)
+    internal static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name, string httpUserAgent)
     {
         return serviceCollection
 
@@ -117,6 +77,19 @@ internal static partial class Xtensions
                 //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
                 //CookieContainer = new CookieContainer(),
                 UseCookies = false
-            });
+            })
+
+            .AddStandardResilienceHandler(static options => 
+            {
+                //options.RateLimiter
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.Retry.BackoffType = DelayBackoffType.Linear;
+                options.Retry.MaxRetryAttempts = 5;
+                //options.CircuitBreaker.ManualControl = new CircuitBreakerManualControl(isIsolated: true);
+                //options.AttemptTimeout.
+            })
+            
+            .Services;
     }
 }
+

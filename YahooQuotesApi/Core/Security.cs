@@ -8,7 +8,6 @@ public sealed partial class Security
 #pragma warning restore CA1724
 {
     private readonly ILogger Logger;
-    public Dictionary<string, Prop> Props { get; } = new(StringComparer.OrdinalIgnoreCase);
     internal Security(Symbol symbol, ILogger logger)
     {
         Symbol = symbol;
