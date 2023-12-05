@@ -2,16 +2,15 @@
 
 public sealed class Quotes
 {
-    private readonly ILogger Logger;
-    private readonly YahooSnapshot Snapshot;
-    private readonly YahooHistory History;
-    private readonly HistoryBaseComposer HistoryBaseComposer;
+    private ILogger Logger { get; }
+    private YahooSnapshot Snapshot { get; }
+    private YahooHistory History { get; }
+    private HistoryBaseComposer HistoryBaseComposer { get; }
 
     // must be public to support dependency injection
-    public Quotes(YahooQuotesBuilder builder, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
+    public Quotes(ILogger logger, YahooSnapshot snapshot, YahooHistory history, HistoryBaseComposer hbc)
     {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         Snapshot = snapshot;
         History = history;
         HistoryBaseComposer = hbc;

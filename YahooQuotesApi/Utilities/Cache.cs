@@ -34,7 +34,6 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
                 if (!Items.TryGetValue(key, out (TResult value, Instant time) item)
                     || (item.value is not null && (now - item.time) > CacheDuration))
                 {
-                    results.Clear();
                     return false;
                 }
                 results.Add(key, item.value);

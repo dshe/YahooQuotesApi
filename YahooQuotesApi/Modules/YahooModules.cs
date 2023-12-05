@@ -11,10 +11,9 @@ public sealed class YahooModules
     private readonly YahooCrumb YahooCrumbService;
     private readonly IHttpClientFactory HttpClientFactory;
 
-    public YahooModules(YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooModules(ILogger logger, YahooCrumb crumbService, IHttpClientFactory factory)
     {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         YahooCrumbService = crumbService;
         HttpClientFactory = factory;
     }

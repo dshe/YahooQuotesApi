@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Polly;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -13,29 +12,22 @@ namespace YahooQuotesApi;
 // Tight coupling between IHttpClientFactory and Microsoft.Extensions.DependencyInjection.
 // The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 // HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
+// https://learn.microsoft.com/en-us/dotnet/core/resilience/http-resilience?tabs=dotnet-cli
 
-internal sealed class Services
+internal static class Services
 {
-    private readonly YahooQuotesBuilder YahooQuotesBuilder;
-    internal Services(YahooQuotesBuilder yahooQuotesBuilder) =>
-        YahooQuotesBuilder = yahooQuotesBuilder;
-
-    internal ServiceProvider GetServiceProvider()
+    internal static YahooQuotes Build(YahooQuotesBuilder yahooQuotesBuilder)
     {
-        string httpUserAgent = YahooQuotesBuilder.HttpUserAgent;
-
         return new ServiceCollection()
 
-            .AddNamedHttpClient("crumb",    httpUserAgent)
-            .AddNamedHttpClient("snapshot", httpUserAgent)
-            .AddNamedHttpClient("history",  httpUserAgent)
-            .AddNamedHttpClient("modules",  httpUserAgent)
+            .AddNamedHttpClient("crumb",    yahooQuotesBuilder)
+            .AddNamedHttpClient("snapshot", yahooQuotesBuilder)
+            .AddNamedHttpClient("history",  yahooQuotesBuilder)
+            .AddNamedHttpClient("modules",  yahooQuotesBuilder)
 
-            .AddLogging(configure => configure
-                .ClearProviders()
-                .AddProvider(new CustomLoggerProvider(YahooQuotesBuilder.Logger)))
-
-            .AddSingleton(YahooQuotesBuilder)
+            .AddSingleton(yahooQuotesBuilder)
+            .AddSingleton(yahooQuotesBuilder.Clock)
+            .AddSingleton(yahooQuotesBuilder.Logger)
             .AddSingleton<YahooQuotes>()
             .AddSingleton<Quotes>()
             .AddSingleton<YahooCrumb>()
@@ -44,20 +36,22 @@ internal sealed class Services
             .AddSingleton<HistoryBaseComposer>()
             .AddSingleton<YahooModules>()
 
-            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
-    }
-}
+            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true })
 
-internal static partial class Xtensions
-{
-    internal static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name, string httpUserAgent)
+            .GetRequiredService<YahooQuotes>();
+    }
+
+    private static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name, YahooQuotesBuilder builder)
     {
+        string httpUserAgent = builder.HttpUserAgent;
+
         return serviceCollection
 
             .AddHttpClient(name, client =>
             {
                 //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 //client.Timeout = Timeout.InfiniteTimeSpan; // default: 100 seconds
+                //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
                 client.DefaultRequestVersion = new Version(2, 0);
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
 
@@ -79,16 +73,9 @@ internal static partial class Xtensions
                 UseCookies = false
             })
 
-            .AddStandardResilienceHandler(static options => 
-            {
-                //options.RateLimiter
-                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
-                options.Retry.BackoffType = DelayBackoffType.Linear;
-                options.Retry.MaxRetryAttempts = 5;
-                //options.CircuitBreaker.ManualControl = new CircuitBreakerManualControl(isIsolated: true);
-                //options.AttemptTimeout.
-            })
-            
+            //.AddStandardResilienceHandler(builder.HttpResilienceOptions)
+            .AddStandardResilienceHandler()
+
             .Services;
     }
 }

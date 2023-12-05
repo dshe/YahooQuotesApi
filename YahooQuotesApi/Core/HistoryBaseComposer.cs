@@ -4,15 +4,15 @@ namespace YahooQuotesApi;
 
 public sealed class HistoryBaseComposer
 {
-    private readonly IClock Clock;
-    private readonly ILogger Logger;
-    private readonly bool UseNonAdjustedClose;
+    private IClock Clock { get; }
+    private ILogger Logger { get; }
+    private bool UseNonAdjustedClose { get; }
 
-    public HistoryBaseComposer(YahooQuotesBuilder builder)
+    public HistoryBaseComposer(IClock clock, ILogger logger, YahooQuotesBuilder builder)
     {
+        Clock = clock;
+        Logger = logger;
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Clock = builder.Clock;
-        Logger = builder.Logger;
         UseNonAdjustedClose = builder.NonAdjustedClose;
     }
 

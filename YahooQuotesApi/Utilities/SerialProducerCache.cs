@@ -5,9 +5,9 @@ internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKe
     private readonly SemaphoreSlim Semaphore = new(1, 1);
     private readonly List<TKey> Buffer = new();
     private readonly Cache<TKey, TResult> Cache;
-    private readonly Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
+    private readonly Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> Produce;
 
-    internal SerialProducerCache(IClock clock, Duration cacheDuration, Func<IEnumerable<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
+    internal SerialProducerCache(IClock clock, Duration cacheDuration, Func<List<TKey>, CancellationToken, Task<Dictionary<TKey, TResult>>> produce)
     {
         Cache = new Cache<TKey, TResult>(clock, cacheDuration);
         Produce = produce;
@@ -17,7 +17,7 @@ internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKe
     {
         if (Cache.TryGetAll(keys, out var results))
             return results;
-
+        
         lock (Buffer)
         {
             Buffer.AddRange(keys);

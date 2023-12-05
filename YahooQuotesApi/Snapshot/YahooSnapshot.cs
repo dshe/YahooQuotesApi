@@ -15,13 +15,13 @@ public sealed class YahooSnapshot : IDisposable
     private readonly YahooCrumb YahooCrumbService;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    public YahooSnapshot(YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
-        HttpClientFactory = factory;
+        Logger = logger;
         ApiVersion = builder.SnapshotApiVersion;
         YahooCrumbService = crumbService;
+        HttpClientFactory = factory;
         Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
     }
 
@@ -34,7 +34,7 @@ public sealed class YahooSnapshot : IDisposable
         return await Cache.Get(symbols, ct).ConfigureAwait(false);
     }
 
-    private async Task<Dictionary<Symbol, Security?>> Producer(IEnumerable<Symbol> symbols, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Security?>> Producer(List<Symbol> symbols, CancellationToken ct)
     {
         Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
 
@@ -57,7 +57,7 @@ public sealed class YahooSnapshot : IDisposable
         return dict;
     }
 
-    private async Task<IEnumerable<JsonElement>> GetElements(IEnumerable<Symbol> symbols, CancellationToken ct)
+    private async Task<List<JsonElement>> GetElements(List<Symbol> symbols, CancellationToken ct)
     {
         var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
 
@@ -75,10 +75,10 @@ public sealed class YahooSnapshot : IDisposable
         await Parallel.ForEachAsync(datas, parallelOptions, async (data, ct) =>
             data.elements.AddRange(await MakeRequest(data.uri, cookie, ct).ConfigureAwait(false))).ConfigureAwait(false);
 
-        return datas.Select(x => x.elements).SelectMany(x => x);
+        return datas.Select(x => x.elements).SelectMany(x => x).ToList();
     }
 
-    private IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols, string crumb)
+    private IEnumerable<Uri> GetUris(List<Symbol> symbols, string crumb)
     {
         string baseUrl = $"https://query2.finance.yahoo.com/{ApiVersion}/finance/quote?symbols=";
 
@@ -89,7 +89,7 @@ public sealed class YahooSnapshot : IDisposable
             .Select(s => new Uri(s));
     }
 
-    private async Task<JsonElement[]> MakeRequest(Uri uri, IEnumerable<string> cookie, CancellationToken ct)
+    private async Task<JsonElement[]> MakeRequest(Uri uri, List<string> cookie, CancellationToken ct)
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 

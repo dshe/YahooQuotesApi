@@ -1,77 +1,70 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace YahooQuotesApi;
 
-public sealed class YahooQuotesBuilder
+public sealed record YahooQuotesBuilder
 {
-    public YahooQuotesBuilder() {}
+    public YahooQuotesBuilder() { }
 
-    internal IClock Clock { get; private set; } = SystemClock.Instance;
-    internal YahooQuotesBuilder WithClock(IClock clock) // for testing
+    // for testing
+    internal IClock Clock { get; private init; } = SystemClock.Instance;
+    internal YahooQuotesBuilder WithClock(IClock clock) => this with { Clock = clock };
+
+    internal ILogger Logger { get; private init; } = NullLogger.Instance;
+    public YahooQuotesBuilder WithLogger(ILogger logger) => this with { Logger = logger };
+    public YahooQuotesBuilder WithLoggerFactory(ILoggerFactory loggerFactory)
     {
-        Clock = clock;
-        return this;
+        ArgumentNullException.ThrowIfNull(loggerFactory, nameof(loggerFactory));
+        return this with { Logger = loggerFactory.CreateLogger("YahooQuotes") };
     }
 
-    internal ILogger Logger { get; private set; } = NullLogger.Instance;
-    public YahooQuotesBuilder WithLogger(ILogger logger)
-    {
-        Logger = logger;
-        return this;
-    }
-
-    internal string SnapshotApiVersion { get; private set; } = "v7";
+    internal string SnapshotApiVersion { get; private init; } = "v7";
     public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion)
     {
         if (string.IsNullOrWhiteSpace(snapshotApiVersion))
             throw new ArgumentException("invalid argument", nameof(snapshotApiVersion));
-        SnapshotApiVersion = snapshotApiVersion;
-        return this;
+        return this with { SnapshotApiVersion = snapshotApiVersion };
     }
 
-    internal string HttpUserAgent { get; private set; } = "";
+    /* "HttpStandardResilienceOptions" is not CLS-compliant
+    internal Action<HttpStandardResilienceOptions> HttpResilienceOptions { get; private init; } = static options =>
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+    public YahooQuotesBuilder WithHttpResilienceOptions(Action<HttpStandardResilienceOptions> options)
+    {
+        return this with { HttpResilienceOptions = options };
+    }
+    */
+
+    internal string HttpUserAgent { get; private init; } = "";
     public YahooQuotesBuilder WithHttpUserAgent(string httpUserAgent)
     {
         if (string.IsNullOrWhiteSpace(httpUserAgent))
             throw new ArgumentException("invalid argument", nameof(httpUserAgent));
-        HttpUserAgent = httpUserAgent;
-        return this;
+        return this with { HttpUserAgent = httpUserAgent };
     }
 
-    internal Instant HistoryStartDate { get; private set; } = Instant.MinValue;
-    public YahooQuotesBuilder WithHistoryStartDate(Instant start)
-    {
-        HistoryStartDate = start;
-        return this;
-    }
+    internal Instant HistoryStartDate { get; private init; } = Instant.MinValue;
+    public YahooQuotesBuilder WithHistoryStartDate(Instant start) =>
+        this with { HistoryStartDate = start };
 
-    internal Frequency PriceHistoryFrequency { get; private set; } = Frequency.Daily;
-    public YahooQuotesBuilder WithPriceHistoryFrequency(Frequency frequency)
-    {
-        PriceHistoryFrequency = frequency;
-        return this;
-    }
+    internal Frequency PriceHistoryFrequency { get; private init; } = Frequency.Daily;
+    public YahooQuotesBuilder WithPriceHistoryFrequency(Frequency frequency) =>
+        this with { PriceHistoryFrequency = frequency };
 
-    internal Duration SnapshotCacheDuration { get; private set; } = Duration.Zero;
-    internal Duration HistoryCacheDuration { get; private set; } = Duration.Zero;
+    internal Duration SnapshotCacheDuration { get; private init; } = Duration.Zero;
+    internal Duration HistoryCacheDuration { get; private init; } = Duration.Zero;
     public YahooQuotesBuilder WithCacheDuration(Duration snapshotCacheDuration, Duration historyCacheDuration)
     {
         if (snapshotCacheDuration > historyCacheDuration)
             throw new ArgumentException("snapshotCacheDuration > historyCacheDuration.");
-        SnapshotCacheDuration = snapshotCacheDuration;
-        HistoryCacheDuration = historyCacheDuration;
-        return this;
+        return this with { SnapshotCacheDuration = snapshotCacheDuration, HistoryCacheDuration = historyCacheDuration };
     }
 
-    internal bool NonAdjustedClose { get; private set; }
-    internal YahooQuotesBuilder WithNonAdjustedClose() // for testing
-    {
-        NonAdjustedClose = true;
-        return this;
-    }
+    // for testing
+    internal bool NonAdjustedClose { get; private init; }
+    internal YahooQuotesBuilder WithNonAdjustedClose() => 
+        this with { NonAdjustedClose = true };
 
-    public YahooQuotes Build() => new Services(this)
-        .GetServiceProvider()
-        .GetRequiredService<YahooQuotes>();
+    public YahooQuotes Build() => Services.Build(this);
 }

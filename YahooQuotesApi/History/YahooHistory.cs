@@ -12,10 +12,10 @@ public sealed class YahooHistory
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
 
-    public YahooHistory(YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
+    public YahooHistory(ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        Logger = builder.Logger;
+        Logger = logger;
         Start = builder.HistoryStartDate;
         PriceHistoryFrequency = builder.PriceHistoryFrequency;
         HttpClientFactory = httpClientFactory;
