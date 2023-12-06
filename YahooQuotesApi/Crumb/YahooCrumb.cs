@@ -2,10 +2,12 @@
 
 namespace YahooQuotesApi.Crumb;
 
-public sealed class YahooCrumb
+public sealed class YahooCrumb : IDisposable
 {
     private readonly ILogger Logger;
     private readonly HttpClient HttpClient;
+    private readonly SemaphoreSlim SemaphoreSlim = new(1, 1);
+    private (List<string>, string) CookieAndCrumb;
 
     public YahooCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
@@ -14,30 +16,36 @@ public sealed class YahooCrumb
         HttpClient = httpClientFactory.CreateClient("crumb");
     }
 
-    public async Task<(List<string>, string)> GetCookieAndCrumb(CancellationToken ct) =>
-        await GetLazy(ct).Value.ConfigureAwait(false);
-    private Lazy<Task<(List<string>, string)>> GetLazy(CancellationToken ct) =>
-        new(async () => await Get(ct).ConfigureAwait(false));
-    private async Task<(List<string>, string)> Get(CancellationToken ct)
+    public async Task<(List<string>, string)> GetCookieAndCrumb(CancellationToken ct)
     {
-        Logger.LogDebug("GetCookieAndCrumb: start");
+        await SemaphoreSlim.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            List<string> cookies = await GetCookies(ct).ConfigureAwait(false);
-            string crumb = await GetCrumb(cookies, ct).ConfigureAwait(false);
-            return (cookies, crumb);
+            if (CookieAndCrumb == default)
+            {
+                var cookies = await GetCookies(ct).ConfigureAwait(false);
+                var crumb = await GetCrumb(cookies, ct).ConfigureAwait(false);
+                CookieAndCrumb = (cookies, crumb);
+            }
+            return CookieAndCrumb;
         }
         catch (Exception e)
         {
             Logger.LogCritical(e, "GetCookieAndCrumb: error");
             throw;
         }
+        finally
+        {
+            SemaphoreSlim.Release(); 
+        }
     }
 
     private async Task<List<string>> GetCookies(CancellationToken ct)
     {
+        //Uri url = new("https://finance.yahoo.com/");
         // Uri url = new("https://fc.yahoo.com/"); // timed out
-        Uri url = new("https://login.yahoo.com");
+        Uri url = new("https://login.yahoo.com/");
+        //Uri url = new("https://api.login.yahoo.com/");
 
         // This call may result in a 404 error,
         // but we just need it to extract set-cookie from the response headers
@@ -45,14 +53,16 @@ public sealed class YahooCrumb
         using HttpResponseMessage response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues("Set-Cookie", out var setCookie))
             throw new InvalidOperationException("Set-Cookie header was not present in the response from " + url + ".");
-        Logger.LogDebug("GetCookieAndCrumb: received these cookies: {Cookies}", string.Join(',', setCookie));
+        List<string> cookies = setCookie.ToList();
+        Logger.LogTrace(message: "GetCookieAndCrumb: received these cookies({Count}): {Cookies}", cookies.Count, Environment.NewLine + string.Join(Environment.NewLine, cookies));
         //List<string> cookies = setCookie.Where(c => c.StartsWith("A3=d", StringComparison.OrdinalIgnoreCase)).ToList();
-        List<string> cookies = setCookie
-            .Where(c => c.Contains("domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))
+        cookies = cookies
+            .Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.Contains("SameSite=None", StringComparison.OrdinalIgnoreCase))
             .ToList();
         if (!cookies.Any())
             throw new InvalidOperationException("No useful cookies found.");
-        Logger.LogDebug("GetCookieAndCrumb: using these cookies: {Cookies}", string.Join(',', cookies));
+        Logger.LogTrace("GetCookieAndCrumb: using these cookies({Count}): {Cookies}", cookies.Count, Environment.NewLine + string.Join(Environment.NewLine, cookies));
         return cookies;
     }
 
@@ -63,23 +73,21 @@ public sealed class YahooCrumb
         HttpClient.DefaultRequestHeaders.Add("cookie", cookies);
         Uri url = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
         using HttpResponseMessage response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (Exception e) 
-        {
-            Logger.LogError(e, "GetCookieAndCrumb: response error from {Url}.", "https://query2.finance.yahoo.com/v1/test/getcrumb");
-            throw;
-        }
+        response.EnsureSuccessStatusCode();
 
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(crumb))
             throw new HttpRequestException($"Could not generate crumb from {url} using cookies.");
+        return crumb;
 
         // Cache the cookie and crumb values to use with further requests.
         // httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
         // Example: query2.finance.yahoo.com/v7/finance/quote?symbols={symbol}&crumb={crumb}
-        return crumb;
+    }
+
+    public void Dispose()
+    {
+        HttpClient.Dispose();
+        SemaphoreSlim.Dispose();
     }
 }

@@ -12,8 +12,8 @@ public static class Program
 
         ILogger logger = LoggerFactory
             .Create(x => x
-                .AddSimpleConsole(x => x.SingleLine = true)
-                .SetMinimumLevel(LogLevel.Warning))
+                .AddSimpleConsole(x => x.SingleLine = false)
+                .SetMinimumLevel(LogLevel.Debug))
             .CreateLogger("Demo");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");

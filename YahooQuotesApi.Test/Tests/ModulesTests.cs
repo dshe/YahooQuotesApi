@@ -46,8 +46,8 @@ public class ModulesTests : XunitTestBase
         var results = await YahooQuotes.GetModulesAsync("InvalidSymbol", new[] { "Price", "balanceSheetHistoryQuarterly" });
         Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", results.Error.Message);
 
-        results = await YahooQuotes.GetModulesAsync("InvalidSymbol", new[] { "InvalidModuleName1", "InvalidModuleName2" });
-        Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", results.Error.Message);
+        var results2 = await YahooQuotes.GetModulesAsync("InvalidSymbol", new[] { "InvalidModuleName1", "InvalidModuleName2" });
+        Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", results2.Error.Message);
     }
 
     [Fact]

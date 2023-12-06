@@ -22,7 +22,6 @@ public sealed class YahooModules
     {
         if (!Symbol.TryCreate(symbol, out var sym) || sym.IsCurrency)
             throw new ArgumentException($"Invalid symbol: {sym.Name}.");
-
         if (!modules.Any())
             throw new ArgumentException("No modules indicated.");
         if (modules.Any(string.IsNullOrEmpty))
@@ -37,16 +36,16 @@ public sealed class YahooModules
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
-
         HttpClient httpClient = HttpClientFactory.CreateClient("modules");
+        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         // and not allow reading a json error messages such as NotFound.
         Uri uri = GetUri(symbol, crumb, modulesRequested);
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        // await using?
+        // Don't process http errors here.
+
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         return GetModules(modulesRequested, jsonDocument);
@@ -56,9 +55,7 @@ public sealed class YahooModules
     {
         const string address = "https://query2.finance.yahoo.com/v10/finance/quoteSummary";
         string url = $"{address}/{symbol}?crumb={crumb}&modules={string.Join(",", modules)}";
-
         Logger.LogInformation("{Url}", url);
-
         return new Uri(url);
     }
 
