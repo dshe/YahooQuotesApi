@@ -13,7 +13,7 @@ public static class Program
         ILogger logger = LoggerFactory
             .Create(x => x
                 .AddSimpleConsole(x => x.SingleLine = false)
-                .SetMinimumLevel(LogLevel.Debug))
+                .SetMinimumLevel(LogLevel.Warning))
             .CreateLogger("Demo");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");

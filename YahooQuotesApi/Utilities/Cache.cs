@@ -12,7 +12,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
         CacheDuration = cacheDuration;
     }
 
-    internal void Save(Dictionary<TKey, TResult> dict)
+    internal void Add(Dictionary<TKey, TResult> dict)
     {
         lock (Items)
         {
@@ -42,14 +42,11 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
         return true;
     }
 
-    internal Dictionary<TKey, TResult> Get(HashSet<TKey> keys)
+    internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
     {
-        Dictionary<TKey, TResult> dictionary = new(keys.Count);
         lock (Items)
         {
-            foreach (TKey key in keys)
-                dictionary.Add(key, Items[key].result);
+            return keys.ToDictionary(k => k, k => Items[k].result);
         }
-        return dictionary;
     }
 }

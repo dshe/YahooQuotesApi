@@ -1,29 +1,29 @@
 ﻿using System.Net.Http;
 
-namespace YahooQuotesApi.Crumb;
+namespace YahooQuotesApi;
 
-public sealed class YahooCrumb : IDisposable
+public sealed class CookieAndCrumb
 {
     private readonly object LockObj = new();
     private readonly ILogger Logger;
     private readonly HttpClient HttpClient;
     private Task<(List<string>, string)>? TheTask;
 
-    public YahooCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
+    public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
         Logger = logger;
         ArgumentNullException.ThrowIfNull(httpClientFactory);
         HttpClient = httpClientFactory.CreateClient("crumb");
     }
 
-    public async Task<(List<string>, string)> GetCookieAndCrumb(CancellationToken ct)
+    public async Task<(List<string>, string)> Get(CancellationToken ct)
     {
         lock (LockObj)
         {
             if (TheTask == null)
                 TheTask = GetCookieAndCrumb1(ct); // start task
         }
-        return await TheTask.ConfigureAwait(false);
+        return await TheTask.WaitAsync(ct).ConfigureAwait(false);
     }
 
     private async Task<(List<string>, string)> GetCookieAndCrumb1(CancellationToken ct)
@@ -82,6 +82,4 @@ public sealed class YahooCrumb : IDisposable
             throw new HttpRequestException($"Could not receive crumb from {url} using cookies.");
         return crumb;
     }
-
-    public void Dispose() => HttpClient.Dispose();
 }

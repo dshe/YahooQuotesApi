@@ -2,8 +2,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using YahooQuotesApi.Crumb;
-using YahooQuotesApi.Utilities;
 
 namespace YahooQuotesApi;
 
@@ -13,6 +11,8 @@ namespace YahooQuotesApi;
 // The pooled HttpMessageHandler instances allow CookieContainer objects to be shared. 
 // HttpClient can only be injected inside Typed clients. Otherwise, use IHttpClientFactory.
 // https://learn.microsoft.com/en-us/dotnet/core/resilience/http-resilience?tabs=dotnet-cli
+// HttpClient instances created by IHttpClientFactory are intended to be short-lived.
+// There is no need to dispose of the HttpClient instances from HttpClientFactory.
 
 internal static class Services
 {
@@ -30,7 +30,7 @@ internal static class Services
             .AddSingleton(yahooQuotesBuilder.Logger)
             .AddSingleton<YahooQuotes>()
             .AddSingleton<Quotes>()
-            .AddSingleton<YahooCrumb>()
+            .AddSingleton<CookieAndCrumb>()
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<YahooHistory>()
             .AddSingleton<HistoryBaseComposer>()
@@ -70,7 +70,7 @@ internal static class Services
                 AllowAutoRedirect = false,
                 //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
                 //CookieContainer = new CookieContainer(),
-                UseCookies = false
+                UseCookies = false // Important since these handlers may be reused.
             })
 
             //.AddStandardResilienceHandler(builder.HttpResilienceOptions)

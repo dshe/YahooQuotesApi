@@ -35,7 +35,7 @@ internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKe
             if (items.Any())
             {
                 results = await Produce(items, ct).ConfigureAwait(false);
-                Cache.Save(results);
+                Cache.Add(results);
             }
         }
         finally
@@ -43,7 +43,7 @@ internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKe
             Semaphore.Release();
         }
 
-        return Cache.Get(keys);
+        return Cache.GetAll(keys);
     }
 
     public void Dispose() => Semaphore.Dispose();

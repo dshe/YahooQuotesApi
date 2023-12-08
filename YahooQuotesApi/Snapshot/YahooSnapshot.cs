@@ -3,7 +3,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using YahooQuotesApi.Crumb;
 
 namespace YahooQuotesApi;
 
@@ -12,15 +11,15 @@ public sealed class YahooSnapshot : IDisposable
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
     private readonly string ApiVersion;
-    private readonly YahooCrumb YahooCrumbService;
+    private readonly CookieAndCrumb CookieAndCrumb;
     private readonly SerialProducerCache<Symbol, Security?> Cache;
 
-    public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, CookieAndCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         Logger = logger;
         ApiVersion = builder.SnapshotApiVersion;
-        YahooCrumbService = crumbService;
+        CookieAndCrumb = crumbService;
         HttpClientFactory = factory;
         Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
     }
@@ -59,7 +58,7 @@ public sealed class YahooSnapshot : IDisposable
 
     private async Task<List<JsonElement>> GetElements(List<Symbol> symbols, CancellationToken ct)
     {
-        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
+        var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
 
         (Uri uri, List<JsonElement> elements)[] datas =
             GetUris(symbols, crumb)

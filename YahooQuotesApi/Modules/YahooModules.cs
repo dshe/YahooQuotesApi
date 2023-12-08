@@ -1,21 +1,18 @@
 ﻿using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using YahooQuotesApi.Crumb;
-
 namespace YahooQuotesApi;
 
 public sealed class YahooModules
 {
     private readonly ILogger Logger;
-    private readonly YahooCrumb YahooCrumbService;
+    private readonly CookieAndCrumb CookieAndCrumb;
     private readonly IHttpClientFactory HttpClientFactory;
 
-    public YahooModules(ILogger logger, YahooCrumb crumbService, IHttpClientFactory factory)
+    public YahooModules(ILogger logger, CookieAndCrumb crumbService, IHttpClientFactory factory)
     {
         Logger = logger;
-        YahooCrumbService = crumbService;
+        CookieAndCrumb = crumbService;
         HttpClientFactory = factory;
     }
 
@@ -38,7 +35,7 @@ public sealed class YahooModules
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
         HttpClient httpClient = HttpClientFactory.CreateClient("modules");
-        var (cookie, crumb) = await YahooCrumbService.GetCookieAndCrumb(ct).ConfigureAwait(false);
+        var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception

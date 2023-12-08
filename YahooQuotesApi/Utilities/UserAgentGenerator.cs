@@ -1,4 +1,4 @@
-﻿namespace YahooQuotesApi.Utilities;
+﻿namespace YahooQuotesApi;
 
 internal static class UserAgentGenerator
 {
