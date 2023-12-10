@@ -6,11 +6,11 @@ namespace YahooQuotesApi;
 
 public sealed class YahooHistory
 {
-    private readonly ILogger Logger;
-    private readonly Instant Start;
-    private readonly Frequency PriceHistoryFrequency;
-    private readonly IHttpClientFactory HttpClientFactory;
-    private readonly ParallelProducerCache<string, Result<ITick[]>> Cache;
+    private ILogger Logger { get; }
+    private Instant Start { get; }
+    private Frequency PriceHistoryFrequency { get; }
+    private IHttpClientFactory HttpClientFactory { get; }
+    private ParallelProducerCache<string, Result<ITick[]>> Cache { get; }
 
     public YahooHistory(ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
     {

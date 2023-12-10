@@ -8,12 +8,12 @@ namespace YahooQuotesApi;
 
 public sealed class YahooSnapshot : IDisposable
 {
-    private readonly ILogger Logger;
-    private readonly IHttpClientFactory HttpClientFactory;
-    private readonly string ApiVersion;
-    private readonly CookieAndCrumb CookieAndCrumb;
-    private readonly SerialProducerCache<Symbol, Security?> Cache;
-
+    private ILogger Logger { get; }
+    private IHttpClientFactory HttpClientFactory { get; }
+    private string ApiVersion { get; }
+    private CookieAndCrumb CookieAndCrumb { get; }
+    private SerialProducerCache<Symbol, Security?> Cache { get; }
+ 
     public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, CookieAndCrumb crumbService, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));

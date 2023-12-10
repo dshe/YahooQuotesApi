@@ -8,9 +8,9 @@
     <PackageTags>yahoo finance api quotes dividends splits modules</PackageTags>
     <Description>Yahoo Finance API to retrieve quote snapshots, and quote, dividend and split history.</Description>
     <Authors>DavidS</Authors>
-    <Version>5.5.3</Version>
-    <AssemblyVersion>5.5.3</AssemblyVersion>
-    <FileVersion>5.5.3</FileVersion>
+    <Version>5.5.4</Version>
+    <AssemblyVersion>5.5.4</AssemblyVersion>
+    <FileVersion>5.5.4</FileVersion>
     <PackageIcon>worm64.png</PackageIcon>
     <RepositoryUrl>https://github.com/dshe/YahooQuotesApi</RepositoryUrl>
     <RepositoryType>github</RepositoryType>

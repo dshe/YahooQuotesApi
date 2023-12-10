@@ -5,9 +5,9 @@ namespace YahooQuotesApi;
 
 public sealed class YahooModules
 {
-    private readonly ILogger Logger;
-    private readonly CookieAndCrumb CookieAndCrumb;
-    private readonly IHttpClientFactory HttpClientFactory;
+    private ILogger Logger { get; }
+    private CookieAndCrumb CookieAndCrumb { get; }
+    private IHttpClientFactory HttpClientFactory { get; }
 
     public YahooModules(ILogger logger, CookieAndCrumb crumbService, IHttpClientFactory factory)
     {
@@ -34,8 +34,8 @@ public sealed class YahooModules
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        HttpClient httpClient = HttpClientFactory.CreateClient("modules");
         var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+        HttpClient httpClient = HttpClientFactory.CreateClient("modules");
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception

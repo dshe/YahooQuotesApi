@@ -24,6 +24,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
 
     internal bool TryGetAll(HashSet<TKey> keys, out Dictionary<TKey, TResult> results)
     {
+
         results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
         lock (Items)
         {

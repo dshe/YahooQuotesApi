@@ -54,11 +54,11 @@ internal static class Services
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
                 client.DefaultRequestVersion = new Version(2, 0);
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-
+ 
                 if (!string.IsNullOrEmpty(httpUserAgent))
                     client.DefaultRequestHeaders.UserAgent.ParseAdd(httpUserAgent);
                 else if (name == "crumb")
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandomUserAgent()); // ???
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandomUserAgent());
 
                 if (name == "snapshot" || name == "modules")
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

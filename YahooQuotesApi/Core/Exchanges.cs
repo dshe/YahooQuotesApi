@@ -39,7 +39,7 @@ internal static class Exchanges
             "MC" => (17, 30), // Spain, ICE
             "LS" => (17, 30), // Lisbon
             "DE" => (17, 30), // Deutsche Boerse XETRA
-            "F" => (17, 30), // Frankfurt
+            "F"  => (17, 30), // Frankfurt
             "BE" => (17, 30), // Berlin
             "BM" => (17, 30), // Bremen
             "SG" => (17, 30), // Stuttgart
@@ -73,7 +73,7 @@ internal static class Exchanges
             "BO" => (15, 30), // Bombay
             "NS" => (15, 30), // National Stock Exchange of India
 
-            "T" => (15, 0), // Tokyo
+            "T"  => (15, 0), // Tokyo
             "KS" => (15, 30), // Korea
             "KQ" => (15, 30), // Korea?
             "HK" => (16, 0), // Hong Kong
