@@ -1,4 +1,6 @@
 ﻿using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 
 namespace YahooQuotesApi;
 
@@ -6,19 +8,13 @@ public sealed class CookieAndCrumb
 {
     private readonly object LockObj = new();
     private readonly ILogger Logger;
-    private readonly HttpClient HttpClient;
-    private readonly Uri CookieUri;
-    private readonly Uri CrumbUri;
+    private readonly IHttpClientFactory HttpClientFactory;
     private Task<(List<string>, string)>? TheTask;
 
-    public CookieAndCrumb(YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
+    public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        ArgumentNullException.ThrowIfNull(httpClientFactory, nameof(httpClientFactory));
-        Logger = builder.Logger;
-        CookieUri = builder.CookieUri;
-        CrumbUri = builder.CrumbUri;
-        HttpClient = httpClientFactory.CreateClient("crumb");
+        Logger = logger;
+        HttpClientFactory = httpClientFactory;
     }
 
     public async Task<(List<string>, string)> Get(CancellationToken ct)
@@ -36,6 +32,14 @@ public sealed class CookieAndCrumb
         try
         {
             List<string> cookies = await GetCookies(ct).ConfigureAwait(false);
+            if (!cookies.Any())
+                cookies = await GetEuropeanCookies(ct).ConfigureAwait(false);
+            if (!cookies.Any())
+            {
+                Logger.LogCritical("No cookies found.");
+                throw new InvalidOperationException("No cookies found.");
+            }
+
             string crumb = await GetCrumb(cookies, ct).ConfigureAwait(false);
             return (cookies, crumb);
         }
@@ -48,47 +52,116 @@ public sealed class CookieAndCrumb
 
     private async Task<List<string>> GetCookies(CancellationToken ct)
     {
-        // This call may result in a 404 error,
-        // but we just need it to extract set-cookie from the response headers
-        // which is then used in subsequent calls
-        using HttpResponseMessage response = await HttpClient.GetAsync(CookieUri, ct).ConfigureAwait(false);
+        // "https://fc.yahoo.com/"  => time out
+        Uri uri = new("https://login.yahoo.com/");
+        HttpClient httpClient = HttpClientFactory.CreateClient("cookie");
+        // This call may result in a 404 error, which may be ignored.
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
-            throw new InvalidOperationException($"Set-Cookie header was not present in the response from {CookieUri}.");
+        {
+            Logger.LogTrace("Set-Cookie header was not present in the response from {Uri}.", uri);
+            return new List<string>(0);
+        }
         List<string> cookies = setCookie.ToList();
-        Logger.LogTrace("GetCookies: received these cookies({Count}): {Cookies}", cookies.Count, FormatCookies(cookies));
+        Logger.LogTrace("GetCookies: received these cookies({Count}): {Cookies}", cookies.Count, cookies.AsString());
         if (!cookies.Any())
-            throw new InvalidOperationException($"No cookies returned in the response from {CookieUri}.");
+        {
+            Logger.LogTrace("No cookies returned in the response from {Uri}.", uri);
+            return new List<string>(0);
+        }
         cookies = cookies
             .Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        if (!cookies.Any())
-            throw new InvalidOperationException($"No useful cookies returned in the response from {CookieUri}.");
-        Logger.LogTrace("GetCookies: using these cookies({Count}): {Cookies}", cookies.Count, FormatCookies(cookies));
-        // The cookies expire in 1 year.
+        Logger.LogTrace("GetCookies: using these cookies({Count}): {Cookies}", cookies.Count, cookies.AsString());
         return cookies;
     }
 
-    private async Task<string> GetCrumb(List<string> cookies, CancellationToken ct = default)
+    private async Task<List<string>> GetEuropeanCookies(CancellationToken ct)
     {
-        // Make an HTTP GET call, including the obtained cookie from the previous response.
-        HttpClient.DefaultRequestHeaders.Add("cookie", cookies);
-        using HttpResponseMessage response = await HttpClient.GetAsync(CrumbUri, ct).ConfigureAwait(false);
+        Logger.LogTrace("GetEuropeanCookies()");
+        HttpClient httpClient = HttpClientFactory.CreateClient("cookie");
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+        Uri uri = new("https://finance.yahoo.com/");
+        HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+
+        Uri? redirect = null;
+        string? crumb = null, sessionId = null;
+
+        while (response.Headers.Location != null)
+        {
+            redirect = response.Headers.Location;
+
+            Match match = Regex.Match(redirect.Query, @"gcrumb=(.+?)&", RegexOptions.Compiled);
+            if (match.Success)
+                crumb = match.Groups[1].Value;
+
+            match = Regex.Match(redirect.Query, @"sessionId=(.*)", RegexOptions.Compiled);
+            if (match.Success)
+                sessionId = match.Groups[1].Value;
+
+            if (response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? tmpCookies))
+                httpClient.DefaultRequestHeaders.Add("cookie", tmpCookies);
+
+            Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
+            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+        }
+
+        if (redirect == null || crumb == null || sessionId == null)
+            return new List<string>(0);
+
+        Dictionary<string, string> form = new()
+        {
+            {"csrfToken", crumb},
+            {"sessionId", sessionId},
+            {"originalDoneUrl", "https://finance.yahoo.com/?guccounter=2"},
+            {"namespace", "yahoo"},
+            {"agree", "agree"}
+        };
+        using (FormUrlEncodedContent encodedForm = new(form))
+        response = await httpClient.PostAsync(redirect, encodedForm, ct).ConfigureAwait(false);
+        Logger.LogTrace("GetEuropeanCookies: posted {Uri}", redirect);
+
+        if (response.Headers.Location != null)
+        {
+            redirect = response.Headers.Location;
+            Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
+            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+        }
+
+        if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? cookies))
+            return new List<string>(0);
+
+        Logger.LogTrace("GetEuropeanCookies: received these cookies({Count}): {Cookies}", cookies.Count(), cookies.AsString());
+        return cookies.ToList();
+    }
+
+    // Make an HTTP GET call which includes the cookie obtained from the previous response.
+    private async Task<string> GetCrumb(IEnumerable<string> cookies, CancellationToken ct = default)
+    {
+        // "https://query1.finance.yahoo.com/v1/test/getcrumb" also works
+        Uri crumbUri = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
+        HttpClient httpClient = HttpClientFactory.CreateClient("crumb");
+        httpClient.DefaultRequestHeaders.Add("cookie", cookies);
+        using HttpResponseMessage response = await httpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
         try
         {
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Did not receive crumb from {CrumbUri} using cookies.", ex);
+            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies.", ex);
         }
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(crumb))
-            throw new InvalidOperationException($"Did not receive crumb from {CookieUri} using cookies.");
+            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies.");
 
         Logger.LogTrace("GetCrumb: received crumb {Crumb}", crumb);
         return crumb;
     }
+}
 
-    private static string FormatCookies(IEnumerable<string> cookies) =>
-        Environment.NewLine + string.Join(Environment.NewLine, cookies);
+internal static class Extensions
+{
+        internal static string AsString(this IEnumerable<string> cookies) =>
+            Environment.NewLine + string.Join(Environment.NewLine, cookies);
 }

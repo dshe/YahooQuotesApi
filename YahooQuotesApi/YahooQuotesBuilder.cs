@@ -19,19 +19,6 @@ public sealed record YahooQuotesBuilder
     }
     internal ILogger Logger { get; private init; } = NullLogger.Instance;
 
-    //"https://fc.yahoo.com/"  => time out
-    //"https://finance.yahoo.com/" => no Set-Cookie header
-    //"https://login.yahoo.com/" => ok
-    /** <summary>temporary</summary> */
-    public YahooQuotesBuilder WithCookieUri(Uri cookieUri) =>
-        this with { CookieUri = cookieUri };
-    internal Uri CookieUri { get; private init; } = new Uri("https://login.yahoo.com/");
-
-    /** <summary>temporary</summary> */
-    public YahooQuotesBuilder WithCrumbUri(Uri crumbUri) =>
-        this with { CrumbUri = crumbUri };
-    internal Uri CrumbUri { get; private init; } = new Uri("https://query2.finance.yahoo.com/v1/test/getcrumb");
-
     public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion)
     {
         if (string.IsNullOrWhiteSpace(snapshotApiVersion))
@@ -39,12 +26,6 @@ public sealed record YahooQuotesBuilder
         return this with { SnapshotApiVersion = snapshotApiVersion };
     }
     internal string SnapshotApiVersion { get; private init; } = "v7";
-
-    /* "HttpStandardResilienceOptions" is not CLS-compliant
-    public YahooQuotesBuilder WithHttpResilienceOptions(Action<HttpStandardResilienceOptions> options) =>
-        this with { HttpResilienceOptions = options };
-    internal Action<HttpStandardResilienceOptions> HttpResilienceOptions { get; private init; } = static options => { };
-    */
 
     public YahooQuotesBuilder WithHttpUserAgent(string httpUserAgent) =>
         this with { HttpUserAgent = httpUserAgent };
