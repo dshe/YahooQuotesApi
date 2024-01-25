@@ -77,7 +77,6 @@ internal static class Services
 
             // Temporary fix: "parallelizeTestCollections": false
             // https://github.com/dotnet/runtime/issues/97037
-
             .AddStandardResilience(builder.AddHttpResilience)
 
             .Services;

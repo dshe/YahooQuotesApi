@@ -139,10 +139,11 @@ public sealed class CookieAndCrumb
     }
 
     // Make an HTTP GET call which includes the cookie obtained from the previous response.
-    private async Task<string> GetCrumb(IEnumerable<string> cookies, CancellationToken ct = default)
+    private async Task<string> GetCrumb(IEnumerable<string> cookies, CancellationToken ct)
     {
-        // "https://query1.finance.yahoo.com/v1/test/getcrumb" also works
-        Uri crumbUri = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
+        // "https://query1.finance.yahoo.com/v1/test/getcrumb"
+        // "https://query2.finance.yahoo.com/v1/test/getcrumb"
+        Uri crumbUri = new("https://query1.finance.yahoo.com/v1/test/getcrumb");
         HttpClient httpClient = HttpClientFactory.CreateClient("crumb");
         httpClient.DefaultRequestHeaders.Add("cookie", cookies);
         using HttpResponseMessage response = await httpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
