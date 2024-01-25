@@ -75,9 +75,19 @@ internal static class Services
                 UseCookies = false, // Important since these handlers may be reused.
             })
 
-            .AddStandardResilienceHandler()
+            // Temporary fix: "parallelizeTestCollections": false
+            // https://github.com/dotnet/runtime/issues/97037
+
+            .AddStandardResilience(builder.AddHttpResilience)
 
             .Services;
     }
+
+    private static IHttpClientBuilder AddStandardResilience(this IHttpClientBuilder builder, bool add)
+    {
+        if (add)
+            builder.AddStandardResilienceHandler();
+        return builder;
+    }    
 }
 

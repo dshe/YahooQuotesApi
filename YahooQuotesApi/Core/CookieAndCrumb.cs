@@ -24,8 +24,7 @@ public sealed class CookieAndCrumb
 
         lock (LockObj)
         {
-            if (TheTask == null)
-                TheTask = GetCookieAndCrumb1(ct); // start task
+            TheTask ??= GetCookieAndCrumb1(ct); // start task if not already started
         }
 
         return await TheTask.WaitAsync(ct).ConfigureAwait(false);

@@ -63,7 +63,7 @@ public class ArgumentTests : XunitTestBase
     [Fact]
     public async Task IgnoreDuplicateTest()
     {
-        var symbols = new[] { "C", "X", "MSFT", "C" }; ;
+        var symbols = new[] { "C", "X", "MSFT", "C" };
         var ysecurities = await YahooQuotes.GetAsync(symbols);
         Assert.Equal(3, ysecurities.Count);
     }
