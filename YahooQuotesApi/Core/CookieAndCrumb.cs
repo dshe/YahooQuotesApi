@@ -19,12 +19,10 @@ public sealed class CookieAndCrumb
 
     public async Task<(List<string>, string)> Get(CancellationToken ct)
     {
-        if (TheTask != null && TheTask.IsCompletedSuccessfully)
-            return TheTask.Result;
-
+        // Lazy<Task<T>> does not support cancellation.
         lock (LockObj)
         {
-            TheTask ??= GetCookieAndCrumb1(ct); // start task if not already started
+            TheTask ??= GetCookieAndCrumb1(ct); // start the task if not already started
         }
 
         return await TheTask.WaitAsync(ct).ConfigureAwait(false);

@@ -51,16 +51,16 @@ internal static class Services
             .AddHttpClient(name, client =>
             {
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
+                if (!string.IsNullOrEmpty(httpUserAgent))
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(httpUserAgent);
+                else
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
+
                 if (name != "cookie")
                 {
                     client.DefaultRequestVersion = new Version(2, 0);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 }
- 
-                if (!string.IsNullOrEmpty(httpUserAgent))
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(httpUserAgent);
-                else if (name == "cookie" || name == "crumb")
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
 
                 if (name == "snapshot" || name == "modules")
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

@@ -43,7 +43,7 @@ public class ArgumentTests : XunitTestBase
     [Fact]
     public async Task UnknownSymbolTest()
     {
-        Assert.Null(await YahooQuotes.GetAsync("UnknownSymbol"));
+        Assert.Null(await YahooQuotes.GetAsync("UnknownSymbolx"));
     }
 
     [Fact]

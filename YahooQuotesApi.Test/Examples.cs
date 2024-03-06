@@ -12,7 +12,9 @@ public class Examples
     [Fact]
     public async Task Snapshot()
     {
-        YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+        YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+            //.WithoutHttpResilience()
+            .Build();
 
         Security? security = await yahooQuotes.GetAsync("AAPL");
         if (security == null)

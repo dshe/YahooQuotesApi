@@ -74,6 +74,9 @@ public sealed class YahooSnapshot : IDisposable
         await Parallel.ForEachAsync(datas, parallelOptions, async (data, ct) =>
             data.elements.AddRange(await MakeRequest(data.uri, cookie, ct).ConfigureAwait(false))).ConfigureAwait(false);
 
+        //await MakeRequest(datas[0].uri, cookie, ct).ConfigureAwait(false);
+
+
         return datas.Select(x => x.elements).SelectMany(x => x).ToList();
     }
 
@@ -98,6 +101,9 @@ public sealed class YahooSnapshot : IDisposable
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         //and not allow reading a json error messages such as NotFound.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.NotFound)
+            response.EnsureSuccessStatusCode();
+
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
 
