@@ -8,13 +8,14 @@ public sealed class CookieAndCrumb
 {
     private readonly object LockObj = new();
     private readonly ILogger Logger;
-    private readonly IHttpClientFactory HttpClientFactory;
+    private readonly HttpClient HttpClient;
     private Task<(List<string>, string)>? TheTask;
 
     public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
         Logger = logger;
-        HttpClientFactory = httpClientFactory;
+        HttpClient = httpClientFactory.CreateClient("cookie");
     }
 
     public async Task<(List<string>, string)> Get(CancellationToken ct)
@@ -24,7 +25,6 @@ public sealed class CookieAndCrumb
         {
             TheTask ??= GetCookieAndCrumb1(ct); // start the task if not already started
         }
-
         return await TheTask.WaitAsync(ct).ConfigureAwait(false);
     }
 
@@ -42,6 +42,7 @@ public sealed class CookieAndCrumb
             }
 
             string crumb = await GetCrumb(cookies, ct).ConfigureAwait(false);
+
             return (cookies, crumb);
         }
         catch (Exception e)
@@ -55,9 +56,8 @@ public sealed class CookieAndCrumb
     {
         // "https://fc.yahoo.com/"  => time out
         Uri uri = new("https://login.yahoo.com/");
-        HttpClient httpClient = HttpClientFactory.CreateClient("cookie");
         // This call may result in a 404 error, which may be ignored.
-        using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
         {
             Logger.LogTrace("Set-Cookie header was not present in the response from {Uri}.", uri);
@@ -80,10 +80,8 @@ public sealed class CookieAndCrumb
     private async Task<List<string>> GetEuropeanCookies(CancellationToken ct)
     {
         Logger.LogTrace("GetEuropeanCookies()");
-        HttpClient httpClient = HttpClientFactory.CreateClient("cookie");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
         Uri uri = new("https://finance.yahoo.com/");
-        HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        HttpResponseMessage response = await HttpClient.GetAsync(uri, ct).ConfigureAwait(false);
 
         Uri? redirect = null;
         string? crumb = null, sessionId = null;
@@ -101,10 +99,10 @@ public sealed class CookieAndCrumb
                 sessionId = match.Groups[1].Value;
 
             if (response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? tmpCookies))
-                httpClient.DefaultRequestHeaders.Add("cookie", tmpCookies);
+                HttpClient.DefaultRequestHeaders.Add("cookie", tmpCookies);
 
             Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
-            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+            response = await HttpClient.GetAsync(redirect, ct).ConfigureAwait(false);
         }
 
         if (redirect == null || crumb == null || sessionId == null)
@@ -119,14 +117,14 @@ public sealed class CookieAndCrumb
             {"agree", "agree"}
         };
         using (FormUrlEncodedContent encodedForm = new(form))
-        response = await httpClient.PostAsync(redirect, encodedForm, ct).ConfigureAwait(false);
+        response = await HttpClient.PostAsync(redirect, encodedForm, ct).ConfigureAwait(false);
         Logger.LogTrace("GetEuropeanCookies: posted {Uri}", redirect);
 
         if (response.Headers.Location != null)
         {
             redirect = response.Headers.Location;
             Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
-            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+            response = await HttpClient.GetAsync(redirect, ct).ConfigureAwait(false);
         }
 
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? cookies))
@@ -142,9 +140,8 @@ public sealed class CookieAndCrumb
         // "https://query1.finance.yahoo.com/v1/test/getcrumb"
         // "https://query2.finance.yahoo.com/v1/test/getcrumb"
         Uri crumbUri = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
-        HttpClient httpClient = HttpClientFactory.CreateClient("crumb");
-        httpClient.DefaultRequestHeaders.Add("cookie", cookies);
-        using HttpResponseMessage response = await httpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
+        HttpClient.DefaultRequestHeaders.Add("cookie", cookies);
+        using HttpResponseMessage response = await HttpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
             Logger.LogTrace("GetCrumb response: {Name}({Code}).", response.ReasonPhrase, response.StatusCode);
         /*

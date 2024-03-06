@@ -64,8 +64,6 @@ internal static class Services
 
                 if (name == "snapshot" || name == "modules")
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                else
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
             })
 
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
