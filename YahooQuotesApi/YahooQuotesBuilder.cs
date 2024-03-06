@@ -47,8 +47,8 @@ public sealed record YahooQuotesBuilder
     internal Duration SnapshotCacheDuration { get; private init; } = Duration.Zero;
     internal Duration HistoryCacheDuration { get; private init; } = Duration.Zero;
 
-    public YahooQuotesBuilder WithoutHttpResilience() => this with { AddHttpResilience = false };
-    internal bool AddHttpResilience { get; private init; } = true;
+    public YahooQuotesBuilder WithoutHttpResilience() => this with { WithHttpResilience = false };
+    internal bool WithHttpResilience { get; private init; } = true;
 
     /** <summary>for testing</summary> */
     internal YahooQuotesBuilder WithNonAdjustedClose() => this with { NonAdjustedClose = true };

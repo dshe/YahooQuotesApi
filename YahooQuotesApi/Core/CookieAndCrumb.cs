@@ -141,21 +141,25 @@ public sealed class CookieAndCrumb
     {
         // "https://query1.finance.yahoo.com/v1/test/getcrumb"
         // "https://query2.finance.yahoo.com/v1/test/getcrumb"
-        Uri crumbUri = new("https://query1.finance.yahoo.com/v1/test/getcrumb");
+        Uri crumbUri = new("https://query2.finance.yahoo.com/v1/test/getcrumb");
         HttpClient httpClient = HttpClientFactory.CreateClient("crumb");
         httpClient.DefaultRequestHeaders.Add("cookie", cookies);
         using HttpResponseMessage response = await httpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            Logger.LogTrace("GetCrumb response: {Name}({Code}).", response.ReasonPhrase, response.StatusCode);
+        /*
         try
         {
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies.", ex);
+            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies(1).", ex);
         }
+        */
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(crumb))
-            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies.");
+            throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies(2).");
 
         Logger.LogTrace("GetCrumb: received crumb {Crumb}", crumb);
         return crumb;
