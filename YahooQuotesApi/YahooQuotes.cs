@@ -7,13 +7,17 @@ public sealed class YahooQuotes
     private readonly ILogger Logger;
     private readonly Quotes Quotes;
     private readonly YahooModules Modules;
+    private readonly CookieAndCrumb CookieAndCrumb;
+    private YahooHistory History { get; }
 
     // must be public to support dependency injection
-    public YahooQuotes(ILogger logger, YahooModules modules, Quotes quotes)
+    public YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, YahooModules modules, Quotes quotes, YahooHistory history)
     {
         Logger = logger;
         Quotes = quotes;
         Modules = modules;
+        History = history; 
+        CookieAndCrumb = cookieAndCrumb;
     }
 
     public async Task<Security?> GetAsync(string symbol, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default) =>
@@ -31,9 +35,8 @@ public sealed class YahooQuotes
         Symbol historyBaseSymbol = default;
         if (!string.IsNullOrEmpty(historyBase))
         {
-            if (!Symbol.TryCreate(historyBase, out Symbol hbs))
+            if (!Symbol.TryCreate(historyBase, out historyBaseSymbol))
                 throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-            historyBaseSymbol = hbs;
         }
         Dictionary<Symbol, Security?> securities = await Quotes.GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
         return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
@@ -67,4 +70,10 @@ public sealed class YahooQuotes
             throw;
         }
     }
+
+    internal async Task<(List<string>, string)> GetCookieAndCrumbAsyncTest() =>
+        await CookieAndCrumb.Get(default).ConfigureAwait(false);
+
+    internal async Task<Result<T[]>> GetTicksAsyncTest<T>(Symbol symbol) where T : ITick =>
+        await History.GetTicksAsync<T>(symbol, default).ConfigureAwait(false);
 }

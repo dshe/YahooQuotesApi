@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NodaTime;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,6 +14,14 @@ public class SnapshotTests : XunitTestBase
     private readonly YahooQuotes YahooQuotes;
     public SnapshotTests(ITestOutputHelper output) : base(output, LogLevel.Trace) =>
         YahooQuotes = new YahooQuotesBuilder().WithLogger(Logger).Build();
+
+    [Fact]
+    public async Task TestCookieAndCrumb()
+    {
+        (List<string> cookies, string crumb) = await YahooQuotes.GetCookieAndCrumbAsyncTest();
+        Assert.NotEmpty(crumb);
+        Assert.NotEmpty(cookies);
+    }
 
     [Fact]
     public async Task TestInternationalStocks()

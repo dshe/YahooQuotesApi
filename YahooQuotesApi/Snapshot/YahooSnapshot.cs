@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace YahooQuotesApi;
@@ -95,7 +96,8 @@ public sealed class YahooSnapshot : IDisposable
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 
-        HttpClient httpClient = HttpClientFactory.CreateClient("snapshot");
+        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception

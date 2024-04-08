@@ -12,6 +12,19 @@ public class HistoryTests : XunitTestBase
     public HistoryTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
+    public async Task RawHistoryTest()
+    {
+        var yahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(Logger)
+            .WithHistoryStartDate(Instant.FromUtc(2022, 1, 1, 0, 0))
+            .Build();
+
+        var ticks = await yahooQuotes.GetTicksAsyncTest<PriceTick>("IBM".ToSymbol());
+
+        Assert.True(ticks.HasValue);
+    }
+
+    [Fact]
     public async Task SingleSecurityTest()
     {
         var yahooQuotes = new YahooQuotesBuilder()

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 namespace YahooQuotesApi;
 
@@ -35,7 +36,8 @@ public sealed class YahooModules
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
         var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
-        HttpClient httpClient = HttpClientFactory.CreateClient("modules");
+        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
         // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception

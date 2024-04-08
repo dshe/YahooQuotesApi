@@ -20,11 +20,8 @@ internal static class Services
     {
         return new ServiceCollection()
 
-            .AddNamedHttpClient("cookie", yahooQuotesBuilder)
-            .AddNamedHttpClient("crumb",    yahooQuotesBuilder)
-            .AddNamedHttpClient("snapshot", yahooQuotesBuilder)
-            .AddNamedHttpClient("history",  yahooQuotesBuilder)
-            .AddNamedHttpClient("modules",  yahooQuotesBuilder)
+            .AddNamedHttpClient("", yahooQuotesBuilder)
+            .AddNamedHttpClient("HttpV2", yahooQuotesBuilder)
 
             .AddSingleton(yahooQuotesBuilder)
             .AddSingleton(yahooQuotesBuilder.Clock)
@@ -44,26 +41,20 @@ internal static class Services
 
     private static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name, YahooQuotesBuilder builder)
     {
-        string httpUserAgent = builder.HttpUserAgent;
-
         return serviceCollection
 
             .AddHttpClient(name, client =>
             {
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
-                if (name != "cookie" && name != "crumb")
+                if (name == "HttpV2")
                 {
                     client.DefaultRequestVersion = new Version(2, 0);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 }
-
-                if (!string.IsNullOrEmpty(httpUserAgent))
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(httpUserAgent);
+                if (!string.IsNullOrEmpty(builder.HttpUserAgent))
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(builder.HttpUserAgent);
                 else
                     client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
-
-                if (name == "snapshot" || name == "modules")
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
 
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
@@ -75,8 +66,6 @@ internal static class Services
                 UseCookies = false, // Important since these handlers may be reused.
             })
 
-            // Temporary fix: "parallelizeTestCollections": false
-            // https://github.com/dotnet/runtime/issues/97037
             .AddStandardResilience(builder.WithHttpResilience)
 
             .Services;

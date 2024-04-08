@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace YahooQuotesApi;
 
@@ -61,7 +62,9 @@ public sealed class YahooHistory
     {
         Logger.LogInformation("{Url}", uri.ToString());
 
-        HttpClient httpClient = HttpClientFactory.CreateClient("history");
+        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/csv"));
+
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return Result<ITick[]>.Fail("History not found.");
