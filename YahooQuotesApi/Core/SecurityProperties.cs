@@ -67,6 +67,7 @@ public sealed partial class Security
     public decimal? PostMarketChange { get; private set; }
     public double? PostMarketChangePercent { get; private set; }
 
+    public bool HasPrePostMarketData { get; private set; }
     public string Exchange { get; private set; } = "";
     public string FullExchangeName { get; private set; } = "";
     public long? ExchangeDataDelayedBy { get; private set; }

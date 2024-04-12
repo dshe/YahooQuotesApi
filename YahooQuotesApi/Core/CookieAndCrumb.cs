@@ -91,7 +91,6 @@ public sealed class CookieAndCrumb
         Logger.LogTrace("GetEuropeanCookies()");
         Uri uri = new(uriString: "https://finance.yahoo.com/");
         //Uri uri = new("https://login.yahoo.com/");
-        //Uri uri = new("https://finance.yahoo.com/chart/");
         //Uri uri = new("https://www.yahoo.com/");
         HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
