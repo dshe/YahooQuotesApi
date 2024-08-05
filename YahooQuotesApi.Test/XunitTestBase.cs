@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using System;
+using YahooQuotesApi;
 
 namespace Xunit.Abstractions;
 

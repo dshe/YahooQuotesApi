@@ -9,7 +9,7 @@ public sealed class CookieAndCrumb
     private readonly object LockObj = new();
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
-    private Task<(List<string>, string)>? TheTask;
+    private static Task<(List<string>, string)>? TheTask; // STATIC!!!
 
     public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
@@ -55,7 +55,6 @@ public sealed class CookieAndCrumb
 
     private async Task<List<string>> GetCookies(CancellationToken ct)
     {
-        //Uri uri = new("https://fc.yahoo.com/"); => time out
         Uri uri = new("https://login.yahoo.com/");
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");

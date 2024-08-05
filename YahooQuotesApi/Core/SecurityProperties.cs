@@ -88,6 +88,9 @@ public sealed partial class Security
     public long EarningsTimestamp { get; private set; }
     public long EarningsTimestampStart { get; private set; }
     public long EarningsTimestampEnd { get; private set; }
+    public long EarningsCallTimestampStart { get; private set; }
+    public long EarningsCallTimestampEnd { get; private set; }
+    public bool? IsEarningsDateEstimate { get; private set; }
 
     public string ExpireIsoDate { get; private set; } = "";
     public long ExpireDateSeconds { get; private set; }
