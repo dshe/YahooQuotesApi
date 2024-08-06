@@ -21,12 +21,12 @@ public sealed class YahooModules
     {
         if (!Symbol.TryCreate(symbol, out var sym) || sym.IsCurrency)
             throw new ArgumentException($"Invalid symbol: {sym.Name}.");
-        if (!modules.Any())
+        if (modules.Length == 0)
             throw new ArgumentException("No modules indicated.");
         if (modules.Any(string.IsNullOrEmpty))
             throw new ArgumentException("Invalid module: \"\"");
         string[] dups = modules.GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToArray();
-        if (dups.Any())
+        if (dups.Length != 0)
             return Result<JsonProperty[]>.Fail($"Duplicate module(s): \'{string.Join(", ", dups)}\'.");
 
         Result<JsonProperty[]> result = await Produce(symbol, modules, ct).ConfigureAwait(false);
@@ -92,11 +92,11 @@ public sealed class YahooModules
         string[] moduleNames = modules.Select(module => module.Name).ToArray();
 
         string[] missingModules = moduleNamesRequested.Where(n => !moduleNames.Contains(n, StringComparer.OrdinalIgnoreCase)).ToArray();
-        if (missingModules.Any())
+        if (missingModules.Length != 0)
             return Result<JsonProperty[]>.Fail($"Invalid module(s): \'{string.Join(", ", missingModules)}\'.");
 
         string[] extraModules = moduleNames.Where(n => !moduleNamesRequested.Contains(n, StringComparer.OrdinalIgnoreCase)).ToArray();
-        if (extraModules.Any())
+        if (extraModules.Length != 0)
             return Result<JsonProperty[]>.Fail($"Extra module(s): \'{string.Join(", ", extraModules)}\'.");
 
         if (moduleNamesRequested.Length != modules.Length)

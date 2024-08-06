@@ -81,7 +81,7 @@ public sealed class Quotes
             .Select(c => $"USD{c.Currency}=X".ToSymbol())
             .ToHashSet();
 
-        if (!rateSymbols.Any())
+        if (rateSymbols.Count == 0)
             return;
 
         Dictionary<Symbol, Security?> currencyRateSecurities = await Snapshot.GetAsync(rateSymbols, ct).ConfigureAwait(false);

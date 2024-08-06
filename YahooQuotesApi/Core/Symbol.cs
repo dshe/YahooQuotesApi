@@ -25,7 +25,7 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
         get
         {
             int pos = Name.IndexOf('.', StringComparison.Ordinal);
-            if (pos == -1 || Name.EndsWith(".", StringComparison.Ordinal))
+            if (pos == -1 || Name.EndsWith('.'))
                 return "";
             return Name[(pos + 1)..];
         }

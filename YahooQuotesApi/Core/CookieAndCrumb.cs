@@ -34,9 +34,9 @@ public sealed class CookieAndCrumb
         try
         {
             List<string> cookies = await GetCookies(ct).ConfigureAwait(false);
-            if (!cookies.Any())
+            if (cookies.Count == 0)
                 cookies = await GetEuropeanCookies(ct).ConfigureAwait(false);
-            if (!cookies.Any())
+            if (cookies.Count == 0)
             {
                 Logger.LogCritical("No cookies found.");
                 throw new InvalidOperationException("No cookies found.");
@@ -68,7 +68,7 @@ public sealed class CookieAndCrumb
             return new List<string>(0);
         }
         List<string> cookies = setCookie.ToList();
-        if (!cookies.Any())
+        if (cookies.Count == 0)
         {
             Logger.LogTrace("No cookies returned in the response from {Uri}.", uri);
             return new List<string>(0);

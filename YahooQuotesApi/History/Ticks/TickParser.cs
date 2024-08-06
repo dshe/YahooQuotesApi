@@ -50,7 +50,7 @@ internal static class TickParser
             return new DividendTick(date, column[1].ToDouble());
         if (typeof(T) == typeof(SplitTick))
         {
-            string[] split = column[1].Split(new[] { ':', '/' });
+            string[] split = column[1].Split([':', '/']);
             if (split.Length != 2)
                 throw new InvalidOperationException("Split separator not found.");
             return new SplitTick(date, split[1].ToDouble(), split[0].ToDouble());

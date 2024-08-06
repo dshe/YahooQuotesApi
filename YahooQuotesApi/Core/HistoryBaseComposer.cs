@@ -62,7 +62,7 @@ public sealed class HistoryBaseComposer
 
         if (priceHistory.HasError)
             return Result<ValueTick[]>.Fail(priceHistory.Error);
-        if (!priceHistory.Value.Any())
+        if (priceHistory.Value.Length == 0)
             return Result<ValueTick[]>.Fail("No history available.");
         if (security.ExchangeTimezoneName is null)
             return Result<ValueTick[]>.Fail("ExchangeTimezone not found.");
@@ -105,7 +105,7 @@ public sealed class HistoryBaseComposer
         }
 
         // assume snaptime is correct
-        while (ticks.Any())
+        while (ticks.Count != 0)
         {
             ValueTick lastHistory = ticks.Last()!;
             Instant lastDate = lastHistory.Date;
@@ -226,14 +226,14 @@ internal static class HistoryBaseComposerExtensions
 {
     internal static double MultiplyByValue(this double value, Instant date, ValueTick[]? ticks)
     {
-        if (ticks is not null && ticks.Any())
+        if (ticks is not null && ticks.Length != 0)
             value *= ticks.InterpolateValue(date);
         return value;
     }
 
     internal static double DivideByValue(this double value, Instant date, ValueTick[]? ticks)
     {
-        if (ticks is not null && ticks.Any())
+        if (ticks is not null && ticks.Length != 0)
             value /= ticks.InterpolateValue(date);
         return value;
     }

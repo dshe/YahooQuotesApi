@@ -32,7 +32,7 @@ internal sealed class SerialProducerCache<TKey, TResult> : IDisposable where TKe
                 items = Buffer.ToList(); // make copy
                 Buffer.Clear();
             }
-            if (items.Any())
+            if (items.Count != 0)
             {
                 results = await Produce(items, ct).ConfigureAwait(false);
                 Cache.Add(results);

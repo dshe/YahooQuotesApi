@@ -38,7 +38,7 @@ public sealed class YahooSnapshot : IDisposable
     {
         Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
 
-        if (!symbols.Any())
+        if (symbols.Count == 0)
             return dict;
 
         IEnumerable<JsonElement> elements = await GetElements(symbols, ct).ConfigureAwait(false);

@@ -43,7 +43,7 @@ internal static class InterpolationExtensions
     // This method is internal to allow testing
     internal static int BinarySearch<T>(this T[] list, IComparable searchValue, Func<T, IComparable> getComparable)
     {
-        if (!list.Any())
+        if (list.Length == 0)
             throw new ArgumentException("BinarySearch: no items.", nameof(list));
         int low = 0;
         int high = list.Length - 1;
