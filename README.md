@@ -2,7 +2,7 @@
 
 
 **Retrieves from Yahoo Finance: quote snapshots, historical quotes, dividends, splits, and modules**
-- **.NET 6.0** library
+- **.NET 8.0** library
 - intellisense support for most properties
 - simple and intuitive API
 - fault-tolerant
