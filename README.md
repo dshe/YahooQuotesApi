@@ -2,7 +2,7 @@
 
 
 **Retrieves from Yahoo Finance: quote snapshots, historical quotes, dividends, splits, and modules**
-- **.NET 6.0** library
+- **.NET 8.0** library
 - intellisense support for most properties
 - simple and intuitive API
 - fault-tolerant
@@ -72,7 +72,7 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
     .Build();
 
 Security security = await yahooQuotes
-    .GetAsync("TSLA", HistoryFlags.PriceHistory, historyBase: "JPY=X")
+    .GetAsync("TSLA", Histories.PriceHistory, historyBase: "JPY=X")
         ?? throw new ArgumentException("Unknown symbol.");
 
 Assert.Equal("Tesla, Inc.", security.ShortName);
@@ -85,7 +85,7 @@ Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
 Assert.Equal(103.0673, tick.Close); // in USD
 
 Instant instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
-    .InZoneLeniently(security.ExchangeTimezone!).ToInstant();
+    .InZoneLeniently(exchangeTimeZone).ToInstant();
 
 ValueTick tickBase = security.PriceHistoryBase.Value[0];
 Assert.Equal(instant, tickBase.Date);
