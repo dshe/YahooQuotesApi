@@ -22,72 +22,68 @@ using YahooQuotesApi;
 
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-Security? security = await yahooQuotes.GetAsync("AAPL");
+Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync(symbol);
+if (snapshot is null)
+    throw new ArgumentException("Unknown symbol.");
 
-if (security is null)
-    throw new ArgumentException("Unknown symbol: AAPL.");
-
-Assert.Equal("Apple Inc.", security.LongName);
-Assert.True(security.RegularMarketPrice > 0);
+Assert.Equal("Apple Inc.", snapshot.LongName);
+Assert.True(snapshot.RegularMarketPrice > 0);
 ```
 
 #### snapshots
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-Dictionary<string,Security?> securities = await yahooQuotes.GetAsync(new[] { "AAPL", "BP.L", "USDJPY=X" });
+Dictionary<string, Snapshot?> snapshots = await yahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"]);
 
-Security security = securities["BP.L"] ?? throw new ArgumentException("Unknown symbol");
+Snapshot snapshot = snapshots["BP.L"] ?? throw new ArgumentException("Unknown symbol.");
 
-Assert.Equal("BP p.l.c.", security.LongName);
-Assert.Equal("GBP", security.Currency, true);
-Assert.Equal("LSE", security.Exchange);
-Assert.True(security.RegularMarketPrice > 0);
+Assert.Equal("BP p.l.c.", snapshot.LongName);
+Assert.Equal("GBP=X", snapshot.Currency.Name);
+Assert.True(snapshot.RegularMarketPrice > 0);
 ```
 
-#### snapshot with price history
+#### price history
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-    .WithHistoryStartDate(Instant.FromUtc(2020, 1, 1, 0, 0))
+    .WithHistoryStartDate(Instant.FromUtc(2024, 10, 1, 0, 0))
     .Build();
 
-Security security = await yahooQuotes.GetAsync("MSFT", Histories.PriceHistory)
-    ?? throw new ArgumentException("Unknown symbol.");
+Result<History> result = await yahooQuotes.GetHistoryAsync("MSFT");
+History history = result.Value;
 
-Assert.Equal("NasdaqGS", security.FullExchangeName);
+Assert.Equal("Microsoft Corporation", history.LongName); // static type. AstraZeneca PLC", history.LongName);
+Assert.Equal("USD=X", history.Currency.Name);
+Assert.Equal("America/New_York", history.ExchangeTimezoneName);
+DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName) ??
+    throw new ArgumentNullException("Unknown timezone");
 
-Assert.False(security.PriceHistory.HasError);
-PriceTick[] priceHistory = security.PriceHistory.Value;
-PriceTick tick = priceHistory[0];
-
-Assert.Equal(new LocalDate(2020, 1, 2), tick.Date);
-Assert.Equal(160.62, tick.Close);
+ImmutableArray<Tick> ticks = history.Ticks;
+Tick firstTick = ticks[0];
+ZonedDateTime zdt = firstTick.Date.InZone(tz);
+// Note that tick time is market open of 9:30.
+Assert.Equal(new LocalDateTime(2024, 10, 1, 9, 30, 0), zdt.LocalDateTime);
+Assert.Equal(420.69, firstTick.Close, 2); // In USD
 ```
 
-#### snapshot with price history in base currency
+#### price history in base currency
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-    .WithHistoryStartDate(Instant.FromUtc(2020, 7, 15, 0, 0))
-    .WithCacheDuration(snapshotCacheDuration: Duration.FromMinutes(30), historyCacheDuration: Duration.FromHours(6))
+    .WithHistoryStartDate(Instant.FromUtc(2024, 10, 1, 0, 0))
     .Build();
 
-Security security = await yahooQuotes
-    .GetAsync("TSLA", Histories.PriceHistory, historyBase: "JPY=X")
-        ?? throw new ArgumentException("Unknown symbol.");
+Result<History> result = await yahooQuotes.GetHistoryAsync("ASML.AS", "USD=X");
+History history = result.Value;
 
-Assert.Equal("Tesla, Inc.", security.ShortName);
-Assert.Equal("USD", security.Currency);
-Assert.Equal("America/New_York", security.ExchangeTimezoneName);
-DateTimeZone exchangeTimeZone = Helpers.GetTimeZone(security.ExchangeTimezoneName);
+Assert.Equal("ASML Holding N.V.", history.LongName);
+Assert.Equal("EUR=X", history.Currency.Name);
+Assert.Equal("Europe/Amsterdam", history.ExchangeTimezoneName);
+DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName)
+    ?? throw new ArgumentException("Unknown timezone.");
 
-PriceTick tick = security.PriceHistory.Value[0];
-Assert.Equal(new LocalDate(2020, 7, 15), tick.Date);
-Assert.Equal(103.0673, tick.Close); // in USD
-
-Instant instant = new LocalDateTime(2020, 7, 15, 16, 0, 0)
-    .InZoneLeniently(exchangeTimeZone).ToInstant();
-
-ValueTick tickBase = security.PriceHistoryBase.Value[0];
-Assert.Equal(instant, tickBase.Date);
-Assert.Equal(11046, tickBase.Value, 0); // in JPY
+BaseTick firstBaseTick = history.BaseTicks[0];
+Instant instant = firstBaseTick.Date;
+ZonedDateTime zdt = instant.InZone(tz);
+Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
+Assert.Equal(820.49, firstBaseTick.Price, 2); // in EUR
 ```
