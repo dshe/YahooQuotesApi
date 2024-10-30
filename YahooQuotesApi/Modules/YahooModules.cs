@@ -1,26 +1,20 @@
 ﻿using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 namespace YahooQuotesApi;
 
-public sealed class YahooModules
+public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IHttpClientFactory factory)
 {
-    private ILogger Logger { get; }
-    private CookieAndCrumb CookieAndCrumb { get; }
-    private IHttpClientFactory HttpClientFactory { get; }
-
-    public YahooModules(ILogger logger, CookieAndCrumb crumbService, IHttpClientFactory factory)
-    {
-        Logger = logger;
-        CookieAndCrumb = crumbService;
-        HttpClientFactory = factory;
-    }
+    private ILogger Logger { get; } = logger;
+    private CookieAndCrumb CookieAndCrumb { get; } = crumbService;
+    private IHttpClientFactory HttpClientFactory { get; } = factory;
 
     internal async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, string[] modules, CancellationToken ct)
     {
         if (!Symbol.TryCreate(symbol, out var sym) || sym.IsCurrency)
-            throw new ArgumentException($"Invalid symbol: {sym.Name}.");
+            throw new ArgumentException($"Invalid symbol: {sym}.");
         if (modules.Length == 0)
             throw new ArgumentException("No modules indicated.");
         if (modules.Any(string.IsNullOrEmpty))
@@ -82,7 +76,7 @@ public sealed class YahooModules
         if (items.Length != 1)
             throw new InvalidDataException($"Error requesting YahooModules list.");
         JsonElement item = items.Single();
-        JsonProperty[] modules = item.EnumerateObject().ToArray();
+        JsonProperty[] modules = [.. item.EnumerateObject()];
 
         return VerifiedModules(modulesRequested, modules);
     }

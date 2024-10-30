@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-
 namespace YahooQuotesApi;
 
 public sealed class YahooSnapshot : IDisposable
@@ -12,79 +11,71 @@ public sealed class YahooSnapshot : IDisposable
     private ILogger Logger { get; }
     private IHttpClientFactory HttpClientFactory { get; }
     private string ApiVersion { get; }
+    private SnapshotCreator SnapshotCreator { get; }
     private CookieAndCrumb CookieAndCrumb { get; }
-    private SerialProducerCache<Symbol, Security?> Cache { get; }
+    private SerialProducerCache<Symbol, Snapshot?> Cache { get; }
  
-    public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, CookieAndCrumb crumbService, IHttpClientFactory factory)
+    public YahooSnapshot(ILogger logger, YahooQuotesBuilder builder, CookieAndCrumb crumbService, SnapshotCreator sc, IHttpClientFactory factory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         Logger = logger;
         ApiVersion = builder.SnapshotApiVersion;
         CookieAndCrumb = crumbService;
         HttpClientFactory = factory;
-        Cache = new SerialProducerCache<Symbol, Security?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
+        SnapshotCreator = sc;
+        Cache = new SerialProducerCache<Symbol, Snapshot?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
     }
 
-    internal async Task<Dictionary<Symbol, Security?>> GetAsync(HashSet<Symbol> symbols, CancellationToken ct)
+    internal async Task<Dictionary<Symbol, Snapshot?>> GetAsync(IEnumerable<Symbol> syms, CancellationToken ct)
     {
-        Symbol currency = symbols.FirstOrDefault(s => s.IsCurrency);
-        if (currency.IsValid)
-            throw new ArgumentException($"Invalid symbol: {currency} (currency).");
-
-        return await Cache.Get(symbols, ct).ConfigureAwait(false);
-    }
-
-    private async Task<Dictionary<Symbol, Security?>> Producer(List<Symbol> symbols, CancellationToken ct)
-    {
-        Dictionary<Symbol, Security?> dict = symbols.ToDictionary(s => s, s => (Security?)null);
-
+        HashSet<Symbol> symbols = syms.ToHashSet();
         if (symbols.Count == 0)
-            return dict;
-
-        IEnumerable<JsonElement> elements = await GetElements(symbols, ct).ConfigureAwait(false);
-
-        foreach (JsonElement element in elements)
+            return [];
+        if (symbols.Any(s => s.IsCurrency))
+            throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrency)}.");
+        try
         {
-            Security security = new(element, Logger);
-            Symbol symbol = security.Symbol;
-
-            if (!dict.ContainsKey(symbol))
-                throw new InvalidOperationException(symbol.Name);
-
-            dict[symbol] = security;
+            return await Cache.Get(symbols, ct).ConfigureAwait(false);
         }
-
-        return dict;
+        catch (Exception e)
+        {
+            Logger.LogCritical(e, "YahooQuotes GetAsync() error.");
+            throw;
+        }
     }
 
-    private async Task<List<JsonElement>> GetElements(List<Symbol> symbols, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Snapshot?>> Producer(List<Symbol> symbols, CancellationToken ct)
     {
-        var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
-
-        (Uri uri, List<JsonElement> elements)[] datas =
-            GetUris(symbols, crumb)
-                .Select(uri => (uri, elements: new List<JsonElement>()))
-                .ToArray();
-
         ParallelOptions parallelOptions = new()
         {
             MaxDegreeOfParallelism = 4,
             CancellationToken = ct
         };
 
-        await Parallel.ForEachAsync(datas, parallelOptions, async (data, ct) =>
-            data.elements.AddRange(await MakeRequest(data.uri, cookie, ct).ConfigureAwait(false))).ConfigureAwait(false);
+        (string[] cookies, string crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
 
-        //await MakeRequest(datas[0].uri, cookie, ct).ConfigureAwait(false);
+        IEnumerable<Uri> uris = GetUris(symbols, crumb);
 
+        // Unknown symbols are ignored
+        Dictionary<Symbol, Snapshot?> snapshots = symbols.ToDictionary(s => s, s => (Snapshot?)null);
 
-        return datas.Select(x => x.elements).SelectMany(x => x).ToList();
+        await Parallel.ForEachAsync(uris, parallelOptions, async (uri, ct) =>
+        {
+            List<Snapshot> someSnapshots = await MakeRequest(uri, cookies, ct).ConfigureAwait(false);
+            lock (snapshots)
+            {
+                foreach (var snapshot in someSnapshots)
+                    snapshots[snapshot.Symbol] = snapshot;
+                
+            }
+        }).ConfigureAwait(false);
+
+        return snapshots;
     }
 
-    private IEnumerable<Uri> GetUris(List<Symbol> symbols, string crumb)
+    private IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols, string crumb)
     {
         string baseUrl = $"https://query2.finance.yahoo.com/{ApiVersion}/finance/quote?symbols=";
-
         return symbols
             .Select(symbol => WebUtility.UrlEncode(symbol.Name))
             .Chunk(100)
@@ -92,45 +83,18 @@ public sealed class YahooSnapshot : IDisposable
             .Select(s => new Uri(s));
     }
 
-    private async Task<JsonElement[]> MakeRequest(Uri uri, List<string> cookie, CancellationToken ct)
+    private async Task<List<Snapshot>> MakeRequest(Uri uri, string[] cookies, CancellationToken ct)
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
+        httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
-        //Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
-        //and not allow reading a json error messages such as NotFound.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        //if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.NotFound)
-        //    response.EnsureSuccessStatusCode();
-
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
-
-        if (!jsonDocument.RootElement.TryGetProperty("quoteResponse", out JsonElement quoteResponse))
-            throw new InvalidDataException("quoteResponse");
-
-        if (!quoteResponse.TryGetProperty("error", out JsonElement error))
-            throw new InvalidDataException("error");
-
-        if (error.ValueKind is not JsonValueKind.Null)
-        {
-            string errorMessage = error.ToString();
-            if (error.TryGetProperty("description", out JsonElement property))
-            {
-                string? description = property.GetString();
-                if (description is not null)
-                    errorMessage = description;
-            }
-            throw new InvalidDataException($"Error requesting YahooSnapshot: {errorMessage}");
-        }
-
-        if (!quoteResponse.TryGetProperty("result", out JsonElement result))
-            throw new InvalidDataException("result");
-
-        return result.EnumerateArray().ToArray();
+        using JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+        return SnapshotCreator.CreateFromJson(jsonDocument);
     }
 
     public void Dispose() => Cache.Dispose();

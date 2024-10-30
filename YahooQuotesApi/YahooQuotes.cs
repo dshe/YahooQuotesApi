@@ -1,57 +1,53 @@
 ﻿using System.Text.Json;
-
 namespace YahooQuotesApi;
 
-public sealed class YahooQuotes
+public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, YahooSnapshot snapshot, YahooHistory history,  YahooModules modules)
 {
-    private readonly ILogger Logger;
-    private readonly Quotes Quotes;
-    private readonly YahooModules Modules;
-    private readonly CookieAndCrumb CookieAndCrumb;
-    private YahooHistory History { get; }
+    private ILogger Logger { get; } = logger;
+    private CookieAndCrumb CookieAndCrumb { get; } = cookieAndCrumb;
+    private YahooSnapshot Snapshot { get; } = snapshot;
+    private YahooHistory History { get; } = history;
+    private YahooModules Modules { get; } = modules;
 
-    // must be public to support dependency injection
-    public YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, YahooModules modules, Quotes quotes, YahooHistory history)
+
+    public async Task<Snapshot?> GetSnapshotAsync(string symbol, CancellationToken ct = default) =>
+        await GetSnapshotAsync(symbol.ToSymbol(), ct).ConfigureAwait(false);
+
+    public async Task<Dictionary<string, Snapshot?>> GetSnapshotAsync(IEnumerable<string> symbols, CancellationToken ct = default)
     {
-        Logger = logger;
-        Quotes = quotes;
-        Modules = modules;
-        History = history; 
-        CookieAndCrumb = cookieAndCrumb;
+        Dictionary<Symbol, Snapshot?> results = await GetSnapshotAsync(symbols.Select(s => s.ToSymbol()), ct).ConfigureAwait(false);
+        return results.ToDictionary(s => s.Key.Name, static s => s.Value, StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<Security?> GetAsync(string symbol, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default) =>
-        (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
+    public async Task<Snapshot?> GetSnapshotAsync(Symbol symbol, CancellationToken ct = default) =>
+        (await GetSnapshotAsync([symbol], ct).ConfigureAwait(false)).Values.Single();
+    
+    public async Task<Dictionary<Symbol, Snapshot?>> GetSnapshotAsync(IEnumerable<Symbol> symbols, CancellationToken ct = default) =>
+        await Snapshot.GetAsync(symbols, ct).ConfigureAwait(false);
 
-    public async Task<Security?> GetAsync(Symbol symbol, Histories historyFlags = default, Symbol historyBase = default, CancellationToken ct = default) =>
-        (await GetAsync(new[] { symbol }, historyFlags, historyBase, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<string, Security?>> GetAsync(IEnumerable<string> symbols, Histories historyFlags = default, string historyBase = "", CancellationToken ct = default)
+
+    public async Task<Result<History>> GetHistoryAsync(string symbol, string baseSymbol = "", CancellationToken ct = default) =>
+        (await GetHistoryAsync([symbol], baseSymbol, ct).ConfigureAwait(false)).Values.Single();
+
+    public async Task<Dictionary<string, Result<History>>> GetHistoryAsync(IEnumerable<string> symbols, string baseSymbol = "", CancellationToken ct = default)
     {
-        HashSet<Symbol> syms = symbols
-            .Select(s => s.ToSymbol())
-            .ToHashSet();
-
-        Symbol historyBaseSymbol = default;
-        if (!string.IsNullOrEmpty(historyBase))
-        {
-            if (!Symbol.TryCreate(historyBase, out historyBaseSymbol))
-                throw new ArgumentException($"Invalid base symbol: {historyBase}.");
-        }
-        Dictionary<Symbol, Security?> securities = await Quotes.GetAsync(syms, historyFlags, historyBaseSymbol, ct).ConfigureAwait(false);
-        return syms.ToDictionary(s => s.Name, s => securities[s], StringComparer.OrdinalIgnoreCase);
+        Symbol baseSym = string.IsNullOrEmpty(baseSymbol) ? default : baseSymbol.ToSymbol();
+        Dictionary<Symbol, Result<History>> results = await GetHistoryAsync(symbols.Select(s => s.ToSymbol()), baseSym, ct).ConfigureAwait(false);
+        return results.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value);
     }
 
-    public async Task<Dictionary<Symbol, Security?>> GetAsync(IEnumerable<Symbol> symbols, Histories historyFlags = default, Symbol historyBase = default, CancellationToken ct = default)
-    {
-        HashSet<Symbol> syms = symbols.ToHashSet();
-        Dictionary<Symbol, Security?> securities = await Quotes.GetAsync(syms, historyFlags, historyBase, ct).ConfigureAwait(false);
-        return syms.ToDictionary(s => s, s => securities[s]);
-    }
+    public async Task<Result<History>> GetHistoryAsync(Symbol symbol, Symbol baseSymbol = default, CancellationToken ct = default) =>
+        (await GetHistoryAsync([symbol], baseSymbol, ct).ConfigureAwait(false)).Values.Single();
+
+    public async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> symbols, Symbol baseSymbol = default, CancellationToken ct = default) =>
+        await History.GettHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
+
+
 
     public async Task<Result<JsonProperty>> GetModuleAsync(string symbol, string module, CancellationToken ct = default)
     {
-        Result<JsonProperty[]> result = await GetModulesAsync(symbol, new[] { module }, ct).ConfigureAwait(false);
+        Result<JsonProperty[]> result = await GetModulesAsync(symbol, [module], ct).ConfigureAwait(false);
         return result.ToResult(v => v.Single());
     }
 
@@ -71,9 +67,7 @@ public sealed class YahooQuotes
         }
     }
 
-    internal async Task<(List<string>, string)> GetCookieAndCrumbAsyncTest() =>
-        await CookieAndCrumb.Get(default).ConfigureAwait(false);
-
-    internal async Task<Result<T[]>> GetTicksAsyncTest<T>(Symbol symbol) where T : ITick =>
-        await History.GetTicksAsync<T>(symbol, default).ConfigureAwait(false);
+    // testing
+    internal async Task<(string[], string)> GetCookieAndCrumbAsync() =>
+          await CookieAndCrumb.Get(default).ConfigureAwait(false);
 }

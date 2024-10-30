@@ -5,7 +5,6 @@ global using System.Collections.Generic;
 global using System.Linq;
 global using System.Threading;
 global using System.Threading.Tasks;
-
 using System.Runtime.CompilerServices;
 
 //Action<HttpStandardResilienceOptions> is not CLS-compliant

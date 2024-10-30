@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System;
-using YahooQuotesApi;
-
 namespace Xunit.Abstractions;
 
 public abstract class XunitTestBase
@@ -14,9 +11,11 @@ public abstract class XunitTestBase
     protected XunitTestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Debug, string name = "Test")
     {
         Output = output;
+
         LogFactory = LoggerFactory.Create(builder => builder
             .AddMXLogger(output.WriteLine)
             .SetMinimumLevel(logLevel));
+
         Logger = LogFactory.CreateLogger(name);
     }
 }

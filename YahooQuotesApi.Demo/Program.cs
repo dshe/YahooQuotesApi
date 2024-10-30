@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
-
 namespace YahooQuotesApi.Demo;
 
 public static class Program
@@ -17,7 +16,7 @@ public static class Program
             .CreateLogger("Demo");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
-        await new MyApp(logger).Run(100, Histories.All, "JPY=X");
+        await new MyApp(logger).Run(100, "JPY=X");
 
         await Task.Delay(3000);
 

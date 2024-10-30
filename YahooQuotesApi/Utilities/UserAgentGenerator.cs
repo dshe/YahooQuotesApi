@@ -3,7 +3,7 @@
 internal static class UserAgentGenerator
 {
     private static readonly string[] UserAgents =
-    {
+    [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/603.2.4 (KHTML, like Gecko) Version/10.1.1 Safari/603.2.4",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1",
         "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
@@ -23,7 +23,7 @@ internal static class UserAgentGenerator
         "Mozilla/5.0 (Linux; Linux x86_64; en-US) Gecko/20130401 Firefox/67.8",
         "Mozilla/5.0 (Windows NT 10.2; x64) AppleWebKit/534.45 (KHTML, like Gecko) Chrome/55.0.3502.198 Safari/600.8 Edge/9.69335",
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0"
-    };
+    ];
 
     private static readonly Random random = new();
 

@@ -1,86 +1,146 @@
 ﻿using System.IO;
-using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Net.Http.Headers;
-
 namespace YahooQuotesApi;
 
 public sealed class YahooHistory
 {
     private ILogger Logger { get; }
+    private CookieAndCrumb CookieAndCrumb { get; }
     private Instant Start { get; }
-    private Frequency PriceHistoryFrequency { get; }
     private IHttpClientFactory HttpClientFactory { get; }
-    private ParallelProducerCache<string, Result<ITick[]>> Cache { get; }
+    private HistoryBasePricesCreator HistoryBasePricesCreator { get; }
+    private HistoryCreator HistoryCreator { get; }
+    private ParallelProducerCache<Symbol, Result<History>> Cache { get; }
 
-    public YahooHistory(ILogger logger, YahooQuotesBuilder builder, IHttpClientFactory httpClientFactory)
+    public YahooHistory(ILogger logger, YahooQuotesBuilder builder, CookieAndCrumb crumbService, HistoryCreator hc, HistoryBasePricesCreator hbc, IHttpClientFactory httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         Logger = logger;
+        CookieAndCrumb = crumbService;
         Start = builder.HistoryStartDate;
-        PriceHistoryFrequency = builder.PriceHistoryFrequency;
         HttpClientFactory = httpClientFactory;
-        Cache = new ParallelProducerCache<string, Result<ITick[]>>(builder.Clock, builder.HistoryCacheDuration);
+        HistoryCreator = hc;
+        HistoryBasePricesCreator = hbc;
+        Cache = new(builder.Clock, builder.HistoryCacheDuration);
     }
 
-    internal async Task<Result<T[]>> GetTicksAsync<T>(Symbol symbol, CancellationToken ct) where T : ITick
+    internal async Task<Dictionary<Symbol, Result<History>>> GettHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
     {
-        if (symbol.IsCurrency)
-            throw new ArgumentException($"Invalid symbol: '{symbol.Name}'.");
-        Type type = typeof(T);
-        Frequency frequency = type == typeof(PriceTick) ? PriceHistoryFrequency : Frequency.Daily;
-        Uri uri = GetUri<T>(symbol.Name, frequency);
-        string key = $"{symbol},{type.Name},{frequency.Name()}";
+        HashSet<Symbol> symbols = syms.ToHashSet();
+
+        if (symbols.Any(s => s.IsCurrencyRate))
+            throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrencyRate)}.");
+        if (baseSymbol != default && baseSymbol.IsCurrencyRate)
+            throw new ArgumentException($"Invalid base symbol: {baseSymbol}.");
+        if (baseSymbol == default && symbols.Any(s => s.IsCurrency))
+            throw new ArgumentException($"Base symbol required.");
         try
         {
-            Result<ITick[]> result = await Cache.Get(key, () => Produce<T>(uri, ct)).ConfigureAwait(false);
-            return result.ToResult(v => v.Cast<T>().ToArray()); // returns a copy of an array (mutable shallow copy)
+            return await GetHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
         }
         catch (Exception e)
         {
-            Logger.LogCritical(e, "History error: {Message}.", e.Message);
+            Logger.LogCritical(e, "YahooQuotes GetAsync() error.");
             throw;
         }
     }
 
-    private Uri GetUri<T>(string symbol, Frequency frequency) where T : ITick
+    private async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(HashSet<Symbol> symbols, Symbol baseSymbol, CancellationToken ct)
     {
-        string parm = typeof(T).Name switch
+        HashSet<Symbol> stockSymbols = symbols.Where(s => s.IsStock).ToHashSet();
+        if (baseSymbol != default && baseSymbol.IsStock)
+            stockSymbols.Add(baseSymbol);
+
+        Dictionary<Symbol, Result<History>> results = [];
+        await AddToResultsAsync(stockSymbols, results, ct).ConfigureAwait(false);   
+        await AddCurrenciesToResults(symbols, baseSymbol, results, ct).ConfigureAwait(false);
+
+        /*
+        if (baseSymbol.IsValid && baseSymbol.Name != "USD=X") // check the base history
         {
-            nameof(PriceTick) => "history",
-            nameof(DividendTick) => "div",
-            nameof(SplitTick) => "split",
-            _ => throw new TypeAccessException("tick")
-        };
-        const string address = "https://query2.finance.yahoo.com/v7/finance/download/";
-        string url = $"{address}{symbol}?period1={(Start == Instant.MinValue ? 0 : Start.ToUnixTimeSeconds())}" +
-            $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}&interval=1{frequency.Name()}&events={parm}";
-        return new Uri(url);
+            Symbol s = baseSymbol;
+            if (s.IsCurrency)
+                s = $"USD{baseSymbol}".ToSymbol();
+            Result<History> result = results[s];
+            if (result.HasError)
+                return symbols.ToDictionary(s => s, s => Result<History>.Fail(result.Error));
+            //History history = result.Value;
+            //if (history.Currency != baseSymbol)
+        }
+        */
+        return HistoryBasePricesCreator.Create(symbols, baseSymbol, results);
     }
 
-    private async Task<Result<ITick[]>> Produce<T>(Uri uri, CancellationToken ct) where T : ITick
+    private async Task AddCurrenciesToResults(IEnumerable<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
     {
-        Logger.LogInformation("{Url}", uri.ToString());
+        // currencies + historyBase currency + history currencies
+        List<Symbol> currencySymbols = [];
+        foreach (var symbol in symbols.Where(s => s.IsCurrency))
+        {
+            currencySymbols.Add(symbol);
+            results[symbol] = HistoryCreator.CreateFromSymbol(symbol).ToResult();
+        }
+
+        if (baseSymbol.IsValid)
+        {
+            if (baseSymbol.IsCurrency)
+                currencySymbols.Add(baseSymbol);
+            foreach (History stock in results.Values.Where(r => r.HasValue).Select(r => r.Value).Where(h => h.Currency.IsValid))
+                currencySymbols.Add(stock.Currency);
+        }
+
+        HashSet<Symbol> rateSymbols = currencySymbols
+            .Where(c => c.Name != "USD=X")
+            .Select(c => $"USD{c}".ToSymbol())
+            .ToHashSet();
+
+        await AddToResultsAsync(rateSymbols, results, ct).ConfigureAwait(false);
+    }
+
+    private async Task AddToResultsAsync(IEnumerable<Symbol> symbols, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
+    {
+        ParallelOptions parallelOptions = new()
+        {
+            MaxDegreeOfParallelism = 4,
+            CancellationToken = ct
+        };
+
+        await Parallel.ForEachAsync(symbols, parallelOptions, async (symbol, ct) =>
+        {
+            Result<History> result = await Cache.Get(symbol, () => Produce(symbol, ct)).ConfigureAwait(false);
+            lock (results)
+            {
+                results.Add(symbol, result);
+            }
+        }).ConfigureAwait(false);
+    }
+
+    private async Task<Result<History>> Produce(Symbol symbol, CancellationToken ct)
+    {
+        var (cookies, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+        Uri uri = GetUri(symbol, crumb);
+        Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/csv"));
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-            return Result<ITick[]>.Fail("History not found.");
-        try
-        {
-            response.EnsureSuccessStatusCode();
+        using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using JsonDocument jdoc = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+        return HistoryCreator.CreateFromJson(jdoc, symbol.Name);
+    }
 
-            using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-            using StreamReader streamReader = new(stream);
-            ITick[] ticks = await streamReader.ToTicks<T>(Logger).ConfigureAwait(false);
-            return ticks.ToResult();
-        }
-#pragma warning disable CA1031 // catch a more specific allowed exception type 
-        catch (Exception e)
-        {
-            return Result<ITick[]>.Fail(e);
-        }
+    private Uri GetUri(Symbol symbol, string crumb)
+    {
+        string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?" +
+            "events=history,div,split" +
+            "&interval=1d" +
+            $"&period1={Start.ToUnixTimeSeconds()}" +
+            $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}" +
+            $"&crumb={crumb}";
+        return new Uri(url);
     }
 }

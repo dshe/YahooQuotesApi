@@ -20,6 +20,8 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         {
             if (value is not null)
                 return value;
+            if (errorResult is not null)
+                throw new InvalidOperationException(errorResult.Message, errorResult.Exception);
             throw new InvalidOperationException("Result has no value.");
         }
     }
@@ -63,10 +65,10 @@ public readonly struct Result<T> : IEquatable<Result<T>>
 
     public override string ToString()
     {
-        if (HasValue)
-            return $"Value: {Value}";
         if (HasError)
-            return $"Error: {Error}";
+            return Error.Message;
+        if (Value != null)
+            return $"Value: {Value}";
         return "Undefined";
     }
 
@@ -98,7 +100,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
 
     public static Result<T> From(Func<T> producer)
     {
-        ArgumentNullException.ThrowIfNull(producer);
+         ArgumentNullException.ThrowIfNull(producer);
         try
         {
             return new Result<T>(producer());

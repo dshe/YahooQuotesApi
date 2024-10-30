@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
 namespace YahooQuotesApi.Demo;
 
 public class MyApp
@@ -26,7 +25,7 @@ public class MyApp
             .Build();
     }
 
-    public async Task Run(int number, Histories flags, string baseCurrency)
+    public async Task Run(int number, string baseCurrency)
     {
         List<Symbol> symbols = GetSymbols(number);
 
@@ -35,15 +34,15 @@ public class MyApp
 
         Stopwatch watch = new();
         watch.Start();
-        Dictionary<string, Security?> securities = await YahooQuotes.GetAsync(symbols.Select(x => x.Name), flags, baseCurrency);
+        Dictionary<string, Result<History>> results = await YahooQuotes.GetHistoryAsync(symbols.Select(x => x.Name), baseCurrency);
         watch.Stop();
 
-        int n = securities.Values.Count(x => x is not null);
+        int n = results.Values.Count(x => x.HasValue);
         double s = watch.Elapsed.TotalSeconds;
         double rate = n / s;
         Logger.LogWarning("Rate = {N}/{S:N2} = {Rate:N2} Hz", n, s, rate);
 
-        Analyze(securities);
+        Analyze(results);
     }
 
     private List<Symbol> GetSymbols(int number)
@@ -52,7 +51,7 @@ public class MyApp
 
         List<string> lines = File
             .ReadAllLines(path)
-            .Where(line => !line.StartsWith("#"))
+            .Where(line => !line.StartsWith('#'))
             .Take(number)
             .ToList();
 
@@ -60,46 +59,42 @@ public class MyApp
             .Where(t => !Symbol.TryCreate(t, out _))
             .ToList();
 
-        if (errors.Any())
+        if (errors.Count != 0)
             Logger.LogWarning("Invalid symbol names: {names}.", string.Join(", ", errors));
 
-        List<Symbol> symbols = lines
+        List<Symbol> symbols = [.. lines
             .Select(t => t.ToSymbol(false))
             .Where(s => s.IsValid)
-            .OrderBy(x => x)
-            .ToList();
+            .OrderBy(x => x)];
 
         return symbols;
     }
 
-    private void Analyze(Dictionary<string, Security?> dict)
+    private void Analyze(Dictionary<string, Result<History>> dict)
     {
         Logger.LogWarning("Symbols total: {count}.", dict.Count);
-        Logger.LogWarning("Symbols not found: {count}.", dict.Count(x => x.Value is null));
+        Logger.LogWarning("Symbols not found: {count}.", dict.Count(x => !x.Value.HasValue));
 
-        IEnumerable<KeyValuePair<string, Security>> kvp = dict.Where(kv => kv.Value is not null).Cast<KeyValuePair<string, Security>>();
-        List<Security> securities = kvp.Select(kv => kv.Value).ToList();
+        IEnumerable<(string symbol, History history)> kv = dict.Where(kv => kv.Value.HasValue).Select(x => (x.Key, x.Value.Value));
 
-        Logger.LogWarning("Symbols found: {Count}.", securities.Count);
+        List<History> histories = kv.Select(kv => kv.history).ToList();
 
-        Logger.LogWarning("Symbols no currency: {Securities}.", securities.Count(x => x.Currency == ""));
-        Logger.LogWarning("Symbols no timezone: {Securities}.", securities.Count(x => x.ExchangeTimezoneName == ""));
+        Logger.LogWarning("Symbols found: {Count}.", histories.Count);
 
-        Logger.LogWarning("Symbols with history not set: {Securities}.", securities.Count(x => x.PriceHistory.IsUndefined));
-        Logger.LogWarning("Symbols with history found:   {Securities}.", securities.Count(x => x.PriceHistory.HasValue));
-        Logger.LogWarning("Symbols with history error:   {Securities}.", securities.Count(x => x.PriceHistory.HasError));
-        //foreach (var security in securities.Where(s => s.PriceHistory.HasError).Where(s => !s.PriceHistory.Error.StartsWith("History not found")))
-        //    Logger.LogError($"History error for symbol '{security.Symbol}' {security.PriceHistory.Error}");
+        Logger.LogWarning("Symbols no currency: {Histories}.", histories.Count(x => x.Currency.Name == ""));
+        Logger.LogWarning("Symbols no timezone: {Histories}.", histories.Count(x => x.ExchangeTimezoneName == ""));
 
-        Logger.LogWarning("Symbols with base history not set: {Securities}.", securities.Count(x => x.PriceHistoryBase.IsUndefined));
-        Logger.LogWarning("Symbols with base history found:   {Securities}.", securities.Count(x => x.PriceHistoryBase.HasValue));
-        //foreach (var security in securities.Where(s => s.PriceHistoryBase.HasError).Where(s => !s.PriceHistoryBase.Error.StartsWith("History not found")))
-        //    Logger.LogError($"Historybase error for symbol '{security.Symbol}' {security.PriceHistoryBase.Error}");
+        Logger.LogWarning("Symbols with history not set: {Histories}.", histories.Count(x => x.Ticks.Length == 0));
 
-        LogUnique(securities.Where(s => s.PriceHistory.HasError).Select(s => s.PriceHistory.Error.Message)
-        .Concat(securities.Where(s => s.DividendHistory.HasError).Select(s => s.DividendHistory.Error.Message))
-        .Concat(securities.Where(s => s.SplitHistory.HasError).Select(s => s.SplitHistory.Error.Message))
-        .Concat(securities.Where(s => s.PriceHistoryBase.HasError).Select(s => s.PriceHistoryBase.Error.Message)));
+        Logger.LogWarning("Symbols with base history not set: {Histories}.", histories.Count(x => x.BaseTicks.Length == 0));
+        //Logger.LogWarning("Symbols with base history found:   {Histories}.", histories.Count(x => x.PriceHistoryBase.HasValue));
+        //foreach (var history in histories.Where(s => s.PriceHistoryBase.HasError).Where(s => !s.PriceHistoryBase.Error.StartsWith("History not found")))
+        //    Logger.LogError($"Historybase error for symbol '{history.Symbol}' {history.PriceHistoryBase.Error}");
+
+        //LogUnique(histories.Where(s => s.PriceHistory.HasError).Select(s => s.PriceHistory.Error.Message)
+        //.Concat(histories.Where(s => s.DividendHistory.HasError).Select(s => s.DividendHistory.Error.Message))
+        //.Concat(histories.Where(s => s.SplitHistory.HasError).Select(s => s.SplitHistory.Error.Message))
+        //.Concat(histories.Where(s => s.PriceHistoryBase.HasError).Select(s => s.PriceHistoryBase.Error.Message)));
     }
 
     private void LogUnique(IEnumerable<string> errors)

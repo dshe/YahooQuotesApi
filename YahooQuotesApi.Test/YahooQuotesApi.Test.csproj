@@ -9,23 +9,26 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;IDE0130</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;IDE0130</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="ExchangesTest.cs" />
     <Compile Remove="SnapshotTests.cs" />
     <Compile Remove="YahooCurrencyTests.cs" />
-    <Compile Remove="~\AsyncCacheTest.cs" />
-    <Compile Remove="~\CurrencyTests.cs" />
-    <Compile Remove="~\Experimental.cs" />
-    <None Include="~\CurrencyTests.cs" />
-    <None Include="~\Experimental.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="MXLogger" Version="2.0.8" />
-    <PackageReference Include="NodaTime" Version="3.1.11" />
-    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="NodaTime" Version="3.2.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

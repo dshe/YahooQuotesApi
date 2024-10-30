@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-
 namespace YahooQuotesApi;
 
 // Microsoft.Extensions.Http.Polly
@@ -26,13 +24,14 @@ internal static class Services
             .AddSingleton(yahooQuotesBuilder)
             .AddSingleton(yahooQuotesBuilder.Clock)
             .AddSingleton(yahooQuotesBuilder.Logger)
-            .AddSingleton<YahooQuotes>()
-            .AddSingleton<Quotes>()
             .AddSingleton<CookieAndCrumb>()
             .AddSingleton<YahooSnapshot>()
+            .AddSingleton<SnapshotCreator>()
             .AddSingleton<YahooHistory>()
-            .AddSingleton<HistoryBaseComposer>()
+            .AddSingleton<HistoryCreator>()
+            .AddSingleton<HistoryBasePricesCreator>()
             .AddSingleton<YahooModules>()
+            .AddSingleton<YahooQuotes>()
 
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true })
 
