@@ -52,7 +52,7 @@ YahooQuotes yahooQuotes = new YahooQuotesBuilder()
 Result<History> result = await yahooQuotes.GetHistoryAsync("MSFT");
 History history = result.Value;
 
-Assert.Equal("Microsoft Corporation", history.LongName); // static type. AstraZeneca PLC", history.LongName);
+Assert.Equal("Microsoft Corporation", history.LongName);
 Assert.Equal("USD=X", history.Currency.Name);
 Assert.Equal("America/New_York", history.ExchangeTimezoneName);
 DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName) ??
@@ -63,7 +63,7 @@ Tick firstTick = ticks[0];
 ZonedDateTime zdt = firstTick.Date.InZone(tz);
 // Note that tick time is market open of 9:30.
 Assert.Equal(new LocalDateTime(2024, 10, 1, 9, 30, 0), zdt.LocalDateTime);
-Assert.Equal(420.69, firstTick.Close, 2); // In USD
+Assert.Equal(420.69, firstTick.Close, 2); // in USD
 ```
 
 #### price history in base currency
@@ -85,5 +85,5 @@ BaseTick firstBaseTick = history.BaseTicks[0];
 Instant instant = firstBaseTick.Date;
 ZonedDateTime zdt = instant.InZone(tz);
 Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
-Assert.Equal(820.49, firstBaseTick.Price, 2); // in EUR
+Assert.Equal(820.49, firstBaseTick.Price, 2); // in USD
 ```
