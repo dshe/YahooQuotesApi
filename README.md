@@ -61,7 +61,7 @@ DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimez
 ImmutableArray<Tick> ticks = history.Ticks;
 Tick firstTick = ticks[0];
 ZonedDateTime zdt = firstTick.Date.InZone(tz);
-// Note that tick time is market open of 9:30.
+// Note that tick time is market open at 9:30 AM.
 Assert.Equal(new LocalDateTime(2024, 10, 1, 9, 30, 0), zdt.LocalDateTime);
 Assert.Equal(420.69, firstTick.Close, 2); // in USD
 ```
@@ -85,5 +85,5 @@ BaseTick firstBaseTick = history.BaseTicks[0];
 Instant instant = firstBaseTick.Date;
 ZonedDateTime zdt = instant.InZone(tz);
 Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
-Assert.Equal(820.49, firstBaseTick.Price, 2); // in USD
+Assert.Equal(820.49, firstBaseTick.Price, 2); // EUR -> USD
 ```
