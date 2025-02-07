@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Net.Http.Headers;
+
 namespace YahooQuotesApi;
 
 public sealed class YahooHistory
@@ -26,7 +27,7 @@ public sealed class YahooHistory
         Cache = new(builder.Clock, builder.HistoryCacheDuration);
     }
 
-    internal async Task<Dictionary<Symbol, Result<History>>> GettHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
+    internal async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
     {
         HashSet<Symbol> symbols = syms.ToHashSet();
 
