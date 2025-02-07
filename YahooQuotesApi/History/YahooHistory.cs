@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Net.Http.Headers;
+using NodaTime;
 
 namespace YahooQuotesApi;
 
@@ -27,7 +28,7 @@ public sealed class YahooHistory
         Cache = new(builder.Clock, builder.HistoryCacheDuration);
     }
 
-    internal async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
+    internal async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, string interval, CancellationToken ct)
     {
         HashSet<Symbol> symbols = syms.ToHashSet();
 
@@ -39,7 +40,7 @@ public sealed class YahooHistory
             throw new ArgumentException($"Base symbol required.");
         try
         {
-            return await GetHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
+            return await GetHistoryAsync(symbols, baseSymbol, interval, ct).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -48,33 +49,20 @@ public sealed class YahooHistory
         }
     }
 
-    private async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(HashSet<Symbol> symbols, Symbol baseSymbol, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(HashSet<Symbol> symbols, Symbol baseSymbol, string interval, CancellationToken ct)
     {
         HashSet<Symbol> stockSymbols = symbols.Where(s => s.IsStock).ToHashSet();
         if (baseSymbol != default && baseSymbol.IsStock)
             stockSymbols.Add(baseSymbol);
 
         Dictionary<Symbol, Result<History>> results = [];
-        await AddToResultsAsync(stockSymbols, results, ct).ConfigureAwait(false);   
-        await AddCurrenciesToResults(symbols, baseSymbol, results, ct).ConfigureAwait(false);
+        await AddToResultsAsync(stockSymbols, results, interval, ct).ConfigureAwait(false);   
+        await AddCurrenciesToResults(symbols, baseSymbol, results, interval, ct).ConfigureAwait(false);
 
-        /*
-        if (baseSymbol.IsValid && baseSymbol.Name != "USD=X") // check the base history
-        {
-            Symbol s = baseSymbol;
-            if (s.IsCurrency)
-                s = $"USD{baseSymbol}".ToSymbol();
-            Result<History> result = results[s];
-            if (result.HasError)
-                return symbols.ToDictionary(s => s, s => Result<History>.Fail(result.Error));
-            //History history = result.Value;
-            //if (history.Currency != baseSymbol)
-        }
-        */
         return HistoryBasePricesCreator.Create(symbols, baseSymbol, results);
     }
 
-    private async Task AddCurrenciesToResults(IEnumerable<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
+    private async Task AddCurrenciesToResults(IEnumerable<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results, string interval, CancellationToken ct)
     {
         // currencies + historyBase currency + history currencies
         List<Symbol> currencySymbols = [];
@@ -97,10 +85,10 @@ public sealed class YahooHistory
             .Select(c => $"USD{c}".ToSymbol())
             .ToHashSet();
 
-        await AddToResultsAsync(rateSymbols, results, ct).ConfigureAwait(false);
+        await AddToResultsAsync(rateSymbols, results, interval, ct).ConfigureAwait(false);
     }
 
-    private async Task AddToResultsAsync(IEnumerable<Symbol> symbols, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
+    private async Task AddToResultsAsync(IEnumerable<Symbol> symbols, Dictionary<Symbol, Result<History>> results, string interval, CancellationToken ct)
     {
         ParallelOptions parallelOptions = new()
         {
@@ -110,7 +98,7 @@ public sealed class YahooHistory
 
         await Parallel.ForEachAsync(symbols, parallelOptions, async (symbol, ct) =>
         {
-            Result<History> result = await Cache.Get(symbol, () => Produce(symbol, ct)).ConfigureAwait(false);
+            Result<History> result = await Cache.Get(symbol, () => Produce(symbol, interval, ct)).ConfigureAwait(false);
             lock (results)
             {
                 results.Add(symbol, result);
@@ -118,10 +106,10 @@ public sealed class YahooHistory
         }).ConfigureAwait(false);
     }
 
-    private async Task<Result<History>> Produce(Symbol symbol, CancellationToken ct)
+    private async Task<Result<History>> Produce(Symbol symbol, string interval, CancellationToken ct)
     {
         var (cookies, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
-        Uri uri = GetUri(symbol, crumb);
+        Uri uri = GetUri(symbol, crumb, interval);
         Logger.LogInformation("{Uri}", uri.ToString());
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
@@ -134,11 +122,11 @@ public sealed class YahooHistory
         return HistoryCreator.CreateFromJson(jdoc, symbol.Name);
     }
 
-    private Uri GetUri(Symbol symbol, string crumb)
+    private Uri GetUri(Symbol symbol, string crumb, string interval)
     {
         string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?" +
             "events=history,div,split" +
-            "&interval=1d" +
+            $"&interval={interval}" +
             $"&period1={Start.ToUnixTimeSeconds()}" +
             $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}" +
             $"&crumb={crumb}";

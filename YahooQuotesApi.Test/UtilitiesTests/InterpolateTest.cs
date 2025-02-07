@@ -13,11 +13,14 @@ public class InterpolateTest(ITestOutputHelper output) : XunitTestBase(output)
     {
         var ticks = new List<BaseTick>();
         Assert.Throws<ArgumentException>(() => ticks.ToArray().InterpolatePrice(new Instant()));
+    }
 
+    [Fact]
+    public void TestSingleDataPoint()
+    {
+        var ticks = new List<BaseTick>();
         ticks.Add(new BaseTick(new Instant(), 1, 0));
-        Assert.Throws<ArgumentException>(() => ticks.ToArray().InterpolatePrice(new Instant()));
 
-        ticks.Add(new BaseTick(new Instant(), 1, 0));
         Assert.Equal(1, ticks.ToArray().InterpolatePrice(new Instant()));
 
         ticks.Add(new BaseTick(new Instant(), 1, 0));

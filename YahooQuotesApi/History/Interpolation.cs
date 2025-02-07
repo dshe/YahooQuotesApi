@@ -13,6 +13,9 @@ internal static class InterpolationExtensions
 
     private static double Interpolate<T>(this T[] list, Instant date, Func<T, Instant> getDate, Func<T, double> getValue)
     {
+        if (list.Length == 1)
+            return getValue(list[0]);
+
         if (list.Length < 2)
             throw new ArgumentException("BinarySearch: not enough items.", nameof(list));
 

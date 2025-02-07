@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using NodaTime;
+using System.Text.Json;
 namespace YahooQuotesApi;
 
 public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, YahooSnapshot snapshot, YahooHistory history,  YahooModules modules)
@@ -27,21 +28,21 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
 
 
 
-    public async Task<Result<History>> GetHistoryAsync(string symbol, string baseSymbol = "", CancellationToken ct = default) =>
-        (await GetHistoryAsync([symbol], baseSymbol, ct).ConfigureAwait(false)).Values.Single();
+    public async Task<Result<History>> GetHistoryAsync(string symbol, string baseSymbol = "", string interval = "1d", CancellationToken ct = default) =>
+        (await GetHistoryAsync([symbol], baseSymbol, interval, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<string, Result<History>>> GetHistoryAsync(IEnumerable<string> symbols, string baseSymbol = "", CancellationToken ct = default)
+    public async Task<Dictionary<string, Result<History>>> GetHistoryAsync(IEnumerable<string> symbols, string baseSymbol = "", string interval = "1d", CancellationToken ct = default)
     {
         Symbol baseSym = string.IsNullOrEmpty(baseSymbol) ? default : baseSymbol.ToSymbol();
-        Dictionary<Symbol, Result<History>> results = await GetHistoryAsync(symbols.Select(s => s.ToSymbol()), baseSym, ct).ConfigureAwait(false);
+        Dictionary<Symbol, Result<History>> results = await GetHistoryAsync(symbols.Select(s => s.ToSymbol()), baseSym, interval, ct).ConfigureAwait(false);
         return results.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value);
     }
 
-    public async Task<Result<History>> GetHistoryAsync(Symbol symbol, Symbol baseSymbol = default, CancellationToken ct = default) =>
-        (await GetHistoryAsync([symbol], baseSymbol, ct).ConfigureAwait(false)).Values.Single();
+    public async Task<Result<History>> GetHistoryAsync(Symbol symbol, Symbol baseSymbol = default, string interval = "1d", CancellationToken ct = default) =>
+        (await GetHistoryAsync([symbol], baseSymbol, interval, ct).ConfigureAwait(false)).Values.Single();
 
-    public async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> symbols, Symbol baseSymbol = default, CancellationToken ct = default) =>
-        await History.GetHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
+    public async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> symbols, Symbol baseSymbol = default, string interval = "1d", CancellationToken ct = default) =>
+        await History.GetHistoryAsync(symbols, baseSymbol, interval, ct).ConfigureAwait(false);
 
 
 
