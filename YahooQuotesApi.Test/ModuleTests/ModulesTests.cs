@@ -40,23 +40,29 @@ public class ModulesTests : XunitTestBase
     public async Task InvalidSymbolName()
     {
         var result = await YahooQuotes.GetModuleAsync("InvalidSymbol", "Price");
-        Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", result.Error.Message);
+        Assert.Equal("Quote not found for symbol: INVALIDSYMBOL", result.Error.Message);
 
         var results = await YahooQuotes.GetModulesAsync("InvalidSymbol", ["Price", "balanceSheetHistoryQuarterly"]);
-        Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", results.Error.Message);
+        Assert.Equal("Quote not found for symbol: INVALIDSYMBOL", results.Error.Message);
 
         var results2 = await YahooQuotes.GetModulesAsync("InvalidSymbol", ["InvalidModuleName1", "InvalidModuleName2"]);
-        Assert.Equal("Quote not found for ticker symbol: INVALIDSYMBOL", results2.Error.Message);
+        Assert.Equal("Quote not found for symbol: INVALIDSYMBOL", results2.Error.Message);
     }
 
     [Fact]
     public async Task AllInvalidModuleName()
     {
+        // no valid module names indicated
         var result = await YahooQuotes.GetModuleAsync("IBM", "InvalidModuleName");
-        Assert.Equal("No fundamentals data found for any of the summaryTypes=", result.Error.Message);
+        Assert.Equal("No fundamentals data found for symbol: IBM", result.Error.Message);
 
+        // no valid mdoule names indicated
         var results = await YahooQuotes.GetModulesAsync("IBM", ["InvalidModuleName1", "InvalidModuleName2"]);
-        Assert.Equal("No fundamentals data found for any of the summaryTypes=", results.Error.Message);
+        Assert.Equal("No fundamentals data found for symbol: IBM", results.Error.Message);
+
+        // valid module name(s) with invalid module name(s)
+        results = await YahooQuotes.GetModulesAsync("IBM", ["InvalidModuleName1", "price", "InvalidModuleName2"]);
+        Assert.Equal("Invalid module(s): 'InvalidModuleName1, InvalidModuleName2'.", results.Error.Message);
     }
 
     [Fact]

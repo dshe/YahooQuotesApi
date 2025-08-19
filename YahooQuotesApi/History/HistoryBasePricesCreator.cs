@@ -22,9 +22,9 @@ public sealed class HistoryBasePricesCreator
         if (baseSymbol == default)
             return results;
 
-        List<(Symbol symbol, Result<History> result, BaseTick[]? baseTick)> res = symbols
+        (Symbol symbol, Result<History> result, BaseTick[]? baseTick)[] res = symbols
             .Select(symbol => ComposeBasePrices(symbol, baseSymbol, results))
-            .ToList();
+            .ToArray();
 
         Dictionary<Symbol, Result<History>> dict = new(symbols.Count);
         foreach (var (symbol, result, baseTick) in res)
@@ -76,7 +76,7 @@ public sealed class HistoryBasePricesCreator
         if (basePrices[^1].Date > Clock.GetCurrentInstant())
             throw new InvalidOperationException("Future date.");
         */
-        history.BaseTicks = baseTicks.ToImmutableArray();
+        history.BaseTicks = [.. baseTicks];
     }
 
     private (Symbol, Result<History>, BaseTick[]?) ComposeBasePrices(Symbol symbol, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results)

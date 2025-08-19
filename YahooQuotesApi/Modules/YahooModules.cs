@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 namespace YahooQuotesApi;
 
@@ -19,7 +18,7 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
             throw new ArgumentException("No modules indicated.");
         if (modules.Any(string.IsNullOrEmpty))
             throw new ArgumentException("Invalid module: \"\"");
-        string[] dups = modules.GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key).ToArray();
+        string[] dups = [.. modules.GroupBy(x => x).Where(x => x.Count() > 1).Select(x => x.Key)];
         if (dups.Length != 0)
             return Result<JsonProperty[]>.Fail($"Duplicate module(s): \'{string.Join(", ", dups)}\'.");
 
@@ -29,6 +28,8 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
+        //modulesRequested = ["price", "xxx"];
+
         var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -42,7 +43,9 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
-        return GetModules(modulesRequested, jsonDocument);
+
+        Result<JsonProperty[]> moduleResults = GetModules(modulesRequested, jsonDocument);
+        return moduleResults;
     }
 
     private Uri GetUri(string symbol, string crumb, string[] modules)
@@ -72,7 +75,7 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
         if (!quoteSummary.TryGetProperty("result", out JsonElement result))
             throw new InvalidDataException("result");
-        JsonElement[] items = result.EnumerateArray().ToArray();
+        JsonElement[] items = [.. result.EnumerateArray()];
         if (items.Length != 1)
             throw new InvalidDataException($"Error requesting YahooModules list.");
         JsonElement item = items.Single();
@@ -83,13 +86,13 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
     private static Result<JsonProperty[]> VerifiedModules(string[] moduleNamesRequested, JsonProperty[] modules)
     {
-        string[] moduleNames = modules.Select(module => module.Name).ToArray();
+        string[] moduleNames = [.. modules.Select(module => module.Name)];
 
-        string[] missingModules = moduleNamesRequested.Where(n => !moduleNames.Contains(n, StringComparer.OrdinalIgnoreCase)).ToArray();
+        string[] missingModules = [.. moduleNamesRequested.Where(n => !moduleNames.Contains(n, StringComparer.OrdinalIgnoreCase))];
         if (missingModules.Length != 0)
             return Result<JsonProperty[]>.Fail($"Invalid module(s): \'{string.Join(", ", missingModules)}\'.");
 
-        string[] extraModules = moduleNames.Where(n => !moduleNamesRequested.Contains(n, StringComparer.OrdinalIgnoreCase)).ToArray();
+        string[] extraModules = [.. moduleNames.Where(n => !moduleNamesRequested.Contains(n, StringComparer.OrdinalIgnoreCase))];
         if (extraModules.Length != 0)
             return Result<JsonProperty[]>.Fail($"Extra module(s): \'{string.Join(", ", extraModules)}\'.");
 

@@ -55,7 +55,7 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
     {
         try
         {
-            Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, modules.ToArray(), ct).ConfigureAwait(false);
+            Result<JsonProperty[]> result = await Modules.GetModulesAsync(symbol, [.. modules], ct).ConfigureAwait(false);
             if (result.HasError)
                 Logger.LogWarning("YahooQuotes:GetModulesAsync() error: {Message}.", result.Error);
             return result;
