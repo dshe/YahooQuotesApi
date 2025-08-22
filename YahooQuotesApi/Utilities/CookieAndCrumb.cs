@@ -88,15 +88,14 @@ public sealed class CookieAndCrumb
         //Uri uri = new("https://login.yahoo.com/");
         //Uri uri = new("https://www.yahoo.com/");
         HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        //using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
-        Uri? redirect = response.Headers.Location ?? throw new InvalidOperationException($"Did not receive redirect location from {uri}.");
+        Uri redirect = response.Headers.Location ?? throw new InvalidOperationException($"Did not receive redirect location from {uri}.");
         string? crumb = null, sessionId = null;
 
-        while (response.Headers.Location != null)
+        while (true)
         {
-            redirect = response.Headers.Location;
-
             Match match = Regex.Match(redirect.Query, @"gcrumb=(.+?)&", RegexOptions.Compiled);
             if (match.Success)
                 crumb = match.Groups[1].Value;
@@ -110,9 +109,12 @@ public sealed class CookieAndCrumb
 
             Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
             response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+            if (response.Headers.Location == null)
+                break;
+            redirect = response.Headers.Location;
         }
 
-        if (redirect == null || crumb == null || sessionId == null)
+        if (crumb == null || sessionId == null)
             return [];
 
         Dictionary<string, string> form = new()
