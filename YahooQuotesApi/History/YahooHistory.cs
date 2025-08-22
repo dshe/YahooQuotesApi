@@ -28,7 +28,7 @@ public sealed class YahooHistory
 
     internal async Task<Dictionary<Symbol, Result<History>>> GettHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
     {
-        HashSet<Symbol> symbols = syms.ToHashSet();
+        HashSet<Symbol> symbols = [.. syms];
 
         if (symbols.Any(s => s.IsCurrencyRate))
             throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrencyRate)}.");
@@ -49,7 +49,7 @@ public sealed class YahooHistory
 
     private async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(HashSet<Symbol> symbols, Symbol baseSymbol, CancellationToken ct)
     {
-        HashSet<Symbol> stockSymbols = symbols.Where(s => s.IsStock).ToHashSet();
+        HashSet<Symbol> stockSymbols = [.. symbols.Where(s => s.IsStock)];
         if (baseSymbol != default && baseSymbol.IsStock)
             stockSymbols.Add(baseSymbol);
 
@@ -91,10 +91,9 @@ public sealed class YahooHistory
                 currencySymbols.Add(stock.Currency);
         }
 
-        HashSet<Symbol> rateSymbols = currencySymbols
+        HashSet<Symbol> rateSymbols = [.. currencySymbols
             .Where(c => c.Name != "USD=X")
-            .Select(c => $"USD{c}".ToSymbol())
-            .ToHashSet();
+            .Select(c => $"USD{c}".ToSymbol())];
 
         await AddToResultsAsync(rateSymbols, results, ct).ConfigureAwait(false);
     }
@@ -128,15 +127,22 @@ public sealed class YahooHistory
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        string? contentType = response.Content.Headers.ContentType?.MediaType;
+        if (contentType != "application/json")
+        {
+            response.EnsureSuccessStatusCode();
+            return Result<History>.Fail(new ErrorResult($"Invalid content type: {contentType}."));
+        }
+
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        using JsonDocument jdoc = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
-        return HistoryCreator.CreateFromJson(jdoc, symbol.Name);
+        using JsonDocument doc = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+        return HistoryCreator.CreateFromJson(doc, symbol.Name);
     }
 
     private Uri GetUri(Symbol symbol, string crumb)
     {
-        string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?" +
-            "events=history,div,split" +
+        string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}" +
+            "?events=history,div,split" +
             "&interval=1d" +
             $"&period1={Start.ToUnixTimeSeconds()}" +
             $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}" +

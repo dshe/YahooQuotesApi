@@ -39,8 +39,14 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
         // and not allow reading a json error messages such as NotFound.
         Uri uri = GetUri(symbol, crumb, modulesRequested);
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        // Don't process http errors here.
+        string? contentType = response.Content.Headers.ContentType?.MediaType;
+        if (contentType != "application/json")
+        {
+            response.EnsureSuccessStatusCode();
+            return Result<JsonProperty[]>.Fail(new ErrorResult($"Invalid content type: {contentType}."));
+        }
 
+        // Don't process http errors here.
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
 

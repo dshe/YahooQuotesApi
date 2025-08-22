@@ -66,17 +66,14 @@ public sealed class CookieAndCrumb
             Logger.LogTrace("Set-Cookie header was not present in the response from {Uri}.", uri);
             return [];
         }
-        string[] cookies = setCookie.ToArray();
+        string[] cookies = [.. setCookie];
         if (cookies.Length == 0)
         {
             Logger.LogTrace("No cookies returned in the response from {Uri}.", uri);
             return [];
         }
         Logger.LogTrace("GetCookies: received these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
-        cookies = cookies
-            .Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))
-            //.Where(c => c.StartsWith("A3=", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        cookies = [.. cookies.Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))];
         Logger.LogTrace("GetCookies: using these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
         return cookies;
     }
@@ -143,7 +140,7 @@ public sealed class CookieAndCrumb
         Logger.LogTrace("GetEuropeanCookies: received these cookies({Count}): {Cookies}", cookies.Count(), cookies.AsString());
         cookies = cookies
             .Where(c => c.StartsWith("A3=", StringComparison.OrdinalIgnoreCase));
-        return cookies.ToArray();
+        return [.. cookies];
     }
 
     // Make an HTTP GET call which includes the cookie obtained from the previous response.

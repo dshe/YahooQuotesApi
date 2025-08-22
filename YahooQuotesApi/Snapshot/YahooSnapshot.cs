@@ -92,6 +92,13 @@ public sealed class YahooSnapshot : IDisposable
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
         using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        string? mediaType = response.Content.Headers.ContentType?.MediaType;
+        if (mediaType != "application/json")
+        {
+            response.EnsureSuccessStatusCode();
+            throw new InvalidOperationException($"Unexpected media type: {mediaType}");
+        }
+
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         using JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         return SnapshotCreator.CreateFromJson(jsonDocument);
