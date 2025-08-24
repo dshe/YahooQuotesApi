@@ -18,7 +18,7 @@ public class ModulesTests : XunitTestBase
 
     [Theory]
     [InlineData("IBM", "Price")]
-    [InlineData("X", "AssetProfile")]
+    [InlineData("F", "AssetProfile")]
     public async Task ValidSingleModule(string symbol, string moduleName)
     {
         Result<JsonProperty> result = await YahooQuotes.GetModuleAsync(symbol, moduleName);
@@ -26,7 +26,7 @@ public class ModulesTests : XunitTestBase
     }
 
     [Theory]
-    [InlineData("X", "Price")]
+    [InlineData("F", "Price")]
     [InlineData("TSLA", "assetProfile", "defaultKeyStatistics")]
     [InlineData("MSFT", "Price", "calendarEvents", "balanceSheetHistoryQuarterly")]
     public async Task ValidMultiModules(string symbol, params string[] moduleNamesRequested)

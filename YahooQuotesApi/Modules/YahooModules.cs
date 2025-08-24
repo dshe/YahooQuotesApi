@@ -28,8 +28,6 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        //modulesRequested = ["price", "xxx"];
-
         var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -38,12 +36,19 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
         // Don't use GetFromJsonAsync() or GetStreamAsync() because it would throw an exception
         // and not allow reading a json error messages such as NotFound.
         Uri uri = GetUri(symbol, crumb, modulesRequested);
-        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         string? contentType = response.Content.Headers.ContentType?.MediaType;
         if (contentType != "application/json")
         {
-            response.EnsureSuccessStatusCode();
-            return Result<JsonProperty[]>.Fail(new ErrorResult($"Invalid content type: {contentType}."));
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException e)
+            {
+                return Result<JsonProperty[]>.Fail(e);
+            }
+            return Result<JsonProperty[]>.Fail($"Invalid content type: {contentType}.");
         }
 
         // Don't process http errors here.

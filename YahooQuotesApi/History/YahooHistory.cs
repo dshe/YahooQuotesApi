@@ -126,12 +126,19 @@ public sealed class YahooHistory
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
-        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         string? contentType = response.Content.Headers.ContentType?.MediaType;
         if (contentType != "application/json")
         {
-            response.EnsureSuccessStatusCode();
-            return Result<History>.Fail(new ErrorResult($"Invalid content type: {contentType}."));
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException e)
+            {
+                return Result<History>.Fail(e);
+            }
+            return Result<History>.Fail($"Invalid content type: {contentType}.");
         }
 
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

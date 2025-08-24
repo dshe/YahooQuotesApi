@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using System.Net;
 using System.Net.Http;
 namespace YahooQuotesApi;
@@ -14,8 +15,12 @@ namespace YahooQuotesApi;
 
 internal static class Services
 {
+    //ILogger Logger;
+
     internal static YahooQuotes Build(YahooQuotesBuilder yahooQuotesBuilder)
     {
+        //yahooQuotesBuilder.Logger.
+
         return new ServiceCollection()
 
             .AddNamedHttpClient("", yahooQuotesBuilder)
@@ -72,9 +77,41 @@ internal static class Services
 
     private static IHttpClientBuilder AddStandardResilience(this IHttpClientBuilder builder, bool add)
     {
-        if (add)
-            builder.AddStandardResilienceHandler();
-        return builder;
-    }    
-}
+        if (!add)
+            return builder;
 
+        /* Automatic resilience policies applied:
+         retries for 429, 503, and transient errors
+         Timeout handling
+         circuit breaking
+         Retry - after header support(handled automatically)
+        */
+        builder.AddStandardResilienceHandler();
+        /*
+        .AddStandardResilienceHandler(options =>
+        {
+            //options.Retry.MaxRetryAttempts = 3;
+            //options.Retry.BackoffType = DelayBackoffType.Exponential;
+            //options.Retry.Delay = TimeSpan.FromSeconds(2); // initial delay
+            options.Retry.ShouldRetryAfterHeader = true;
+            //options.Retry.UseJitter = true;
+            //options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+            //options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+            //options.CircuitBreaker.FailureRatio = 0.2;
+            //options.CircuitBreaker.MinimumThroughput = 20;
+            //options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
+            //options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+            options.RateLimiter = new HttpRateLimiterStrategyOptions
+            {
+                DefaultRateLimiterOptions = new System.Threading.RateLimiting.ConcurrencyLimiterOptions
+                {
+                    QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
+                    PermitLimit = 1, // max concurrent
+                    QueueLimit = 0,
+                }
+            };
+        })
+        */
+        return builder;
+    }
+}

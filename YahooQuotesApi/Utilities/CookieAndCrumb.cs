@@ -57,7 +57,7 @@ public sealed class CookieAndCrumb
         Uri uri = new("https://login.yahoo.com/");
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+        //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
 
         // This call may result in an error, which may be ignored.
         using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
@@ -87,8 +87,8 @@ public sealed class CookieAndCrumb
         Uri uri = new(uriString: "https://finance.yahoo.com/");
         //Uri uri = new("https://login.yahoo.com/");
         //Uri uri = new("https://www.yahoo.com/");
-        HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
-        //using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        //HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
         Uri redirect = response.Headers.Location ?? throw new InvalidOperationException($"Did not receive redirect location from {uri}.");
@@ -108,7 +108,7 @@ public sealed class CookieAndCrumb
                 httpClient.DefaultRequestHeaders.Add("cookie", tmpCookies);
 
             Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
-            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+            response = await httpClient.GetAsync(redirect, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             if (response.Headers.Location == null)
                 break;
             redirect = response.Headers.Location;
@@ -125,7 +125,7 @@ public sealed class CookieAndCrumb
             {"namespace", "yahoo"},
             {"agree", "agree"}
         };
-        using (FormUrlEncodedContent encodedForm = new(form))
+        using FormUrlEncodedContent encodedForm = new(form);
         response = await httpClient.PostAsync(redirect, encodedForm, ct).ConfigureAwait(false);
         Logger.LogTrace("GetEuropeanCookies: posted {Uri}", redirect);
 
@@ -133,7 +133,7 @@ public sealed class CookieAndCrumb
         {
             redirect = response.Headers.Location;
             Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
-            response = await httpClient.GetAsync(redirect, ct).ConfigureAwait(false);
+            response = await httpClient.GetAsync(redirect, HttpCompletionOption.ResponseHeadersRead,ct).ConfigureAwait(false);
         }
 
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? cookies))

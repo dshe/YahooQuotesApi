@@ -91,7 +91,7 @@ public sealed class YahooSnapshot : IDisposable
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 
-        using HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         string? mediaType = response.Content.Headers.ContentType?.MediaType;
         if (mediaType != "application/json")
         {
