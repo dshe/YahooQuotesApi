@@ -10,7 +10,6 @@ public sealed class YahooSnapshot : IDisposable
 {
     private ILogger Logger { get; }
     private IHttpClientFactory HttpClientFactory { get; }
-    private string ApiVersion { get; }
     private SnapshotCreator SnapshotCreator { get; }
     private CookieAndCrumb CookieAndCrumb { get; }
     private SerialProducerCache<Symbol, Snapshot?> Cache { get; }
@@ -19,7 +18,6 @@ public sealed class YahooSnapshot : IDisposable
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         Logger = logger;
-        ApiVersion = builder.SnapshotApiVersion;
         CookieAndCrumb = crumbService;
         HttpClientFactory = factory;
         SnapshotCreator = sc;
@@ -73,9 +71,9 @@ public sealed class YahooSnapshot : IDisposable
         return snapshots;
     }
 
-    private IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols, string crumb)
+    private static IEnumerable<Uri> GetUris(IEnumerable<Symbol> symbols, string crumb)
     {
-        string baseUrl = $"https://query2.finance.yahoo.com/{ApiVersion}/finance/quote?symbols=";
+        string baseUrl = $"https://query2.finance.yahoo.com/v7/finance/quote?symbols=";
         return symbols
             .Select(symbol => WebUtility.UrlEncode(symbol.Name))
             .Chunk(100)

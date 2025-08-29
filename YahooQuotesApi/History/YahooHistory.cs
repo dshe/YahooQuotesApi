@@ -42,7 +42,7 @@ public sealed class YahooHistory
         }
         catch (Exception e)
         {
-            Logger.LogCritical(e, "YahooQuotes GetAsync() error.");
+            Logger.LogCritical(e, "GetHistoryAsync() error.");
             throw;
         }
     }

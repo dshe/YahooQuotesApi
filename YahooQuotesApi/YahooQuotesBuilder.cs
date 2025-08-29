@@ -14,18 +14,6 @@ public sealed record class YahooQuotesBuilder
     public YahooQuotesBuilder WithLoggerFactory(ILoggerFactory loggerFactory) =>
         WithLogger(loggerFactory.CreateLogger<YahooQuotes>());
 
-    internal string HttpUserAgent { get; private init; } = "";
-    public YahooQuotesBuilder WithHttpUserAgent(string httpUserAgent) => 
-        this with { HttpUserAgent = httpUserAgent };
-
-    internal bool WithHttpResilience { get; private init; } = true;
-    public YahooQuotesBuilder WithoutHttpResilience() =>
-        this with { WithHttpResilience = false };
-
-    internal string SnapshotApiVersion { get; private init; } = "v7";
-    public YahooQuotesBuilder WithSnapShotApiVersion(string snapshotApiVersion) =>
-        this with { SnapshotApiVersion = snapshotApiVersion };
-
     internal Duration SnapshotCacheDuration { get; private init; } = Duration.Zero;
     public YahooQuotesBuilder WithSnapshotCacheDuration(Duration duration) =>
         this with { SnapshotCacheDuration = duration };

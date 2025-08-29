@@ -19,7 +19,6 @@ public sealed class CookieAndCrumb
 
     internal async Task<(string[], string)> Get(CancellationToken ct)
     {
-        Logger.LogTrace("CookieAndCrumb.Get()");
         // Lazy<Task<T>> does not support cancellation.
         lock (LockObj)
         {
@@ -47,19 +46,19 @@ public sealed class CookieAndCrumb
         }
         catch (Exception e)
         {
-            Logger.LogCritical(e, "GetCookieAndCrumb: error");
+            Logger.LogCritical(e, "GetCookieAndCrumb1: error");
             throw;
         }
     }
 
     private async Task<string[]> GetCookies(CancellationToken ct)
     {
-        Uri uri = new("https://login.yahoo.com/");
-
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
 
         // This call may result in an error, which may be ignored.
+        Uri uri = new("https://login.yahoo.com/");
+        Logger.LogTrace("GetCookies: requesting {Uri}", uri);
         using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
         {
@@ -69,24 +68,24 @@ public sealed class CookieAndCrumb
         string[] cookies = [.. setCookie];
         if (cookies.Length == 0)
         {
-            Logger.LogTrace("No cookies returned in the response from {Uri}.", uri);
+            Logger.LogTrace("GetCookies: No cookies returned in the response from {Uri}.", uri);
             return [];
         }
         Logger.LogTrace("GetCookies: received these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
         cookies = [.. cookies.Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))];
-        Logger.LogTrace("GetCookies: using these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
+        Logger.LogTrace("GetCookies: filtered cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
         return cookies;
     }
 
     private async Task<string[]> GetEuropeanCookies(CancellationToken ct)
     {
         HttpClient httpClient = HttpClientFactory.CreateClient("");
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+        //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 
-        Logger.LogTrace("GetEuropeanCookies()");
         Uri uri = new(uriString: "https://finance.yahoo.com/");
         //Uri uri = new("https://login.yahoo.com/");
         //Uri uri = new("https://www.yahoo.com/");
+        Logger.LogTrace("GetEuropeanCookies: requesting1 {Uri}", uri);
         HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -106,7 +105,7 @@ public sealed class CookieAndCrumb
             if (response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? tmpCookies))
                 httpClient.DefaultRequestHeaders.Add("cookie", tmpCookies);
 
-            Logger.LogTrace("GetEuropeanCookies: requesting {Uri}", redirect);
+            Logger.LogTrace("GetEuropeanCookies: requesting2 {Uri}", redirect);
             response = await httpClient.GetAsync(redirect, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             if (response.Headers.Location == null)
                 break;
@@ -124,9 +123,10 @@ public sealed class CookieAndCrumb
             {"namespace", "yahoo"},
             {"agree", "agree"}
         };
+
+        Logger.LogTrace("GetEuropeanCookies: posting {Uri}", redirect);
         using FormUrlEncodedContent encodedForm = new(form);
         response = await httpClient.PostAsync(redirect, encodedForm, ct).ConfigureAwait(false);
-        Logger.LogTrace("GetEuropeanCookies: posted {Uri}", redirect);
 
         if (response.Headers.Location != null)
         {
@@ -135,13 +135,14 @@ public sealed class CookieAndCrumb
             response = await httpClient.GetAsync(redirect, HttpCompletionOption.ResponseHeadersRead,ct).ConfigureAwait(false);
         }
 
-        if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? cookies))
+        if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
             return [];
+        string[] cookies = [.. setCookie];
+        Logger.LogTrace("GetEuropeanCookies: received these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
 
-        Logger.LogTrace("GetEuropeanCookies: received these cookies({Count}): {Cookies}", cookies.Count(), cookies.AsString());
-        cookies = cookies
-            .Where(c => c.StartsWith("A3=", StringComparison.OrdinalIgnoreCase));
-        return [.. cookies];
+        cookies = [.. cookies.Where(c => c.StartsWith("A3=", StringComparison.OrdinalIgnoreCase))];
+        Logger.LogTrace("GetEuropeanCookies: filtered cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
+        return cookies;
     }
 
     // Make an HTTP GET call which includes the cookie obtained from the previous response.

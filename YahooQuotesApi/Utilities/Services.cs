@@ -15,12 +15,8 @@ namespace YahooQuotesApi;
 
 internal static class Services
 {
-    //ILogger Logger;
-
     internal static YahooQuotes Build(YahooQuotesBuilder yahooQuotesBuilder)
     {
-        //yahooQuotesBuilder.Logger.
-
         return new ServiceCollection()
 
             .AddNamedHttpClient("", yahooQuotesBuilder)
@@ -55,10 +51,7 @@ internal static class Services
                     client.DefaultRequestVersion = new Version(2, 0);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 }
-                if (!string.IsNullOrEmpty(builder.HttpUserAgent))
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(builder.HttpUserAgent);
-                else
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
             })
 
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
@@ -70,48 +63,38 @@ internal static class Services
                 UseCookies = false, // Important since these handlers may be reused.
             })
 
-            .AddStandardResilience(builder.WithHttpResilience)
-
-            .Services;
-    }
-
-    private static IHttpClientBuilder AddStandardResilience(this IHttpClientBuilder builder, bool add)
-    {
-        if (!add)
-            return builder;
-
-        /* Automatic resilience policies applied:
-         retries for 429, 503, and transient errors
-         Timeout handling
-         circuit breaking
-         Retry - after header support(handled automatically)
-        */
-        builder.AddStandardResilienceHandler();
-        /*
-        .AddStandardResilienceHandler(options =>
-        {
-            //options.Retry.MaxRetryAttempts = 3;
-            //options.Retry.BackoffType = DelayBackoffType.Exponential;
-            //options.Retry.Delay = TimeSpan.FromSeconds(2); // initial delay
-            options.Retry.ShouldRetryAfterHeader = true;
-            //options.Retry.UseJitter = true;
-            //options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
-            //options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
-            //options.CircuitBreaker.FailureRatio = 0.2;
-            //options.CircuitBreaker.MinimumThroughput = 20;
-            //options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
-            //options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-            options.RateLimiter = new HttpRateLimiterStrategyOptions
+            /* Automatic resilience policies applied:
+             retries for 429, 503, and transient errors
+             Timeout handling
+             circuit breaking
+             Retry - after header support(handled automatically)
+            */
+            .AddStandardResilienceHandler()
+            /*
+            .AddStandardResilienceHandler(options =>
             {
-                DefaultRateLimiterOptions = new System.Threading.RateLimiting.ConcurrencyLimiterOptions
+                //options.Retry.MaxRetryAttempts = 3;
+                options.Retry.BackoffType = DelayBackoffType.Exponential;
+                //options.Retry.Delay = TimeSpan.FromSeconds(2); // initial delay
+                options.Retry.ShouldRetryAfterHeader = true;
+                //options.Retry.UseJitter = true;
+                //options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+                //options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+                //options.CircuitBreaker.FailureRatio = 0.2;
+                //options.CircuitBreaker.MinimumThroughput = 20;
+                //options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
+                //options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+                options.RateLimiter = new HttpRateLimiterStrategyOptions
                 {
-                    QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
-                    PermitLimit = 1, // max concurrent
-                    QueueLimit = 0,
-                }
-            };
-        })
-        */
-        return builder;
+                    DefaultRateLimiterOptions = new System.Threading.RateLimiting.ConcurrencyLimiterOptions
+                    {
+                        QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
+                        PermitLimit = 1, // max concurrent
+                        QueueLimit = 0,
+                    }
+                };
+            })
+            */
+            .Services;
     }
 }

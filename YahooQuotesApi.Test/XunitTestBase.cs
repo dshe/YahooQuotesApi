@@ -8,7 +8,7 @@ public abstract class XunitTestBase
     protected readonly ILogger Logger;
     protected void Write(string format, params object[] args) => Output.WriteLine(string.Format(format, args));
 
-    protected XunitTestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Debug, string name = "Test")
+    protected XunitTestBase(ITestOutputHelper output, LogLevel logLevel = LogLevel.Trace, string name = "Test")
     {
         Output = output;
 
