@@ -86,7 +86,7 @@ public sealed class CookieAndCrumb
         //Uri uri = new("https://login.yahoo.com/");
         //Uri uri = new("https://www.yahoo.com/");
         Logger.LogTrace("GetEuropeanCookies: requesting1 {Uri}", uri);
-        HttpResponseMessage response = await httpClient.GetAsync(uri, ct).ConfigureAwait(false);
+        HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
         Uri redirect = response.Headers.Location ?? throw new InvalidOperationException($"Did not receive redirect location from {uri}.");
