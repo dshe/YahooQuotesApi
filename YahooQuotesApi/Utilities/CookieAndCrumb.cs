@@ -1,14 +1,16 @@
 ﻿using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 namespace YahooQuotesApi;
 
 public sealed class CookieAndCrumb
 {
-    private readonly object LockObj = new();
+    private static readonly SemaphoreSlim Semaphore = new(1);
+    private static ExceptionDispatchInfo? CapturedExceptionInfo;
+    private static (string[], string)? CookiesAndCrumb;
     private readonly ILogger Logger;
     private readonly IHttpClientFactory HttpClientFactory;
-    private static Task<(string[], string)>? TheTask; // STATIC!!!
 
     public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
     {
@@ -19,12 +21,21 @@ public sealed class CookieAndCrumb
 
     internal async Task<(string[], string)> Get(CancellationToken ct)
     {
-        // Lazy<Task<T>> does not support cancellation.
-        lock (LockObj)
+        await Semaphore.WaitAsync(ct).ConfigureAwait(false);
+        try
         {
-            TheTask ??= GetCookieAndCrumb1(ct); // start the task if not already started
+            CapturedExceptionInfo?.Throw();
+            return CookiesAndCrumb ??= await GetCookieAndCrumb1(ct).ConfigureAwait(false);
         }
-        return await TheTask.WaitAsync(ct).ConfigureAwait(false);
+        catch (Exception e)
+        {
+            CapturedExceptionInfo ??= ExceptionDispatchInfo.Capture(e);
+            throw;
+        }
+        finally 
+        {
+            Semaphore.Release();
+        }
     }
 
     private async Task<(string[], string)> GetCookieAndCrumb1(CancellationToken ct)
@@ -39,9 +50,7 @@ public sealed class CookieAndCrumb
                 Logger.LogCritical("No cookies found.");
                 throw new InvalidOperationException("No cookies found.");
             }
-
             string crumb = await GetCrumb(cookies, ct).ConfigureAwait(false);
-
             return (cookies, crumb);
         }
         catch (Exception e)

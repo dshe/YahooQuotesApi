@@ -12,7 +12,7 @@ internal static partial class Extensions
 
     internal static string? IsIncreasing<T>(this IEnumerable<T> items, Func<T, Instant> compare)
     {
-        T[] list = items.ToArray();
+        T[] list = [.. items];
         for (var i = 0; i < list.Length - 1; i++)
         {
             if (compare(list[i]) >= compare(list[i + 1]))
@@ -23,7 +23,7 @@ internal static partial class Extensions
 
     internal static bool IsIncreaing<T>(this IEnumerable<T> items, Func<T, T, bool> compare)
     {
-        T[] list = items.ToArray();
+        T[] list = [.. items];
         for (var i = 0; i < list.Length - 1; i++)
         {
             if (!compare(list[i], list[i + 1]))

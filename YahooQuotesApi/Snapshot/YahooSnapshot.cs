@@ -26,7 +26,7 @@ public sealed class YahooSnapshot : IDisposable
 
     internal async Task<Dictionary<Symbol, Snapshot?>> GetAsync(IEnumerable<Symbol> syms, CancellationToken ct)
     {
-        HashSet<Symbol> symbols = syms.ToHashSet();
+        HashSet<Symbol> symbols = [.. syms];
         if (symbols.Count == 0)
             return [];
         if (symbols.Any(s => s.IsCurrency))

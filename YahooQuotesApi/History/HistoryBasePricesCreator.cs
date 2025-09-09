@@ -22,9 +22,8 @@ public sealed class HistoryBasePricesCreator
         if (baseSymbol == default)
             return results;
 
-        (Symbol symbol, Result<History> result, BaseTick[]? baseTick)[] res = symbols
-            .Select(symbol => ComposeBasePrices(symbol, baseSymbol, results))
-            .ToArray();
+        (Symbol symbol, Result<History> result, BaseTick[]? baseTick)[] res =
+            [.. symbols.Select(symbol => ComposeBasePrices(symbol, baseSymbol, results))];
 
         Dictionary<Symbol, Result<History>> dict = new(symbols.Count);
         foreach (var (symbol, result, baseTick) in res)
