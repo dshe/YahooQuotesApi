@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 public sealed class HistoryBasePricesCreator
 {

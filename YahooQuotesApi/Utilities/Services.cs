@@ -20,9 +20,6 @@ internal static class Services
     {
         return new ServiceCollection()
 
-            .AddNamedHttpClient("")
-            .AddNamedHttpClient("HttpV2")
-
             .AddSingleton(yahooQuotesBuilder)
             .AddSingleton(yahooQuotesBuilder.Clock)
             .AddSingleton(yahooQuotesBuilder.Logger)
@@ -36,6 +33,9 @@ internal static class Services
             .AddSingleton<YahooModules>()
             .AddSingleton<YahooQuotes>()
 
+            .AddNamedHttpClient("")
+            .AddNamedHttpClient("HttpV2")
+
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true })
 
             .GetRequiredService<YahooQuotes>();
@@ -47,13 +47,13 @@ internal static class Services
 
             .AddHttpClient(name, client =>
             {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
                 if (name == "HttpV2")
                 {
                     client.DefaultRequestVersion = new Version(2, 0);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 }
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
             })
 
             .AddHttpMessageHandler<HttpRateLimitingHandler>()  // rate limiter goes first
@@ -74,7 +74,7 @@ internal static class Services
              Retry - after header support(handled automatically)
             */
 
-            .AddStandardResilienceHandler()
+            //.AddStandardResilienceHandler()
             /*
             .AddStandardResilienceHandler(options =>
             {
