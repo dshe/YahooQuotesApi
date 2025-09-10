@@ -9,4 +9,4 @@ global using Xunit.Abstractions;
 
 [assembly: CLSCompliant(false)]
 
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: CollectionBehavior(DisableTestParallelization = false)]
