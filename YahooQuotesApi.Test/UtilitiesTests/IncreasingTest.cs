@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using NodaTime;
-using Xunit;
-using Xunit.Abstractions;
+﻿using NodaTime;
 namespace YahooQuotesApi.UtilityTests;
 
 public class IncreasingTest(ITestOutputHelper output) : XunitTestBase(output, LogLevel.Trace)

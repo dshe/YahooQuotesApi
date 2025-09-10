@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
-namespace YahooQuotesApi.SnapshotTest;
+﻿namespace YahooQuotesApi.SnapshotTest;
 
 public class SnapshotTests : XunitTestBase
 {

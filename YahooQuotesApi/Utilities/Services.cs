@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Http.Resilience;
 using System.Net;
 using System.Net.Http;
+using YahooQuotesApi.Utilities;
 namespace YahooQuotesApi;
 
 // Microsoft.Extensions.Http.Polly
@@ -19,12 +20,13 @@ internal static class Services
     {
         return new ServiceCollection()
 
-            .AddNamedHttpClient("", yahooQuotesBuilder)
-            .AddNamedHttpClient("HttpV2", yahooQuotesBuilder)
+            .AddNamedHttpClient("")
+            .AddNamedHttpClient("HttpV2")
 
             .AddSingleton(yahooQuotesBuilder)
             .AddSingleton(yahooQuotesBuilder.Clock)
             .AddSingleton(yahooQuotesBuilder.Logger)
+            .AddSingleton<HttpRateLimitingHandler>()
             .AddSingleton<CookieAndCrumb>()
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<SnapshotCreator>()
@@ -39,7 +41,7 @@ internal static class Services
             .GetRequiredService<YahooQuotes>();
     }
 
-    private static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name, YahooQuotesBuilder builder)
+    private static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name)
     {
         return serviceCollection
 
@@ -53,6 +55,8 @@ internal static class Services
                 }
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
             })
+
+            .AddHttpMessageHandler<HttpRateLimitingHandler>()  // rate limiter goes first
 
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
             {
@@ -69,6 +73,7 @@ internal static class Services
              circuit breaking
              Retry - after header support(handled automatically)
             */
+
             .AddStandardResilienceHandler()
             /*
             .AddStandardResilienceHandler(options =>

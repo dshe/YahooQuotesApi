@@ -1,9 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
-namespace YahooQuotesApi.UtilityTests;
+﻿namespace YahooQuotesApi.UtilityTests;
 
 public class CookieAndCrumbTests : XunitTestBase
 {

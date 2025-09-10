@@ -1,8 +1,4 @@
 ﻿using NodaTime;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
 namespace YahooQuotesApi.HistoryTest;
 
 public class HistoryTests : XunitTestBase

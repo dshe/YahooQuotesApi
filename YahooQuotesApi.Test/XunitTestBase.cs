@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Threading.RateLimiting;
+
 namespace Xunit.Abstractions;
 
 public abstract class XunitTestBase
@@ -18,4 +19,7 @@ public abstract class XunitTestBase
 
         Logger = LogFactory.CreateLogger(name);
     }
+
+    public static bool IsRunningOnAppVeyor() =>
+        Environment.GetEnvironmentVariable("APPVEYOR") == "True";
 }

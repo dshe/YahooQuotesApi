@@ -1,9 +1,6 @@
 ﻿using NodaTime;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Threading.Tasks;
-using Xunit;
+
 namespace YahooQuotesApi.Examples;
 
 public class Examples

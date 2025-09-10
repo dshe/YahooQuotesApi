@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using Xunit.Abstractions;
-namespace YahooQuotesApi.UtilityTests;
+﻿namespace YahooQuotesApi.UtilityTests;
 
 public class SymbolTest(ITestOutputHelper output) : XunitTestBase(output)
 {

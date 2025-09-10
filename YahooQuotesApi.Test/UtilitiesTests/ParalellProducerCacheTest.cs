@@ -1,7 +1,4 @@
 ﻿using NodaTime;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
 namespace YahooQuotesApi.UtilityTests;
 
 public class ParalellProducerCacheTest(ITestOutputHelper output) : XunitTestBase(output)

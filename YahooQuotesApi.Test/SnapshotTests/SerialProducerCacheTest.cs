@@ -1,10 +1,4 @@
 ﻿using NodaTime;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
 namespace YahooQuotesApi.SnapshotTest;
 
 public class SerialProducerCacheTest : XunitTestBase

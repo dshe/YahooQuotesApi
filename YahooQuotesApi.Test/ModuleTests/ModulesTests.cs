@@ -1,9 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
+﻿using System.Text.Json;
 namespace YahooQuotesApi.ModuleTest;
 
 public class ModulesTests : XunitTestBase
