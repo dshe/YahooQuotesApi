@@ -157,7 +157,7 @@ public sealed class CookieAndCrumb
     // Make an HTTP GET call which includes the cookie obtained from the previous response.
     private async Task<string> GetCrumb(IEnumerable<string> cookies, CancellationToken ct)
     {
-        await Task.Delay(2000, ct).ConfigureAwait(false);
+        await Task.Delay(1000, ct).ConfigureAwait(false);
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));

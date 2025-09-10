@@ -10,3 +10,4 @@ using System.Runtime.CompilerServices;
 [assembly: CLSCompliant(true)]
 
 [assembly: InternalsVisibleTo("YahooQuotesApi.Test")]
+[assembly: InternalsVisibleTo("YahooQuotesApi.MinTest")]

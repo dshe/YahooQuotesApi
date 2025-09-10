@@ -74,7 +74,7 @@ internal static class Services
              Retry - after header support(handled automatically)
             */
 
-            //.AddStandardResilienceHandler()
+            .AddStandardResilienceHandler()
             /*
             .AddStandardResilienceHandler(options =>
             {
