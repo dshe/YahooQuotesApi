@@ -11,7 +11,7 @@ public sealed class HttpRateLimitingHandler : DelegatingHandler
     {
         TokenLimit = IsRunningOnAppVeyor() ? 1 : int.MaxValue,
         TokensPerPeriod = IsRunningOnAppVeyor() ? 1 : int.MaxValue,
-        ReplenishmentPeriod = TimeSpan.FromSeconds(IsRunningOnAppVeyor() ? 30 : 1),
+        ReplenishmentPeriod = TimeSpan.FromSeconds(IsRunningOnAppVeyor() ? 10 : 1),
         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
         QueueLimit = int.MaxValue
     });

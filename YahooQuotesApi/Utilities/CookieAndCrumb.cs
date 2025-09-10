@@ -167,7 +167,7 @@ public sealed class CookieAndCrumb
         using HttpResponseMessage response = await httpClient.GetAsync(crumbUri, ct).ConfigureAwait(false);
         try
         {
-            //response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
