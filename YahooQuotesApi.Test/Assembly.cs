@@ -7,5 +7,6 @@ global using Microsoft.Extensions.Logging;
 global using Xunit;
 global using Xunit.Abstractions;
 
-//[assembly: CLSCompliant(true)]
-[assembly: CollectionBehavior(DisableTestParallelization = false)]
+[assembly: CLSCompliant(false)]
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
