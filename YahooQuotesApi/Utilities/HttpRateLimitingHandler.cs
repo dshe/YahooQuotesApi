@@ -5,11 +5,13 @@ namespace YahooQuotesApi.Utilities;
 
 public sealed class HttpRateLimitingHandler : DelegatingHandler
 {
+    private static bool IsRunningOnAppVeyor() => Environment.GetEnvironmentVariable("APPVEYOR") == "True";
+
     private readonly static TokenBucketRateLimiter Limiter = new (new TokenBucketRateLimiterOptions
     {
         TokenLimit = IsRunningOnAppVeyor() ? 1 : int.MaxValue,
         TokensPerPeriod = IsRunningOnAppVeyor() ? 1 : int.MaxValue,
-        ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+        ReplenishmentPeriod = TimeSpan.FromSeconds(IsRunningOnAppVeyor() ? 30 : 1),
         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
         QueueLimit = int.MaxValue
     });
@@ -21,6 +23,5 @@ public sealed class HttpRateLimitingHandler : DelegatingHandler
             throw new HttpRequestException("Rate limit lease not acquired.");
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
-
-    public static bool IsRunningOnAppVeyor() => Environment.GetEnvironmentVariable("APPVEYOR") == "True";
+  
 }
