@@ -23,7 +23,8 @@ internal static class Services
             .AddSingleton(yahooQuotesBuilder)
             .AddSingleton(yahooQuotesBuilder.Clock)
             .AddSingleton(yahooQuotesBuilder.Logger)
-            .AddSingleton<HttpRateLimitingHandler>()
+            .AddSingleton(yahooQuotesBuilder.HttpRateLimiter)
+            .AddTransient<HttpRateLimitingHandler>()
             .AddSingleton<CookieAndCrumb>()
             .AddSingleton<YahooSnapshot>()
             .AddSingleton<SnapshotCreator>()
@@ -67,39 +68,8 @@ internal static class Services
                 UseCookies = false, // Important since these handlers may be reused.
             })
 
-            /* Automatic resilience policies applied:
-             retries for 429, 503, and transient errors
-             Timeout handling
-             circuit breaking
-             Retry - after header support(handled automatically)
-            */
-
             .AddStandardResilienceHandler()
-            /*
-            .AddStandardResilienceHandler(options =>
-            {
-                //options.Retry.MaxRetryAttempts = 3;
-                options.Retry.BackoffType = DelayBackoffType.Exponential;
-                //options.Retry.Delay = TimeSpan.FromSeconds(2); // initial delay
-                options.Retry.ShouldRetryAfterHeader = true;
-                //options.Retry.UseJitter = true;
-                //options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
-                //options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
-                //options.CircuitBreaker.FailureRatio = 0.2;
-                //options.CircuitBreaker.MinimumThroughput = 20;
-                //options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(20);
-                //options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-                options.RateLimiter = new HttpRateLimiterStrategyOptions
-                {
-                    DefaultRateLimiterOptions = new System.Threading.RateLimiting.ConcurrencyLimiterOptions
-                    {
-                        QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
-                        PermitLimit = 1, // max concurrent
-                        QueueLimit = 0,
-                    }
-                };
-            })
-            */
+
             .Services;
     }
 }

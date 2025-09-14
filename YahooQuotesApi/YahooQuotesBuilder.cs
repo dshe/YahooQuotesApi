@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
+using System.Threading.RateLimiting;
+using YahooQuotesApi.Utilities;
 namespace YahooQuotesApi;
 
 public sealed record class YahooQuotesBuilder
@@ -13,6 +15,10 @@ public sealed record class YahooQuotesBuilder
     public YahooQuotesBuilder WithLogger(ILogger logger) => this with { Logger = logger };
     public YahooQuotesBuilder WithLoggerFactory(ILoggerFactory loggerFactory) =>
         WithLogger(loggerFactory.CreateLogger<YahooQuotes>());
+
+    internal RateLimiter HttpRateLimiter { get; private init; } = NullRateLimiter.Instance;
+    public YahooQuotesBuilder WithHttpRateLimiter(RateLimiter httpRateLimiter) =>
+        this with { HttpRateLimiter = httpRateLimiter };
 
     internal Duration SnapshotCacheDuration { get; private init; } = Duration.Zero;
     public YahooQuotesBuilder WithSnapshotCacheDuration(Duration duration) =>

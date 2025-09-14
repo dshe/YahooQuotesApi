@@ -1,10 +1,21 @@
 ﻿using NodaTime;
+using System.Threading.RateLimiting;
 using YahooQuotesApi;
-
 namespace Xunit.Abstractions;
 
 public abstract class XunitTestBase
 {
+    private static bool IsRunningOnAppVeyor() => Environment.GetEnvironmentVariable("APPVEYOR") == "True";
+    private static readonly RateLimiter limiter = new TokenBucketRateLimiter(
+        new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 1,
+            TokensPerPeriod = 1,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(5),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = int.MaxValue
+        });
+
     private readonly ITestOutputHelper Output;
     protected readonly ILoggerFactory LogFactory;
     protected readonly ILogger Logger;
@@ -25,6 +36,7 @@ public abstract class XunitTestBase
             .WithLogger(Logger)
             .WithHistoryStartDate(Instant.FromUtc(2024, 10, 1, 0, 0))
             .DoNotUseAdjustedClose()
+            .WithHttpRateLimiter(limiter)
             .Build();
     }
 }
