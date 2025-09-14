@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 namespace YahooQuotesApi.MinTest;
 
-public class MinTests(ITestOutputHelper output) : XunitTestBase(output)
+public class Tests(ITestOutputHelper output) : XunitTestBase(output)
 {
     [Fact]
     public async Task SnapshotTest()
