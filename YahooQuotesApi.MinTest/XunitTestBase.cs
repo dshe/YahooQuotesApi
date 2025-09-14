@@ -11,7 +11,7 @@ public abstract class XunitTestBase
         {
             TokenLimit = 1,
             TokensPerPeriod = 1,
-            ReplenishmentPeriod = TimeSpan.FromSeconds(5),
+            ReplenishmentPeriod = TimeSpan.FromSeconds(15),
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = int.MaxValue
         });
