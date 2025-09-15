@@ -56,7 +56,6 @@ public sealed class YahooHistory
         Dictionary<Symbol, Result<History>> results = [];
         await AddToResultsAsync(stockSymbols, results, ct).ConfigureAwait(false);   
         await AddCurrenciesToResults(symbols, baseSymbol, results, ct).ConfigureAwait(false);
-
         /*
         if (baseSymbol.IsValid && baseSymbol.Name != "USD=X") // check the base history
         {
