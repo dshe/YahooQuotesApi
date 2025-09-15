@@ -12,20 +12,23 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '$(base_version)$(version_suffix)'
-before_build:
-- ps: dotnet restore
-after_build:
-- ps: dotnet pack -c release
+#before_build:
+#- ps: dotnet restore
+#after_build:
+#- ps: dotnet pack -c release
 build:
   verbosity: minimal
   publish_nuget: true
 build_script:
-  - dotnet restore
-  - dotnet build
-  # - dotnet test .\YahooQuotesApi.MinTest\YahooQuotesApi.MinTest.csproj
+- dotnet restore
+- dotnet build
+# - dotnet test .\YahooQuotesApi.MinTest\YahooQuotesApi.MinTest.csproj
+- dotnet pack --configuration Release --output ./artifacts
 nuget:
   account_feed: false
   project_feed: true
   disable_publish_on_pr: true
+#artifacts:
+#- path: '**\YahooQuotesApi.$(package_version).nupkg'
 artifacts:
-- path: '**\YahooQuotesApi.$(package_version).nupkg'
+  - path: artifacts\*.nupkg
