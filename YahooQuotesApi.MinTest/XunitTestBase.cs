@@ -5,13 +5,12 @@ namespace Xunit.Abstractions;
 
 public abstract class XunitTestBase
 {
-    private static bool IsRunningOnAppVeyor() => Environment.GetEnvironmentVariable("APPVEYOR") == "True";
     private static readonly RateLimiter limiter = new TokenBucketRateLimiter(
         new TokenBucketRateLimiterOptions
         {
             TokenLimit = 1,
             TokensPerPeriod = 1,
-            ReplenishmentPeriod = TimeSpan.FromSeconds(30),
+            ReplenishmentPeriod = TimeSpan.FromSeconds(60),
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = int.MaxValue
         });

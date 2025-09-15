@@ -7,14 +7,13 @@ public sealed class NullRateLimiter : RateLimiter
     public override RateLimiterStatistics GetStatistics() => new();
     public override TimeSpan? IdleDuration => null;
     protected override RateLimitLease AttemptAcquireCore(int permitCount) =>
-        new SuccessfulRateLimitLease();
-#pragma warning disable CA2000 // Dispose objects before losing scope
+        AcquiredLease.Instance;
     protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken) =>
-        new(new SuccessfulRateLimitLease());
-#pragma warning restore CA2000 // Dispose objects before losing scope
+        new(AcquiredLease.Instance);
 
-    private sealed class SuccessfulRateLimitLease : RateLimitLease
+    private sealed class AcquiredLease : RateLimitLease
     {
+        internal static RateLimitLease Instance { get; } = new AcquiredLease();
         public override bool IsAcquired => true;
         public override IEnumerable<string> MetadataNames => [];
         public override bool TryGetMetadata(string metadataName, out object? metadata)
