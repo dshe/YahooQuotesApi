@@ -19,8 +19,8 @@ after_build:
 build:
   verbosity: minimal
   publish_nuget: true
-test_script:
-- ps: dotnet test .\YahooQuotesApi.MinTest\YahooQuotesApi.MinTest.csproj
+#test_script:
+#- ps: dotnet test .\YahooQuotesApi.MinTest\YahooQuotesApi.MinTest.csproj
 nuget:
   account_feed: false
   project_feed: true

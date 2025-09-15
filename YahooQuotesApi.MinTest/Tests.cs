@@ -17,7 +17,7 @@ public class Tests(ITestOutputHelper output) : XunitTestBase(output)
         Assert.True(snapshot.RegularMarketPrice > 0);
     }
 
-    [Fact(Skip = "Too Many Requests")]
+    [Fact]
     public async Task HistoryTest()
     {
         Result<History> result = await YahooQuotes.GetHistoryAsync("MSFT");
@@ -37,7 +37,7 @@ public class Tests(ITestOutputHelper output) : XunitTestBase(output)
         Assert.Equal(420.69, firstTick.Close, 2); // in USD
     }
 
-    [Fact(Skip = "Too Many Requests")]
+    [Fact]
     public async Task ModulesTest()
     {
         Result<JsonProperty[]> result = await YahooQuotes.GetModulesAsync("TSLA", ["assetProfile", "defaultKeyStatistics"]);
