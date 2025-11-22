@@ -47,7 +47,7 @@ public class MyApp
 
     private List<Symbol> GetSymbols(int number)
     {
-        const string path = @"..\..\..\symbols.txt";
+        string path = $"..{Path.DirectorySeparatorChar}..{Path.DirectorySeparatorChar}..{Path.DirectorySeparatorChar}symbols.txt";
 
         List<string> lines = File
             .ReadAllLines(path)
