@@ -47,17 +47,14 @@ public class MyApp
 
     private List<Symbol> GetSymbols(int number)
     {
-        const string path = @"..\..\..\symbols.txt";
+        string path = $"..{Path.DirectorySeparatorChar}..{Path.DirectorySeparatorChar}..{Path.DirectorySeparatorChar}symbols.txt";
 
-        List<string> lines = File
+        List<string> lines = [.. File
             .ReadAllLines(path)
             .Where(line => !line.StartsWith('#'))
-            .Take(number)
-            .ToList();
+            .Take(number)];
 
-        List<string> errors = lines
-            .Where(t => !Symbol.TryCreate(t, out _))
-            .ToList();
+        List<string> errors = [.. lines.Where(t => !Symbol.TryCreate(t, out _))];
 
         if (errors.Count != 0)
             Logger.LogWarning("Invalid symbol names: {names}.", string.Join(", ", errors));
@@ -99,10 +96,9 @@ public class MyApp
 
     private void LogUnique(IEnumerable<string> errors)
     {
-        List<string> list = errors
+        List<string> list = [.. errors
             .OrderBy(x => x)
-            .Distinct()
-            .ToList();
+            .Distinct()];
 
         foreach (var error in list)
             Logger.LogWarning("Unique error: {Error}", error);

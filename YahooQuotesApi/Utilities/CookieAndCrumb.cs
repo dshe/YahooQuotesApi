@@ -42,7 +42,7 @@ public sealed class CookieAndCrumb
     {
         try
         {
-            string[] cookies = await GetCookies(ct).ConfigureAwait(false);
+            string[] cookies = await TryGetCookies(ct).ConfigureAwait(false);
             if (cookies.Length == 0)
                 cookies = await GetEuropeanCookies(ct).ConfigureAwait(false);
             if (cookies.Length == 0)
@@ -60,11 +60,10 @@ public sealed class CookieAndCrumb
         }
     }
 
-    private async Task<string[]> GetCookies(CancellationToken ct)
+    private async Task<string[]> TryGetCookies(CancellationToken ct)
     {
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
-        //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html")); // important!
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 
         // This call may result in an error, which may be ignored.
         //fc.yahoo.com, query2.finance.yahoo.com, query1.finance.yahoo.com
@@ -84,7 +83,8 @@ public sealed class CookieAndCrumb
             return [];
         }
         Logger.LogTrace("GetCookies: received these cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
-        cookies = [.. cookies.Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase))];
+        cookies = [.. cookies.Where(c => c.Contains("Domain=.yahoo.com", StringComparison.OrdinalIgnoreCase) && c.StartsWith('A'))];
+        // should be no cookies here if the user is in Europe
         Logger.LogTrace("GetCookies: filtered cookies({Count}): {Cookies}", cookies.Length, cookies.AsString());
         return cookies;
     }
@@ -101,7 +101,6 @@ public sealed class CookieAndCrumb
         //Uri uri = new("https://yahoo.com/");
         Logger.LogTrace("GetEuropeanCookies: requesting1 {Uri}", uri);
         HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
         Uri redirect = response.Headers.Location ?? throw new InvalidOperationException($"Did not receive redirect location from {uri}.");
         string? crumb = null, sessionId = null;
@@ -162,7 +161,7 @@ public sealed class CookieAndCrumb
     // Make an HTTP GET call which includes the cookie obtained from the previous response.
     private async Task<string> GetCrumb(IEnumerable<string> cookies, CancellationToken ct)
     {
-        await Task.Delay(1000, ct).ConfigureAwait(false);
+        await Task.Delay(500, ct).ConfigureAwait(false);
 
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
