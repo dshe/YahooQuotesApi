@@ -24,6 +24,8 @@ public class SymbolTest(ITestOutputHelper output) : XunitTestBase(output)
         Assert.True(rate.IsValid && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
         Assert.Equal("DEF", rate.Currency);
 
+        var _ = "GC=F".ToSymbol(); // furues
+
         Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
         Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
         Assert.Throws<ArgumentException>(() => "=XABC".ToSymbol());

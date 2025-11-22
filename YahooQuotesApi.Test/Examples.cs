@@ -6,6 +6,17 @@ namespace YahooQuotesApi.Examples;
 public class Examples
 {
     [Fact]
+    public async Task TestTest()
+    {
+        YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+
+        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL")
+            ?? throw new ArgumentException("Unknown symbol.");
+        Assert.Equal("Apple Inc.", snapshot.LongName);
+        Assert.True(snapshot.RegularMarketPrice > 0);
+    }
+
+    [Fact]
     public async Task GetSnapshot()
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
@@ -74,6 +85,6 @@ public class Examples
         Instant instant = firstBaseTick.Date;
         ZonedDateTime zdt = instant.InZone(tz);
         Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
-        Assert.Equal(814.01, firstBaseTick.Price, 2); // in USD
+        Assert.Equal(812.58, firstBaseTick.Price, 2); // in USD
     }
 }

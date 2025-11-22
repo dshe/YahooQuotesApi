@@ -6,6 +6,18 @@ namespace YahooQuotesApi.MinTest;
 public class Tests(ITestOutputHelper output) : XunitTestBase(output)
 {
     [Fact]
+    public async Task TestTest()
+    {
+        //const string symbol = "SPY";
+        //const string symbol = "^SP400TR";
+        const string symbol = "GC=F";
+
+        Snapshot? snapshot = await YahooQuotes.GetSnapshotAsync(symbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, "EUR=X");
+        ;
+    }
+
+    [Fact]
     public async Task SnapshotTest()
     {
         Dictionary<string, Snapshot?> snapshots = await YahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"]);

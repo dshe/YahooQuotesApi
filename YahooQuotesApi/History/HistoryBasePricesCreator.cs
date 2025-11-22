@@ -5,12 +5,14 @@ public sealed class HistoryBasePricesCreator
     private IClock Clock { get; }
     private ILogger Logger { get; }
     private bool UseAdjustedClose { get; }
+    private Instant HistoryStartDate { get; }
     public HistoryBasePricesCreator(IClock clock, ILogger logger, YahooQuotesBuilder builder)
     {
         Clock = clock;
         Logger = logger;
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
         UseAdjustedClose = builder.UseAdjustedClose;
+        HistoryStartDate = builder.HistoryStartDate;
     }
 
     internal Dictionary<Symbol, Result<History>> Create(HashSet<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results)
@@ -83,9 +85,9 @@ public sealed class HistoryBasePricesCreator
         if (symbolResult.HasError)
             return (symbol, symbolResult, null);
 
-        if (symbol == baseSymbol)
+        if (symbol == baseSymbol && symbol.Name == "USD=X")
         {
-            BaseTick[] bts = [ new(Instant.MinValue, 1, 0), new(Instant.MaxValue, 1, 0)];
+            BaseTick[] bts = [ new(HistoryStartDate, 1, 0), new(Clock.GetCurrentInstant(), 1, 0)];
             symbolResult.Value.BaseTicks = bts.AsImmutableArray();
             return (symbol, symbolResult, bts);
         }
@@ -194,7 +196,7 @@ public sealed class HistoryBasePricesCreator
 
         long GetVolume(Instant date)
         {
-            if (symbolTicks is not null && symbolTicks.Length != 0)
+            if (symbolTicks is not null && symbolTicks.Length > 1)
                 return symbolTicks.InterpolateVolume(date);
             return 0;
         }
@@ -205,14 +207,14 @@ file static class HistoryBaseComposerExtensions
 {
     internal static double MultiplyByValue(this double value, Instant date, BaseTick[]? ticks)
     {
-        if (ticks is not null && ticks.Length != 0)
+        if (ticks is not null && ticks.Length > 1)
             value *= ticks.InterpolatePrice(date);
         return value;
     }
 
     internal static double DivideByValue(this double value, Instant date, BaseTick[]? ticks)
     {
-        if (ticks is not null && ticks.Length != 0)
+        if (ticks is not null && ticks.Length > 1)
             value /= ticks.InterpolatePrice(date);
         return value;
     }

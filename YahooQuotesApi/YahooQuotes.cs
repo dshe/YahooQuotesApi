@@ -9,7 +9,6 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
     private YahooHistory History { get; } = history;
     private YahooModules Modules { get; } = modules;
 
-
     public async Task<Snapshot?> GetSnapshotAsync(string symbol, CancellationToken ct = default) =>
         await GetSnapshotAsync(symbol.ToSymbol(), ct).ConfigureAwait(false);
 

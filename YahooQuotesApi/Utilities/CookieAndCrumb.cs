@@ -64,9 +64,12 @@ public sealed class CookieAndCrumb
     {
         HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
         //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html")); // important!
 
         // This call may result in an error, which may be ignored.
-        Uri uri = new("https://login.yahoo.com/");
+        //fc.yahoo.com, query2.finance.yahoo.com, query1.finance.yahoo.com
+        //Uri uri = new("https://login.yahoo.com/");
+        Uri uri = new("https://finance.yahoo.com/");
         Logger.LogTrace("GetCookies: requesting {Uri}", uri);
         using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
@@ -89,11 +92,13 @@ public sealed class CookieAndCrumb
     private async Task<string[]> GetEuropeanCookies(CancellationToken ct)
     {
         HttpClient httpClient = HttpClientFactory.CreateClient("");
-        //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+
+        // Thank you Alexander Gnauck!
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 
         Uri uri = new(uriString: "https://finance.yahoo.com/");
         //Uri uri = new("https://login.yahoo.com/");
-        //Uri uri = new("https://www.yahoo.com/");
+        //Uri uri = new("https://yahoo.com/");
         Logger.LogTrace("GetEuropeanCookies: requesting1 {Uri}", uri);
         HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         //var ss = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

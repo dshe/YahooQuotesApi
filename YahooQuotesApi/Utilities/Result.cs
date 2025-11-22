@@ -36,21 +36,21 @@ public readonly struct Result<T> : IEquatable<Result<T>>
         }
     }
 
-    internal Result(T value) // result may not be null!
+    internal Result(T val) // result may not be null!
     {
-        ArgumentNullException.ThrowIfNull(value);
-        this.value = value;
+        ArgumentNullException.ThrowIfNull(val);
+        value = val;
         HasValue = true;
         errorResult = null;
         HasError = false;
     }
 
-    internal Result(ErrorResult errorResult)
+    internal Result(ErrorResult error)
     {
-        ArgumentNullException.ThrowIfNull(errorResult);
+        ArgumentNullException.ThrowIfNull(error);
         value = default;
         HasValue = false;
-        this.errorResult = errorResult;
+        errorResult = error;
         HasError = true;
     }
 
@@ -88,7 +88,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
     public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 
-#pragma warning disable CA1000 // static members on generic types
+//#pragma warning disable CA1000 // static members on generic types
     public static Result<T> Ok(T value) => new(value);
     public static Result<T> Fail(ErrorResult errorResult) => new(errorResult);
     public static Result<T> Fail(string message, Exception? ex = null) => new(new ErrorResult(message, ex));
@@ -100,7 +100,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
 
     public static Result<T> From(Func<T> producer)
     {
-         ArgumentNullException.ThrowIfNull(producer);
+        ArgumentNullException.ThrowIfNull(producer);
         try
         {
             return new Result<T>(producer());
@@ -129,7 +129,7 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     }
 }
 
-#pragma warning restore CA1000
+//#pragma warning restore CA1000
 
 public static class ResultExtensions
 {
