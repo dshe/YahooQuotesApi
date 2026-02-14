@@ -11,15 +11,15 @@ public class ArgumentTests : XunitTestBase
     {
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetHistoryAsync((string)null));
-        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetHistoryAsync(""));
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetHistoryAsync((new string[1])));
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetHistoryAsync((string[])null));
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetHistoryAsync([null]));
-        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetHistoryAsync([""]));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetHistoryAsync((string)null, "", TestContext.Current.CancellationToken));
+        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetHistoryAsync("", "", TestContext.Current.CancellationToken));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetHistoryAsync((new string[1]), "", TestContext.Current.CancellationToken));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await YahooQuotes.GetHistoryAsync((string[])null, "", TestContext.Current.CancellationToken));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => YahooQuotes.GetHistoryAsync([null], "", TestContext.Current.CancellationToken));
+        _ = await Assert.ThrowsAsync<ArgumentException>(() => YahooQuotes.GetHistoryAsync([""], "", TestContext.Current.CancellationToken));
 #pragma warning restore CS8625
 #pragma warning restore CS8600
-        _ = await YahooQuotes.GetHistoryAsync(Array.Empty<string>());
+        _ = await YahooQuotes.GetHistoryAsync(Array.Empty<string>(), "", TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("CHF=X", "X")]
     public async Task OkTest(string symbol, string baseSymbol)
     {
-        await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -54,7 +54,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("EUR=X")] // no base
     public async Task InvalidSymbolTest(string symbol, string baseSymbol = "")
     {
-        Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () => await YahooQuotes.GetHistoryAsync(symbol, baseSymbol));
+        Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () => await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken));
         Write(exception.Message.ToString());
     }
 
@@ -69,7 +69,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("USD=X", "XXX=X")]
     public async Task UnknownSymbolTest(string symbol, string baseSymbol = "")
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
         Assert.False(result.HasValue);
         Assert.True(result.HasError);
         Assert.False(result.IsUndefined);
@@ -81,7 +81,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("ARM.L")]
     public async Task NoHistoryTest(string symbol, string baseSymbol = "")
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
         Assert.True(result.HasError);
         Assert.Contains("No 'timestamp' property found", result.Error.Message);
     }
@@ -90,7 +90,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("RUS.PA")]
     public async Task PartialHistoryTest(string symbol, string baseSymbol = "")
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
         History history = result.Value;
         Assert.NotEmpty(history.Ticks);
         Assert.NotEmpty(history.BaseTicks);
@@ -100,7 +100,7 @@ public class ArgumentTests : XunitTestBase
     [InlineData("CSNKY.MI")]
     public async Task WildTest(string symbol, string baseSymbol = "")
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
         History history = result.Value;
         Assert.NotEmpty(history.Ticks);
         Assert.NotEmpty(history.BaseTicks);
@@ -109,7 +109,7 @@ public class ArgumentTests : XunitTestBase
     [Fact]
     public async Task OkSymbolsTest()
     {
-        Dictionary<string, Result<History>> results = await YahooQuotes.GetHistoryAsync([ "AAPL", "MSFT", "JPY=X" ], "USD=X");
+        Dictionary<string, Result<History>> results = await YahooQuotes.GetHistoryAsync([ "AAPL", "MSFT", "JPY=X" ], "USD=X", TestContext.Current.CancellationToken);
         Assert.Equal(3, results.Count);
         Result<History> result = results["JPY=X"];
         Assert.True(result.HasValue);
@@ -120,7 +120,7 @@ public class ArgumentTests : XunitTestBase
     [Fact]
     public async Task TestFieldAccess()
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync("AAPL");
+        Result<History> result = await YahooQuotes.GetHistoryAsync("AAPL", "", TestContext.Current.CancellationToken);
         Assert.Equal("Apple Inc.", result.Value.LongName);  // static type
     }
 
@@ -128,7 +128,7 @@ public class ArgumentTests : XunitTestBase
     public async Task IgnoreDuplicateTest()
     {
         string[] symbols = ["C", "X", "MSFT", "C"];
-        var results = await YahooQuotes.GetHistoryAsync(symbols);
+        var results = await YahooQuotes.GetHistoryAsync(symbols, "", TestContext.Current.CancellationToken);
         Assert.Equal(3, results.Count);
     }
 

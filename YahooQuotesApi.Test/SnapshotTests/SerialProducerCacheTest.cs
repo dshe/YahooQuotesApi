@@ -26,11 +26,11 @@ public class SerialProducerCacheTest : XunitTestBase
     [Fact]
     public async Task Test()
     {
-        await Cache.Get([1, 2, 3], default);
-        var result = await Cache.Get([1, 2], default);
+        await Cache.Get([1, 2, 3], TestContext.Current.CancellationToken);
+        var result = await Cache.Get([1, 2], TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Count);
         Assert.Single(RequestHistory);
-        result = await Cache.Get([6, 1], default);
+        result = await Cache.Get([6, 1], TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Count);
         Assert.Equal(2, RequestHistory.Count);
         ;

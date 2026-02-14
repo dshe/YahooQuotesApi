@@ -24,7 +24,7 @@ public class HistoryTests : XunitTestBase
     [InlineData("USD=X", "JPY=X")]
     public async Task LatestMarketTimeTest(string symbol, string  baseSymbol = "")
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, baseSymbol, TestContext.Current.CancellationToken);
         History history = result.Value;
 
         Assert.Equal(symbol, history.Symbol.Name);
@@ -43,7 +43,7 @@ public class HistoryTests : XunitTestBase
     [Fact]
     public async Task PriceTickTest()
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync("AAPL");
+        Result<History> result = await YahooQuotes.GetHistoryAsync("AAPL", "", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         DateTimeZone timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName)!;
@@ -62,7 +62,7 @@ public class HistoryTests : XunitTestBase
     [Fact]
     public async Task TestDividend()
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync("ABM");
+        Result<History> result = await YahooQuotes.GetHistoryAsync("ABM", "", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         DateTimeZone timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName)!;
@@ -80,7 +80,7 @@ public class HistoryTests : XunitTestBase
     [Fact]
     public async Task TestSplit()
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync("LRCX");
+        Result<History> result = await YahooQuotes.GetHistoryAsync("LRCX", "", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         DateTimeZone timeZone = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName)!;

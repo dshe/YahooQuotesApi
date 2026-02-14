@@ -1,6 +1,7 @@
 ﻿using NodaTime;
 using System.Collections.Immutable;
 using System.Text.Json;
+using System.Threading;
 namespace YahooQuotesApi.MinTest;
 
 public class Tests(ITestOutputHelper output) : XunitTestBase(output)
@@ -12,16 +13,15 @@ public class Tests(ITestOutputHelper output) : XunitTestBase(output)
         //const string symbol = "^SP400TR";
         const string symbol = "GC=F";
 
-        Snapshot? snapshot = await YahooQuotes.GetSnapshotAsync(symbol);
-        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, "EUR=X");
+        Snapshot? snapshot = await YahooQuotes.GetSnapshotAsync(symbol, TestContext.Current.CancellationToken);
+        Result<History> result = await YahooQuotes.GetHistoryAsync(symbol, "EUR=X", TestContext.Current.CancellationToken);
         ;
     }
 
     [Fact]
     public async Task SnapshotTest()
     {
-        Dictionary<string, Snapshot?> snapshots = await YahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"]);
-
+        Dictionary<string, Snapshot?> snapshots = await YahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"], TestContext.Current.CancellationToken);
         Snapshot snapshot = snapshots["BP.L"] ?? throw new ArgumentException("Unknown symbol.");
 
         Assert.Equal("BP p.l.c.", snapshot.LongName);
@@ -32,7 +32,7 @@ public class Tests(ITestOutputHelper output) : XunitTestBase(output)
     [Fact]
     public async Task HistoryTest()
     {
-        Result<History> result = await YahooQuotes.GetHistoryAsync("MSFT");
+        Result<History> result = await YahooQuotes.GetHistoryAsync("MSFT", "", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         Assert.Equal("Microsoft Corporation", history.LongName);
@@ -52,7 +52,7 @@ public class Tests(ITestOutputHelper output) : XunitTestBase(output)
     [Fact]
     public async Task ModulesTest()
     {
-        Result<JsonProperty[]> result = await YahooQuotes.GetModulesAsync("TSLA", ["assetProfile", "defaultKeyStatistics"]);
+        Result<JsonProperty[]> result = await YahooQuotes.GetModulesAsync("TSLA", ["assetProfile", "defaultKeyStatistics"], TestContext.Current.CancellationToken);
         Assert.True(result.HasValue);
         JsonProperty[] properties = result.Value;
         Assert.NotEmpty(properties);

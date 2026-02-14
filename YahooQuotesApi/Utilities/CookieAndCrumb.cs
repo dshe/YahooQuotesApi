@@ -182,7 +182,7 @@ public sealed class CookieAndCrumb
         string crumb = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(crumb))
             throw new InvalidOperationException($"Did not receive crumb from {crumbUri} using cookies(2).");
-        Logger.LogTrace("GetCrumb: received crumb {Crumb}", crumb);
+        Logger.LogTrace("GetCrumb: received crumb {Crumb}.", crumb);
         return crumb;
     }
 }

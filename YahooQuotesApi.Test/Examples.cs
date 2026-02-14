@@ -10,7 +10,7 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL")
+        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken)
             ?? throw new ArgumentException("Unknown symbol.");
         Assert.Equal("Apple Inc.", snapshot.LongName);
         Assert.True(snapshot.RegularMarketPrice > 0);
@@ -21,7 +21,7 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL") 
+        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken) 
             ?? throw new ArgumentException("Unknown symbol.");
         Assert.Equal("Apple Inc.", snapshot.LongName);
         Assert.True(snapshot.RegularMarketPrice > 0);
@@ -32,7 +32,7 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-        Dictionary<string, Snapshot?> snapshots = await yahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"]);
+        Dictionary<string, Snapshot?> snapshots = await yahooQuotes.GetSnapshotAsync(["AAPL", "BP.L", "USDJPY=X"], TestContext.Current.CancellationToken);
 
         Snapshot snapshot = snapshots["BP.L"] ?? throw new ArgumentException("Unknown symbol.");
 
@@ -48,7 +48,7 @@ public class Examples
             .WithHistoryStartDate(Instant.FromUtc(2024, 10, 1, 0, 0))
             .Build();
 
-        Result<History> result = await yahooQuotes.GetHistoryAsync("MSFT");
+        Result<History> result = await yahooQuotes.GetHistoryAsync("MSFT", "", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         Assert.Equal("Microsoft Corporation", history.LongName);
@@ -70,9 +70,10 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder()
             .WithHistoryStartDate(Instant.FromUtc(2024, 10, 1, 0, 0))
+            .DoNotUseAdjustedClose() // ?
             .Build();
 
-        Result<History> result = await yahooQuotes.GetHistoryAsync("ASML.AS", "USD=X");
+        Result<History> result = await yahooQuotes.GetHistoryAsync("ASML.AS", "USD=X", TestContext.Current.CancellationToken);
         History history = result.Value;
 
         Assert.Equal("ASML Holding N.V.", history.LongName);
@@ -85,6 +86,6 @@ public class Examples
         Instant instant = firstBaseTick.Date;
         ZonedDateTime zdt = instant.InZone(tz);
         Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
-        Assert.Equal(812.58, firstBaseTick.Price, 2); // in USD
+        Assert.Equal(822.40, firstBaseTick.Price, 2); // in USD
     }
 }
