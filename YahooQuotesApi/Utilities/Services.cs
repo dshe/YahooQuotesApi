@@ -35,7 +35,6 @@ internal static class Services
             .AddSingleton<YahooQuotes>()
 
             .AddNamedHttpClient("")
-            .AddNamedHttpClient("HttpV2")
 
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true })
 
@@ -50,11 +49,8 @@ internal static class Services
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
-                if (name == "HttpV2")
-                {
-                    client.DefaultRequestVersion = new Version(2, 0);
-                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-                }
+                client.DefaultRequestVersion = HttpVersion.Version11;
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
             })
 
             .AddHttpMessageHandler<HttpRateLimitingHandler>()  // rate limiter goes first

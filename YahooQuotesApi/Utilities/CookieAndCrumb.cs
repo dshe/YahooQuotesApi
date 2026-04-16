@@ -62,7 +62,7 @@ public sealed class CookieAndCrumb
 
     private async Task<string[]> TryGetCookies(CancellationToken ct)
     {
-        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        HttpClient httpClient = HttpClientFactory.CreateClient("");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
 
         // This call may result in an error, which may be ignored.
@@ -70,6 +70,8 @@ public sealed class CookieAndCrumb
         //Uri uri = new("https://login.yahoo.com/");
         Uri uri = new("https://finance.yahoo.com/");
         Logger.LogTrace("GetCookies: requesting {Uri}", uri);
+
+        // fails here
         using HttpResponseMessage response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.Headers.TryGetValues(name: "Set-Cookie", out IEnumerable<string>? setCookie))
         {
@@ -163,7 +165,7 @@ public sealed class CookieAndCrumb
     {
         await Task.Delay(500, ct).ConfigureAwait(false);
 
-        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        HttpClient httpClient = HttpClientFactory.CreateClient("");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 

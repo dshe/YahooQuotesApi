@@ -121,7 +121,7 @@ public sealed class YahooHistory
         Uri uri = GetUri(symbol, crumb);
         Logger.LogInformation("{Uri}", uri.ToString());
 
-        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        HttpClient httpClient = HttpClientFactory.CreateClient("");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookies);
 

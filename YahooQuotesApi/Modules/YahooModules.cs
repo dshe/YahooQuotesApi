@@ -29,7 +29,7 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
     private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
     {
         var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
-        HttpClient httpClient = HttpClientFactory.CreateClient("HttpV2");
+        HttpClient httpClient = HttpClientFactory.CreateClient("");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);
 
