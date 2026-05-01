@@ -36,5 +36,11 @@ public sealed record class YahooQuotesBuilder
     internal YahooQuotesBuilder DoNotUseAdjustedClose() =>
         this with { UseAdjustedClose = false };
 
+    /*
+    internal bool CookiesAndCrumbStatic { get; private init; } = true;
+    internal YahooQuotesBuilder UseCookiesAndCrumbStatic() =>
+        this with { CookiesAndCrumbStatic = true };
+    */
+
     public YahooQuotes Build() => Services.Build(this);
 }

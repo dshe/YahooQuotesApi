@@ -49,6 +49,7 @@ internal static class Services
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
                 //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
+                //client.DefaultRequestVersion = HttpVersion.Version20;
                 client.DefaultRequestVersion = HttpVersion.Version11;
                 client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
             })

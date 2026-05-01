@@ -1,36 +1,21 @@
 ﻿using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 namespace YahooQuotesApi;
 
-public sealed class CookieAndCrumb
+public sealed class CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
 {
     private static readonly SemaphoreSlim Semaphore = new(1);
-    private static ExceptionDispatchInfo? CapturedExceptionInfo;
-    private static (string[], string)? CookiesAndCrumb;
-    private readonly ILogger Logger;
-    private readonly IHttpClientFactory HttpClientFactory;
-
-    public CookieAndCrumb(ILogger logger, IHttpClientFactory httpClientFactory)
-    {
-        ArgumentNullException.ThrowIfNull(httpClientFactory);
-        Logger = logger;
-        HttpClientFactory = httpClientFactory;
-    }
+    private static (string[], string)? CookiesAndCrumbStatic;
+    private readonly ILogger Logger = logger;
+    private readonly IHttpClientFactory HttpClientFactory = httpClientFactory;
 
     internal async Task<(string[], string)> Get(CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            CapturedExceptionInfo?.Throw();
-            return CookiesAndCrumb ??= await GetCookieAndCrumb1(ct).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            CapturedExceptionInfo ??= ExceptionDispatchInfo.Capture(e);
-            throw;
+            return CookiesAndCrumbStatic ??= await GetCookieAndCrumb1(ct).ConfigureAwait(false);
         }
         finally 
         {
