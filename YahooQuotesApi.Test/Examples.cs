@@ -1,5 +1,6 @@
 ﻿using NodaTime;
 using System.Collections.Immutable;
+using System.Text.Json;
 
 namespace YahooQuotesApi.Examples;
 
@@ -9,8 +10,7 @@ public class Examples
     public async Task TestTest()
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
-
-        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken)
+        Snapshot snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken)
             ?? throw new ArgumentException("Unknown symbol.");
         Assert.Equal("Apple Inc.", snapshot.LongName);
         Assert.True(snapshot.RegularMarketPrice > 0);
@@ -21,7 +21,7 @@ public class Examples
     {
         YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-        Snapshot? snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken) 
+        Snapshot snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken) 
             ?? throw new ArgumentException("Unknown symbol.");
         Assert.Equal("Apple Inc.", snapshot.LongName);
         Assert.True(snapshot.RegularMarketPrice > 0);

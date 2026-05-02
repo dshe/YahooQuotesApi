@@ -12,7 +12,7 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
     internal async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, string[] modules, CancellationToken ct)
     {
-        if (!Symbol.TryCreate(symbol, out var sym) || sym.IsCurrency)
+        if (!Symbol.TryCreate(symbol, out Symbol sym) || sym.IsCurrency)
             throw new ArgumentException($"Invalid symbol: {sym}.");
         if (modules.Length == 0)
             throw new ArgumentException("No modules indicated.");

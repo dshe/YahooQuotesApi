@@ -6,7 +6,6 @@ namespace YahooQuotesApi;
 public sealed record class YahooQuotesBuilder
 {
     public YahooQuotesBuilder() { }
-
     internal IClock Clock { get; private init; } = SystemClock.Instance;
     internal YahooQuotesBuilder WithClock(IClock clock) =>
         this with { Clock = clock };
@@ -36,11 +35,9 @@ public sealed record class YahooQuotesBuilder
     internal YahooQuotesBuilder DoNotUseAdjustedClose() =>
         this with { UseAdjustedClose = false };
 
-    /*
-    internal bool CookiesAndCrumbStatic { get; private init; } = true;
-    internal YahooQuotesBuilder UseCookiesAndCrumbStatic() =>
-        this with { CookiesAndCrumbStatic = true };
-    */
+    internal bool SnapshotJson { get; private init; }
+    internal YahooQuotesBuilder UseSnapshotJson() =>
+        this with { SnapshotJson = true };
 
     public YahooQuotes Build() => Services.Build(this);
 }

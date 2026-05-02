@@ -76,7 +76,7 @@ public sealed class YahooHistory
     {
         // currencies + historyBase currency + history currencies
         List<Symbol> currencySymbols = [];
-        foreach (var symbol in symbols.Where(s => s.IsCurrency))
+        foreach (Symbol symbol in symbols.Where(s => s.IsCurrency))
         {
             currencySymbols.Add(symbol);
             results[symbol] = HistoryCreator.CreateFromSymbol(symbol).ToResult();

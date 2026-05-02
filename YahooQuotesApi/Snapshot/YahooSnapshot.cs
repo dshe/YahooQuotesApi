@@ -62,7 +62,7 @@ public sealed class YahooSnapshot : IDisposable
             List<Snapshot> someSnapshots = await MakeRequest(uri, cookies, ct).ConfigureAwait(false);
             lock (snapshots)
             {
-                foreach (var snapshot in someSnapshots)
+                foreach (Snapshot snapshot in someSnapshots)
                     snapshots[snapshot.Symbol] = snapshot;
                 
             }
@@ -100,6 +100,7 @@ public sealed class YahooSnapshot : IDisposable
         using Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         using JsonDocument jsonDocument = await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
         return SnapshotCreator.CreateFromJson(jsonDocument);
+        // jsonDocument is disposed automatically at the end of the using block
     }
 
     public void Dispose() => Cache.Dispose();

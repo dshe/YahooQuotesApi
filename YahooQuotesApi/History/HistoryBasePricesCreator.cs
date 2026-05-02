@@ -53,7 +53,7 @@ public sealed class HistoryBasePricesCreator
 
         for (int i = 0; i < length; i++)
         {
-            var tick = history.Ticks[i];
+            Tick tick = history.Ticks[i];
             double val = (UseAdjustedClose && history.Symbol.IsStock) ? tick.AdjustedClose : tick.Close;
             if (val == 0)
                 continue;

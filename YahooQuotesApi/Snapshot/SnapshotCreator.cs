@@ -3,9 +3,16 @@ using System.Reflection;
 using System.Text.Json;
 namespace YahooQuotesApi;
 
-public sealed class SnapshotCreator(ILogger logger)
+public sealed class SnapshotCreator
 {
-    private ILogger Logger { get; } = logger;
+    private ILogger Logger { get; }
+    private bool UseSnapshotJson { get; }
+    public SnapshotCreator(YahooQuotesBuilder yahooQuotesBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(yahooQuotesBuilder);
+        Logger = yahooQuotesBuilder.Logger;
+        UseSnapshotJson = yahooQuotesBuilder.SnapshotJson;
+    }
 
     internal List<Snapshot> CreateFromJson(JsonDocument jdoc)
     {
@@ -39,12 +46,14 @@ public sealed class SnapshotCreator(ILogger logger)
 
     private Snapshot CreateFromJson(JsonElement je)
     {
+        Snapshot snapshot = new();
+        if (UseSnapshotJson) // only set snapshot.Json if UseSnapshotJson is true, to save memory
+            snapshot.Json = je.Clone();
+
         Dictionary<string, object?> properties = new(120, StringComparer.OrdinalIgnoreCase);
 
-        var snapshot = new Snapshot();
         foreach (JsonProperty jp in je.EnumerateObject())
             properties.Add(jp.Name, SetGetProperty(jp, snapshot));
-
         snapshot.Properties = properties.AsReadOnly();
 
         return snapshot;

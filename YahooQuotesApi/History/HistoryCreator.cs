@@ -109,7 +109,7 @@ public sealed class HistoryCreator(IClock clock, ILogger logger)
         Instant previous = Instant.MinValue;
         for (int i = 0; i < length; i++)
         {
-            var date = timestampArray.GetArrayElementAtIndex<Int64>(i).ToInstantFromSeconds();
+            Instant date = timestampArray.GetArrayElementAtIndex<Int64>(i).ToInstantFromSeconds();
             if (date <= previous)
                 return Result<ImmutableArray<Tick>>.Fail("Timestamps are not in order.");
             previous = date;
@@ -140,7 +140,7 @@ public sealed class HistoryCreator(IClock clock, ILogger logger)
     {
         if (!jdoc.TryGetChartProperty("splits", out JsonElement splitsObject))
             return [];
-        var length = splitsObject.EnumerateObject().Count();
+        int length = splitsObject.EnumerateObject().Count();
         var builder = ImmutableArray.CreateBuilder<Split>(length);
         foreach (JsonProperty jp in splitsObject.EnumerateObject())
             builder.Add(new Split(jp.Value.GetProperty("date").GetInt64().ToInstantFromSeconds(), jp.Value.GetProperty("numerator").GetDecimal(), jp.Value.GetProperty("denominator").GetDecimal()));

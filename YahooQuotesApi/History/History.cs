@@ -38,7 +38,7 @@ public sealed class History
 }
 
 
-// Tisk date is the start of trading.
+// Tick date is the start of trading.
 public sealed record Tick(Instant Date, double Open, double High, double Low, double Close, double AdjustedClose, long Volume);
 public sealed record BaseTick(Instant Date, double Price, long Volume); // 28 bytes
 public sealed record Dividend(Instant Date, decimal Amount);

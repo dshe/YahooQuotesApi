@@ -135,9 +135,9 @@ public class ArgumentTests : XunitTestBase
     [Fact]
     public async Task CancellationTest()
     {
-        var ct = new CancellationToken(true);
-        var task1 = YahooQuotes.GetHistoryAsync("IBM", ct: ct);
-        var e1 = await Assert.ThrowsAnyAsync<Exception>(() => task1);
+        CancellationToken ct = new(true);
+        Task<Result<History>> task1 = YahooQuotes.GetHistoryAsync("IBM", ct: ct);
+        Exception e1 = await Assert.ThrowsAnyAsync<Exception>(() => task1);
         Assert.True(e1 is OperationCanceledException);
     }
 }

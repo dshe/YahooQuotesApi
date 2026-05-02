@@ -1,8 +1,11 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text.Json;
 namespace YahooQuotesApi;
 
 public sealed class Snapshot
 {
+    public JsonElement Json { get; internal set; }
+    public IReadOnlyDictionary<string, object?> Properties { get; internal set; } = ReadOnlyDictionary<string, object?>.Empty;
     public Symbol Symbol { get; internal set; }
     public string UnderlyingSymbol { get; internal set; } = "";
     public string UnderlyingExchangeSymbol { get; internal set; } = "";
@@ -117,5 +120,4 @@ public sealed class Snapshot
     public string FiftyTwoWeekRange { get; internal set; } = "";
     public string AverageAnalystRating { get; internal set; } = "";
     public string CustomPriceAlertConfidence { get; internal set; } = "";
-    public IReadOnlyDictionary<string, object?> Properties { get; internal set; } = ReadOnlyDictionary<string, object?>.Empty;
 }

@@ -22,14 +22,14 @@ public class InterpolateTest(ITestOutputHelper output) : XunitTestBase(output)
     [Fact]
     public void BoundaryTest()
     {
-        var ticks = new List<BaseTick>();
-        var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
-        var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
+        List<BaseTick> ticks = new();
+        Instant date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
+        Instant date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
         ticks.Add(new BaseTick(date1, 1, 0));
         ticks.Add(new BaseTick(date2, 1, 0));
 
-        var result = ticks.ToArray().InterpolatePrice(date1);
+        double result = ticks.ToArray().InterpolatePrice(date1);
         Assert.False(double.IsNaN(result)); // enough data
 
         result = ticks.ToArray().InterpolatePrice(date1.Plus(Duration.FromHours(-7 * 24)));
@@ -45,14 +45,14 @@ public class InterpolateTest(ITestOutputHelper output) : XunitTestBase(output)
     [Fact]
     public void BoundaryLimitTest()
     {
-        var ticks = new List<BaseTick>();
-        var date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
-        var date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
+        List<BaseTick> ticks = new();
+        Instant date1 = new LocalDateTime(2000, 1, 1, 0, 0).InUtc().ToInstant();
+        Instant date2 = new LocalDateTime(2000, 1, 2, 0, 0).InUtc().ToInstant();
 
         ticks.Add(new BaseTick(date1, 1, 0));
         ticks.Add(new BaseTick(date2, 2, 0));
 
-        var result = ticks.ToArray().InterpolatePrice(date2.PlusTicks(1));
+        double result = ticks.ToArray().InterpolatePrice(date2.PlusTicks(1));
         Assert.Equal(2, result);
 
         result = ticks.ToArray().InterpolatePrice(date2.Plus(Duration.FromHours(7 * 24)));
