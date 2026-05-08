@@ -35,9 +35,5 @@ public sealed record class YahooQuotesBuilder
     internal YahooQuotesBuilder DoNotUseAdjustedClose() =>
         this with { UseAdjustedClose = false };
 
-    internal bool SnapshotJson { get; private init; }
-    internal YahooQuotesBuilder UseSnapshotJson() =>
-        this with { SnapshotJson = true };
-
     public YahooQuotes Build() => Services.Build(this);
 }

@@ -49,24 +49,4 @@ public class SnapshotTests : XunitTestBase
         Snapshot? msft = snapshots["MSFT"];
         Assert.Equal("MSFT", msft?.Symbol.Name);
     }
-
-    [Fact]
-    public async Task JsonTest()
-    {
-        YahooQuotes yahooQuotes = new YahooQuotesBuilder()
-            .UseSnapshotJson() // !!!
-            .Build();
-
-        Snapshot snapshot = await yahooQuotes.GetSnapshotAsync("AAPL", TestContext.Current.CancellationToken)
-            ?? throw new ArgumentException("Unknown symbol.");
-
-        if (snapshot.Json.Equals(default))
-            throw new ArgumentException("Json is undefined.");
-
-        if (!snapshot.Json.TryGetProperty("regularMarketPrice", out JsonElement je))
-            throw new ArgumentException("Unknown property.");
-
-        decimal regularMarketPrice = je.GetDecimal();
-        Assert.Equal(regularMarketPrice, snapshot.RegularMarketPrice);
-    }
 }
