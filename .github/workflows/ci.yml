@@ -1,0 +1,52 @@
+name: Build, Test, Publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish NuGet package?'
+        required: false
+        default: 'false'
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    env:
+      PROJECT_NAME: YahooQuotesApi
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_NAME }}.slnx
+
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_NAME }}.slnx `
+          --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test ${{ env.PROJECT_NAME }}.slnx `
+          --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack ${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}.csproj `
+          --configuration Release `
+          --no-restore --no-build `
+          -o ./artifacts
+
+      - name: List artifacts
+        run: ls ./artifacts
+
+      - name: Publish to NuGet
+        if: github.event.inputs.publish == 'true'
+        run: |
+          $pkg = Get-ChildItem ./artifacts/*.nupkg | Select-Object -First 1
+          dotnet nuget push $pkg.FullName `
+            --api-key ${{ secrets.NUGET_API_KEY }} `
+            --source https://api.nuget.org/v3/index.json

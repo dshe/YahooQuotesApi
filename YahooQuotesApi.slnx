@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/SolutionFolder/" />
+  <Project Path="YahooQuotesApi.Demo/YahooQuotesApi.Demo.csproj" />
+  <Project Path="YahooQuotesApi.MinTest/YahooQuotesApi.MinTest.csproj" />
+  <Project Path="YahooQuotesApi.Test/YahooQuotesApi.Test.csproj" />
+  <Project Path="YahooQuotesApi/YahooQuotesApi.csproj" />
+</Solution>
