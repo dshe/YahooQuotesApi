@@ -9,7 +9,6 @@
   </Folder>
   <Folder Name="/SolutionFolder/" />
   <Project Path="YahooQuotesApi.Demo/YahooQuotesApi.Demo.csproj" />
-  <Project Path="YahooQuotesApi.MinTest/YahooQuotesApi.MinTest.csproj" />
   <Project Path="YahooQuotesApi.Test/YahooQuotesApi.Test.csproj" />
   <Project Path="YahooQuotesApi/YahooQuotesApi.csproj" />
 </Solution>
