@@ -9,10 +9,9 @@ public class CookieAndCrumbTests : XunitTestBase
     [Fact]
     public async Task TestCookieAndCrumb()
     {
-        (string[] cookies, string crumb) = await YahooQuotes.GetCookieAndCrumbAsync();
+        (string[] cookies, string crumb) = await YahooQuotes.GetCookieAndCrumbAsync(TestContext.Current.CancellationToken);
         Assert.NotEmpty(crumb);
         Assert.NotEmpty(cookies);
     }
 
 }
-

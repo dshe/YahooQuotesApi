@@ -20,6 +20,20 @@ public class InterpolateTest(ITestOutputHelper output) : XunitTestBase(output)
     }
 
     [Fact]
+    public void TestSingleDataPoint()
+    {
+        List<BaseTick> ticks = new();
+        ticks.Add(new BaseTick(new Instant(), 1, 0));
+        Assert.Throws<ArgumentException>(() => ticks.ToArray().InterpolatePrice(new Instant()));
+
+        ticks.Add(new BaseTick(new Instant(), 1, 0));
+        Assert.Equal(1, ticks.ToArray().InterpolatePrice(new Instant()));
+
+        ticks.Add(new BaseTick(new Instant(), 1, 0));
+        Assert.Equal(1, ticks.ToArray().InterpolatePrice(new Instant()));
+    }
+
+    [Fact]
     public void BoundaryTest()
     {
         List<BaseTick> ticks = new();
@@ -70,7 +84,7 @@ public class InterpolateTest(ITestOutputHelper output) : XunitTestBase(output)
         ticks.Add(new BaseTick(date1, 1, 0));
         ticks.Add(new BaseTick(date2, 2, 0));
 
-        var result = ticks.ToArray().InterpolatePrice(date1.Plus(Duration.FromDays(1)));
+        double result = ticks.ToArray().InterpolatePrice(date1.Plus(Duration.FromDays(1)));
         Assert.Equal(1.25, result);
     }
 

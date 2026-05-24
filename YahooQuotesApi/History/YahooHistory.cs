@@ -9,6 +9,7 @@ public sealed class YahooHistory
     private ILogger Logger { get; }
     private CookieAndCrumb CookieAndCrumb { get; }
     private Instant Start { get; }
+    private string Interval { get; }
     private IHttpClientFactory HttpClientFactory { get; }
     private HistoryBasePricesCreator HistoryBasePricesCreator { get; }
     private HistoryCreator HistoryCreator { get; }
@@ -20,13 +21,14 @@ public sealed class YahooHistory
         Logger = logger;
         CookieAndCrumb = crumbService;
         Start = builder.HistoryStartDate;
+        Interval = builder.HistoryInterval;
         HttpClientFactory = httpClientFactory;
         HistoryCreator = hc;
         HistoryBasePricesCreator = hbc;
         Cache = new(builder.Clock, builder.HistoryCacheDuration);
     }
 
-    internal async Task<Dictionary<Symbol, Result<History>>> GettHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
+    internal async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> syms, Symbol baseSymbol, CancellationToken ct)
     {
         HashSet<Symbol> symbols = [.. syms];
 
@@ -149,7 +151,7 @@ public sealed class YahooHistory
     {
         string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}" +
             "?events=history,div,split" +
-            "&interval=1d" +
+            $"&interval={Interval}" +
             $"&period1={Start.ToUnixTimeSeconds()}" +
             $"&period2={Instant.MaxValue.ToUnixTimeSeconds()}" +
             $"&crumb={crumb}";

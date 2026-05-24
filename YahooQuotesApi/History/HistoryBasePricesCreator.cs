@@ -11,7 +11,7 @@ public sealed class HistoryBasePricesCreator
         Clock = clock;
         Logger = logger;
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-        UseAdjustedClose = builder.UseAdjustedClose;
+        UseAdjustedClose = builder.UseHistoryAdjustedClose;
         HistoryStartDate = builder.HistoryStartDate;
     }
 

@@ -40,7 +40,7 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
         (await GetHistoryAsync([symbol], baseSymbol, ct).ConfigureAwait(false)).Values.Single();
 
     public async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(IEnumerable<Symbol> symbols, Symbol baseSymbol = default, CancellationToken ct = default) =>
-        await History.GettHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
+        await History.GetHistoryAsync(symbols, baseSymbol, ct).ConfigureAwait(false);
 
 
 
@@ -66,7 +66,7 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
         }
     }
 
-    // testing
-    internal async Task<(string[], string)> GetCookieAndCrumbAsync() =>
-          await CookieAndCrumb.Get(default).ConfigureAwait(false);
+    public async Task<(string[], string)> GetCookieAndCrumbAsync(CancellationToken ct = default) =>
+          await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+
 }

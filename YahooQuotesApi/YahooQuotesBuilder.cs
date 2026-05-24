@@ -31,9 +31,13 @@ public sealed record class YahooQuotesBuilder
     public YahooQuotesBuilder WithHistoryStartDate(Instant start) =>
         this with { HistoryStartDate = start };
 
-    internal bool UseAdjustedClose { get; private init; } = true;
+    internal string HistoryInterval { get; private init; } = "1d";
+    public YahooQuotesBuilder WithHistoryInterval(string interval) =>
+        this with { HistoryInterval = interval };
+
+    internal bool UseHistoryAdjustedClose { get; private init; } = true;
     internal YahooQuotesBuilder DoNotUseAdjustedClose() =>
-        this with { UseAdjustedClose = false };
+        this with { UseHistoryAdjustedClose = false };
 
     public YahooQuotes Build() => Services.Build(this);
 }

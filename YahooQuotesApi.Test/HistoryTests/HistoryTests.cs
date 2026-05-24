@@ -96,4 +96,19 @@ public class HistoryTests : XunitTestBase
         Assert.Equal(10, split.Numerator);
     }
 
+    [Fact]
+    public async Task TestInterval()
+    {
+        YahooQuotes yahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(Logger)
+            .WithHistoryStartDate(Instant.FromUtc(2024, 1, 1, 0, 0))
+            .WithHistoryInterval("1wk") // 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 4h, 1d, 5d, 1wk, 1mo, 3mo
+            .Build();
+
+        Result<History> result = await yahooQuotes.GetHistoryAsync("C", "", TestContext.Current.CancellationToken);
+        History history = result.Value;
+
+        Assert.True(history.Ticks[1].Date - history.Ticks[0].Date == Duration.FromDays(7));
+    }
+
 }
