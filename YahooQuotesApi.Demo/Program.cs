@@ -16,7 +16,7 @@ public static class Program
             .CreateLogger("Demo");
 
         //await new MyApp(logger).Run(10000, HistoryFlags.None, "");
-        await new MyApp(logger).Run(100, "JPY=X");
+        await new MyApp(logger).RunAsync(100, "JPY=X");
 
         await Task.Delay(3000);
 

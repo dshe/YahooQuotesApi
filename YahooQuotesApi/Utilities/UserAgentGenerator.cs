@@ -2,7 +2,7 @@
 
 internal static class UserAgentGenerator
 {
-    private static readonly string[] UserAgents =
+    private static readonly string[] _userAgents =
     [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/603.2.4 (KHTML, like Gecko) Version/10.1.1 Safari/603.2.4",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1",
@@ -26,6 +26,6 @@ internal static class UserAgentGenerator
     ];
 
 #pragma warning disable CA5394
-    private static readonly Random random = new();
-    public static string GetRandom() => UserAgents[random.Next(UserAgents.Length)];
+    private static readonly Random _random = new();
+    public static string GetRandom() => _userAgents[_random.Next(_userAgents.Length)];
 }

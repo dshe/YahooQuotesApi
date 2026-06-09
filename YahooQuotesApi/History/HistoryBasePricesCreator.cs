@@ -39,7 +39,7 @@ public sealed class HistoryBasePricesCreator
     private void SetBasePrices(History history)
     {
         Duration marketDuration = Duration.Zero;
-        if (history.Symbol.IsStock)
+        if (history.Symbol.IsSecurity)
         {
             // Price.Date is the START of trading. marketDuration 
             // Add trading day. Ok unless half/partial trading day.
@@ -54,7 +54,7 @@ public sealed class HistoryBasePricesCreator
         for (int i = 0; i < length; i++)
         {
             Tick tick = history.Ticks[i];
-            double val = (UseAdjustedClose && history.Symbol.IsStock) ? tick.AdjustedClose : tick.Close;
+            double val = (UseAdjustedClose && history.Symbol.IsSecurity) ? tick.AdjustedClose : tick.Close;
             if (val == 0)
                 continue;
             if (i < length - 1)
@@ -96,7 +96,7 @@ public sealed class HistoryBasePricesCreator
         BaseTick[]? symbolTicks = null, symbolCurrencyTicks = null, baseSymbolTicks = null, baseSymbolCurrencyTicks = null;
 
         Symbol currency = symbol;
-        if (symbol.IsStock)
+        if (symbol.IsSecurity)
         {
             Logger.LogTrace(" is stock");
             symbolHistory = symbolResult.Value;
@@ -111,8 +111,7 @@ public sealed class HistoryBasePricesCreator
         }
         if (currency.Currency != "USD")
         {
-            if (!Symbol.TryCreate("USD" + currency, out Symbol currencyRate) || !currencyRate.IsCurrencyRate)
-                throw new InvalidOperationException($"Invalid history currency rate symbol format: '{currencyRate}'.");
+            Symbol currencyRate = Symbol.Create("USD" + currency);
             Result<History> result = results[currencyRate];
             if (result.HasError)
             {
@@ -127,7 +126,7 @@ public sealed class HistoryBasePricesCreator
         }
 
         Symbol baseCurrency = baseSymbol;
-        if (baseSymbol.IsStock)
+        if (baseSymbol.IsSecurity)
         {
             Result<History> result = results[baseSymbol];
             if (result.HasError)
@@ -149,8 +148,10 @@ public sealed class HistoryBasePricesCreator
 
         if (baseCurrency.Currency != "USD")
         {
-            if (!Symbol.TryCreate("USD" + baseCurrency, out Symbol currencyRate) || !currencyRate.IsCurrencyRate)
+            Symbol currencyRate = Symbol.Create("USD" + baseCurrency);
+            if (!currencyRate.IsCurrencyRate)
                 throw new InvalidOperationException($"Invalid base currency rate symbol: '{currencyRate}'.");
+
             Result<History> result = results[currencyRate];
             if (result.HasError)
             {

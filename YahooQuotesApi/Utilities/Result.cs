@@ -1,14 +1,19 @@
-﻿namespace YahooQuotesApi;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace YahooQuotesApi;
 
 public sealed record ErrorResult(string Message, Exception? Exception = null);
 
-public readonly struct Result<T> : IEquatable<Result<T>>
+public readonly struct Result<T> : IEquatable<Result<T>> where T : notnull
 {
-    // The default value of a struct is the value produced when all fields equal their default values.
-    // The fields in this struct are T? and ErrorResult?.
-    // The default for these fields is null and IsUndefined is true.
-    private readonly T? value;
-    private readonly ErrorResult? errorResult;
+    // 3 states driven by HasValue/HasError booleans:
+    //   undefined  : !HasValue && !HasError  (default struct)
+    //   ok         :  HasValue
+    //   error      :  HasError
+    // We store the booleans explicitly because T may be a value type,
+    // meaning 'value' is never null even in the error/undefined state.
+    private readonly T? _value;
+    private readonly ErrorResult? _errorResult;
 
     public bool HasValue { get; }
     public bool HasError { get; }
@@ -18,11 +23,11 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     {
         get
         {
-            if (value is not null)
-                return value;
-            if (errorResult is not null)
-                throw new InvalidOperationException(errorResult.Message, errorResult.Exception);
-            throw new InvalidOperationException("Result has no value.");
+            if (HasValue) 
+                return _value!;
+            if (HasError) 
+                throw new InvalidOperationException(_errorResult!.Message, _errorResult.Exception);
+            throw new InvalidOperationException("Result is undefined.");
         }
     }
 
@@ -30,67 +35,108 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     {
         get
         {
-            if (errorResult is not null)
-                return errorResult;
+            if (HasError) 
+                return _errorResult!;
             throw new InvalidOperationException("Result has no error.");
         }
     }
 
-    internal Result(T val) // result may not be null!
+    public bool TryGetValue([MaybeNullWhen(false)] out T value)
     {
-        ArgumentNullException.ThrowIfNull(val);
-        value = val;
+        if (HasValue)
+        {
+            value = _value!;
+            return true;
+        }
+        value = default!;
+        return false;
+    }
+    public TResult Match<TResult>(Func<T, TResult> ok,
+        Func<ErrorResult, TResult> error, Func<TResult> undefined)
+    {
+        ArgumentNullException.ThrowIfNull(ok);
+        ArgumentNullException.ThrowIfNull(error);
+        ArgumentNullException.ThrowIfNull(undefined);
+
+        if (HasValue)
+            return ok(_value!);
+
+        if (HasError)
+            return error(_errorResult!);
+
+        return undefined();
+    }
+
+    public TResult Match<TResult>(
+        Func<T, TResult> ok, Func<ErrorResult, TResult> error)
+    {
+        ArgumentNullException.ThrowIfNull(ok);
+        ArgumentNullException.ThrowIfNull(error);
+
+        if (HasValue)
+            return ok(_value!);
+
+        if (HasError)
+            return error(_errorResult!);
+
+        throw new InvalidOperationException("Result is undefined.");
+    }
+
+    internal Result(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        _value = value;
+        _errorResult = null;
         HasValue = true;
-        errorResult = null;
         HasError = false;
     }
 
     internal Result(ErrorResult error)
     {
         ArgumentNullException.ThrowIfNull(error);
-        value = default;
+        _value = default;
+        _errorResult = error;
         HasValue = false;
-        errorResult = error;
         HasError = true;
     }
 
-    public override int GetHashCode()
-    {
-        if (HasValue)
-            return EqualityComparer<T>.Default.GetHashCode(value!);
-        if (HasError)
-            return EqualityComparer<ErrorResult>.Default.GetHashCode(errorResult!) * -1521134295;
-        return 0;
-    }
-
-    public override string ToString()
-    {
-        if (HasError)
-            return Error.Message;
-        if (Value != null)
-            return $"Value: {Value}";
-        return "Undefined";
-    }
-
-    public override bool Equals(object? obj) => obj is Result<T> result && Equals(result);
+    // ── Equality ─────────────────────────────────────────────────────────────
 
     public bool Equals(Result<T> other) =>
-        EqualityComparer<T>.Default.Equals(value, other.value) &&
-        EqualityComparer<ErrorResult>.Default.Equals(errorResult, other.errorResult);
+    HasValue == other.HasValue && HasError == other.HasError &&
+    EqualityComparer<T>.Default.Equals(_value, other._value) &&
+    EqualityComparer<ErrorResult?>.Default.Equals(_errorResult, other._errorResult);
 
-    public void Deconstruct(out T value, out ErrorResult error)
-    {
-        if (IsUndefined)
-            throw new ArgumentException("Result is undefined.");
-        (value, error) = (Value, Error);
-    }
+    public override bool Equals(object? obj) => obj is Result<T> other && Equals(other);
+
+    // HashCode.Combine handles null fields gracefully.
+    public override int GetHashCode() => HashCode.Combine(HasValue, HasError, _value, _errorResult);
 
     public static bool operator ==(Result<T> left, Result<T> right) => left.Equals(right);
     public static bool operator !=(Result<T> left, Result<T> right) => !(left == right);
 
-//#pragma warning disable CA1000 // static members on generic types
+    // ── Formatting ───────────────────────────────────────────────────────────
+
+    public override string ToString() =>
+        HasValue ? $"Ok({_value})" :
+        HasError ? $"Error({_errorResult!.Message})" :
+                    "Undefined";
+
+    // ── Deconstruct ──────────────────────────────────────────────────────────
+
+    // Returns (hasValue, value-or-default, error-or-null) so callers can use
+    // a single switch/if without calling into throwing properties.
+    public void Deconstruct(out bool hasValue, out T? value, out ErrorResult? error)
+    {
+        hasValue = HasValue;
+        value = _value;
+        error = _errorResult;
+    }
+
+    // ── Factory methods ───────────────────────────────────────────────────────
+
     public static Result<T> Ok(T value) => new(value);
-    public static Result<T> Fail(ErrorResult errorResult) => new(errorResult);
+    public static Result<T> Fail(ErrorResult error) => new(error);
     public static Result<T> Fail(string message, Exception? ex = null) => new(new ErrorResult(message, ex));
     public static Result<T> Fail(Exception ex)
     {
@@ -101,46 +147,57 @@ public readonly struct Result<T> : IEquatable<Result<T>>
     public static Result<T> From(Func<T> producer)
     {
         ArgumentNullException.ThrowIfNull(producer);
-        try
+        try 
         {
-            return new Result<T>(producer());
+            return Ok(producer()); 
         }
-#pragma warning disable CA1031 // catch a more specific allowed exception type 
-        catch (Exception e)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031
+        catch (Exception ex)
+        {
+            return Fail(ex); 
+        }
 #pragma warning restore CA1031
-        {
-            return Result<T>.Fail(e);
-        }
     }
 
     public static async Task<Result<T>> FromAsync(Func<Task<T>> producer)
     {
         ArgumentNullException.ThrowIfNull(producer);
-        try
-        {
-            return new Result<T>(await producer().ConfigureAwait(false));
+        try 
+        { 
+            return Ok(await producer().ConfigureAwait(false)); 
         }
-#pragma warning disable CA1031 // catch a more specific allowed exception type 
-        catch (Exception e)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031
+        catch (Exception ex) 
+        {
+            return Fail(ex); 
+        }
 #pragma warning restore CA1031
-        {
-            return Result<T>.Fail(e);
-        }
     }
 }
 
-//#pragma warning restore CA1000
-
 public static class ResultExtensions
 {
-    public static Result<T> ToResult<T>(this T value) => new(value);
-    public static Result<T2> ToResult<T1,T2>(this Result<T1> result, Func<T1,T2> projection)
+    public static Result<T> ToResult<T>(this T value) where T : notnull => Result<T>.Ok(value);
+
+    // Projects a successful result through a mapping function.
+    // Error and undefined states pass through unchanged.
+    public static Result<TOut> Select<TIn, TOut>(
+        this Result<TIn> result, Func<TIn, TOut> projection)
+        where TIn : notnull where TOut : notnull
     {
         ArgumentNullException.ThrowIfNull(projection);
-        if (result.HasValue)
-            return new Result<T2>(projection(result.Value));
-        if (result.HasError)
-            return new Result<T2>(result.Error);
-        return new Result<T2>();
+        if (result.HasValue) 
+            return Result<TOut>.Ok(projection(result.Value));
+        if (result.HasError) 
+            return Result<TOut>.Fail(result.Error);
+        return default; // undefined → undefined
     }
 }

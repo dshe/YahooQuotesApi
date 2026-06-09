@@ -10,22 +10,22 @@ namespace YahooQuotesApi.Demo;
 
 public class MyApp
 {
-    private readonly ILogger Logger;
-    private readonly YahooQuotes YahooQuotes;
+    private readonly ILogger _logger;
+    private readonly YahooQuotes _yahooQuotes;
 
     public MyApp(ILogger logger)
     {
-        Logger = logger;
+        _logger = logger;
 
         Instant start = SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(30));
 
-        YahooQuotes = new YahooQuotesBuilder()
-            .WithLogger(Logger)
+        _yahooQuotes = new YahooQuotesBuilder()
+            .WithLogger(_logger)
             .WithHistoryStartDate(start)
             .Build();
     }
 
-    public async Task Run(int number, string baseCurrency)
+    public async Task RunAsync(int number, string baseCurrency)
     {
         List<Symbol> symbols = GetSymbols(number);
 
@@ -34,13 +34,13 @@ public class MyApp
 
         Stopwatch watch = new();
         watch.Start();
-        Dictionary<string, Result<History>> results = await YahooQuotes.GetHistoryAsync(symbols.Select(x => x.Name), baseCurrency);
+        Dictionary<string, Result<History>> results = await _yahooQuotes.GetHistoryAsync(symbols.Select(x => x.Name), baseCurrency);
         watch.Stop();
 
         int n = results.Values.Count(x => x.HasValue);
         double s = watch.Elapsed.TotalSeconds;
         double rate = n / s;
-        Logger.LogWarning("Rate = {N}/{S:N2} = {Rate:N2} Hz", n, s, rate);
+        _logger.LogWarning("Rate = {N}/{S:N2} = {Rate:N2} Hz", n, s, rate);
 
         Analyze(results);
     }
@@ -57,10 +57,10 @@ public class MyApp
         List<string> errors = [.. lines.Where(t => !Symbol.TryCreate(t, out _))];
 
         if (errors.Count != 0)
-            Logger.LogWarning("Invalid symbol names: {names}.", string.Join(", ", errors));
+            _logger.LogWarning("Invalid symbol names: {names}.", string.Join(", ", errors));
 
         List<Symbol> symbols = [.. lines
-            .Select(t => t.ToSymbol(false))
+            .Select(t => Symbol.TryCreate(t, out Symbol s) ? s : default)
             .Where(s => s.IsValid)
             .OrderBy(x => x)];
 
@@ -69,21 +69,21 @@ public class MyApp
 
     private void Analyze(Dictionary<string, Result<History>> dict)
     {
-        Logger.LogWarning("Symbols total: {count}.", dict.Count);
-        Logger.LogWarning("Symbols not found: {count}.", dict.Count(x => !x.Value.HasValue));
+        _logger.LogWarning("Symbols total: {count}.", dict.Count);
+        _logger.LogWarning("Symbols not found: {count}.", dict.Count(x => !x.Value.HasValue));
 
         IEnumerable<(string symbol, History history)> kv = dict.Where(kv => kv.Value.HasValue).Select(x => (x.Key, x.Value.Value));
 
         List<History> histories = kv.Select(kv => kv.history).ToList();
 
-        Logger.LogWarning("Symbols found: {Count}.", histories.Count);
+        _logger.LogWarning("Symbols found: {Count}.", histories.Count);
 
-        Logger.LogWarning("Symbols no currency: {Histories}.", histories.Count(x => x.Currency.Name == ""));
-        Logger.LogWarning("Symbols no timezone: {Histories}.", histories.Count(x => x.ExchangeTimezoneName == ""));
+        _logger.LogWarning("Symbols no currency: {Histories}.", histories.Count(x => x.Currency.Name == ""));
+        _logger.LogWarning("Symbols no timezone: {Histories}.", histories.Count(x => x.ExchangeTimezoneName == ""));
 
-        Logger.LogWarning("Symbols with history not set: {Histories}.", histories.Count(x => x.Ticks.Length == 0));
+        _logger.LogWarning("Symbols with history not set: {Histories}.", histories.Count(x => x.Ticks.Length == 0));
 
-        Logger.LogWarning("Symbols with base history not set: {Histories}.", histories.Count(x => x.BaseTicks.Length == 0));
+        _logger.LogWarning("Symbols with base history not set: {Histories}.", histories.Count(x => x.BaseTicks.Length == 0));
         //Logger.LogWarning("Symbols with base history found:   {Histories}.", histories.Count(x => x.PriceHistoryBase.HasValue));
         //foreach (var history in histories.Where(s => s.PriceHistoryBase.HasError).Where(s => !s.PriceHistoryBase.Error.StartsWith("History not found")))
         //    Logger.LogError($"Historybase error for symbol '{history.Symbol}' {history.PriceHistoryBase.Error}");
@@ -101,6 +101,6 @@ public class MyApp
             .Distinct()];
 
         foreach (var error in list)
-            Logger.LogWarning("Unique error: {Error}", error);
+            _logger.LogWarning("Unique error: {Error}", error);
     }
 }

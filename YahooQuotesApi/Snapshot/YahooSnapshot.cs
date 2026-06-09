@@ -21,7 +21,7 @@ public sealed class YahooSnapshot : IDisposable
         CookieAndCrumb = crumbService;
         HttpClientFactory = factory;
         SnapshotCreator = sc;
-        Cache = new SerialProducerCache<Symbol, Snapshot?>(builder.Clock, builder.SnapshotCacheDuration, Producer);
+        Cache = new SerialProducerCache<Symbol, Snapshot?>(builder.Clock, builder.SnapshotCacheDuration, ProducerAsync);
     }
 
     internal async Task<Dictionary<Symbol, Snapshot?>> GetAsync(IEnumerable<Symbol> syms, CancellationToken ct)
@@ -33,7 +33,7 @@ public sealed class YahooSnapshot : IDisposable
             throw new ArgumentException($"Invalid symbol: {symbols.First(s => s.IsCurrency)}.");
         try
         {
-            return await Cache.Get(symbols, ct).ConfigureAwait(false);
+            return await Cache.GetAsync(symbols, ct).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -42,7 +42,7 @@ public sealed class YahooSnapshot : IDisposable
         }
     }
 
-    private async Task<Dictionary<Symbol, Snapshot?>> Producer(List<Symbol> symbols, CancellationToken ct)
+    private async Task<Dictionary<Symbol, Snapshot?>> ProducerAsync(List<Symbol> symbols, CancellationToken ct)
     {
         ParallelOptions parallelOptions = new()
         {
@@ -50,7 +50,7 @@ public sealed class YahooSnapshot : IDisposable
             CancellationToken = ct
         };
 
-        (string[] cookies, string crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+        (string[] cookies, string crumb) = await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
 
         IEnumerable<Uri> uris = GetUris(symbols, crumb);
 
@@ -59,7 +59,7 @@ public sealed class YahooSnapshot : IDisposable
 
         await Parallel.ForEachAsync(uris, parallelOptions, async (uri, ct) =>
         {
-            List<Snapshot> someSnapshots = await MakeRequest(uri, cookies, ct).ConfigureAwait(false);
+            List<Snapshot> someSnapshots = await MakeRequestAsync(uri, cookies, ct).ConfigureAwait(false);
             lock (snapshots)
             {
                 foreach (Snapshot snapshot in someSnapshots)
@@ -81,7 +81,7 @@ public sealed class YahooSnapshot : IDisposable
             .Select(s => new Uri(s));
     }
 
-    private async Task<List<Snapshot>> MakeRequest(Uri uri, string[] cookies, CancellationToken ct)
+    private async Task<List<Snapshot>> MakeRequestAsync(Uri uri, string[] cookies, CancellationToken ct)
     {
         Logger.LogInformation("{Uri}", uri.ToString());
 

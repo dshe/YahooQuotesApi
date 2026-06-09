@@ -6,27 +6,27 @@
  */
 internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
 {
-    private readonly IClock Clock;
-    private readonly Dictionary<TKey, (Task<TResult>, Instant)> TaskCache = [];
-    private readonly Duration Duration;
+    private readonly IClock _clock;
+    private readonly Dictionary<TKey, (Task<TResult>, Instant)> _taskCache = [];
+    private readonly Duration _duration;
 
     internal ParallelProducerCache(IClock clock, Duration cacheDuration)
     {
-        Duration = cacheDuration;
-        Clock = clock;
+        _duration = cacheDuration;
+        _clock = clock;
     }
 
     internal async Task<TResult> Get(TKey key, Func<Task<TResult>> producer)
     {
         (Task<TResult> task, Instant time) item;
-        lock (TaskCache)
+        lock (_taskCache)
         {
-            Instant now = Clock.GetCurrentInstant();
-            if (!TaskCache.TryGetValue(key, out item) || now - item.time > Duration)
+            Instant now = _clock.GetCurrentInstant();
+            if (!_taskCache.TryGetValue(key, out item) || now - item.time > _duration)
             {
                 Task<TResult> task = producer(); // start task
                 item = (task, now);
-                TaskCache[key] = item;
+                _taskCache[key] = item;
             }
         }
         return await item.task.ConfigureAwait(false); // await task outside lock
@@ -34,9 +34,9 @@ internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
 
     internal void Clear()
     {
-        lock (TaskCache)
+        lock (_taskCache)
         {
-            TaskCache.Clear();
+            _taskCache.Clear();
         }
     }
 }

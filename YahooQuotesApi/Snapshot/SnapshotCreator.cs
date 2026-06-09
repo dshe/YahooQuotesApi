@@ -59,7 +59,7 @@ public sealed class SnapshotCreator(ILogger logger)
             if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && symbol.Length == 5)
                 symbol = "USD" + symbol;
             Logger.LogTrace("Setting history property: Symbol = {Symbol}", symbol);
-            snapshot.Symbol = symbol.ToSymbol();
+            snapshot.Symbol = Symbol.Create(symbol);
             return snapshot.Symbol;
         }
         if (jp.Name == "currency")
@@ -70,7 +70,7 @@ public sealed class SnapshotCreator(ILogger logger)
                 if (currency.Length != 3)
                     throw new InvalidOperationException($"Invalid currency: '{currency}'.");
                 Logger.LogTrace("Setting history property: Currency = {Currency}", currency);
-                snapshot.Currency = $"{currency}=X".ToSymbol();
+                snapshot.Currency = Symbol.Create($"{currency}=X");
             }
             return snapshot.Currency;
         }

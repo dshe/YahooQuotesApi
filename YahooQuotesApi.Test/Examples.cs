@@ -1,6 +1,5 @@
 ﻿using NodaTime;
 using System.Collections.Immutable;
-using System.Text.Json;
 
 namespace YahooQuotesApi.Examples;
 

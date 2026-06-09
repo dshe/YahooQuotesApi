@@ -10,11 +10,11 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
     private YahooModules Modules { get; } = modules;
 
     public async Task<Snapshot?> GetSnapshotAsync(string symbol, CancellationToken ct = default) =>
-        await GetSnapshotAsync(symbol.ToSymbol(), ct).ConfigureAwait(false);
+        await GetSnapshotAsync(Symbol.Create(symbol), ct).ConfigureAwait(false);
 
     public async Task<Dictionary<string, Snapshot?>> GetSnapshotAsync(IEnumerable<string> symbols, CancellationToken ct = default)
     {
-        Dictionary<Symbol, Snapshot?> results = await GetSnapshotAsync(symbols.Select(s => s.ToSymbol()), ct).ConfigureAwait(false);
+        Dictionary<Symbol, Snapshot?> results = await GetSnapshotAsync(symbols.Select(s => Symbol.Create(s)), ct).ConfigureAwait(false);
         return results.ToDictionary(s => s.Key.Name, static s => s.Value, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -31,8 +31,8 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
 
     public async Task<Dictionary<string, Result<History>>> GetHistoryAsync(IEnumerable<string> symbols, string baseSymbol = "", CancellationToken ct = default)
     {
-        Symbol baseSym = string.IsNullOrEmpty(baseSymbol) ? default : baseSymbol.ToSymbol();
-        Dictionary<Symbol, Result<History>> results = await GetHistoryAsync(symbols.Select(s => s.ToSymbol()), baseSym, ct).ConfigureAwait(false);
+        Symbol baseSym = string.IsNullOrEmpty(baseSymbol) ? default : Symbol.Create(baseSymbol);
+        Dictionary<Symbol, Result<History>> results = await GetHistoryAsync(symbols.Select(s => Symbol.Create(s)), baseSym, ct).ConfigureAwait(false);
         return results.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value);
     }
 
@@ -47,7 +47,7 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
     public async Task<Result<JsonProperty>> GetModuleAsync(string symbol, string module, CancellationToken ct = default)
     {
         Result<JsonProperty[]> result = await GetModulesAsync(symbol, [module], ct).ConfigureAwait(false);
-        return result.ToResult(v => v.Single());
+        return result.Select(x => x.Single());
     }
 
     public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, IEnumerable<string> modules, CancellationToken ct = default)
@@ -67,6 +67,6 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
     }
 
     public async Task<(string[], string)> GetCookieAndCrumbAsync(CancellationToken ct = default) =>
-          await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+          await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
 
 }

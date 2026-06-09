@@ -12,9 +12,9 @@ public class SerialProducerCacheTest : XunitTestBase
 
     private async Task<Dictionary<int, string>> Producer(IEnumerable<int> keys, CancellationToken ct)
     {
-        var msg = string.Join(", ", keys);
+        string msg = string.Join(", ", keys);
         RequestHistory.Add(msg);
-        var results = new Dictionary<int, string>();
+        Dictionary<int, string> results = new();
         foreach (var key in keys)
         {
             results.Add(key, msg);
@@ -26,13 +26,12 @@ public class SerialProducerCacheTest : XunitTestBase
     [Fact]
     public async Task Test()
     {
-        await Cache.Get([1, 2, 3], TestContext.Current.CancellationToken);
-        var result = await Cache.Get([1, 2], TestContext.Current.CancellationToken);
+        await Cache.GetAsync([1, 2, 3], TestContext.Current.CancellationToken);
+        Dictionary<int, string> result = await Cache.GetAsync([1, 2], TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Count);
         Assert.Single(RequestHistory);
-        result = await Cache.Get([6, 1], TestContext.Current.CancellationToken);
+        result = await Cache.GetAsync([6, 1], TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Count);
         Assert.Equal(2, RequestHistory.Count);
-        ;
     }
 }

@@ -3,7 +3,7 @@ namespace YahooQuotesApi.HistoryTest;
 
 public class HistoryBaseTests : XunitTestBase
 {
-    YahooQuotes YahooQuotes { get; }
+    private YahooQuotes YahooQuotes { get; }
     public HistoryBaseTests(ITestOutputHelper output) : base(output, LogLevel.Debug)
     {
         YahooQuotes = new YahooQuotesBuilder()

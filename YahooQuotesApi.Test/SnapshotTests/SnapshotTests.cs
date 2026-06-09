@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace YahooQuotesApi.SnapshotTest;
+﻿namespace YahooQuotesApi.SnapshotTest;
 
 public class SnapshotTests : XunitTestBase
 {

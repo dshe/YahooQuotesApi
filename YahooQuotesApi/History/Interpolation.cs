@@ -2,8 +2,8 @@
 
 internal static class InterpolationExtensions
 {
-    private static readonly Duration FutureLimit = Duration.FromDays(4);
-    private static readonly Duration PastLimit = Duration.FromDays(4);
+    private static readonly Duration _futureLimit = Duration.FromDays(4);
+    private static readonly Duration _pastLimit = Duration.FromDays(4);
 
     internal static double InterpolatePrice(this BaseTick[] ticks, Instant date) =>
         Interpolate(ticks, date, tick => tick.Date, tick => tick.Price);
@@ -19,12 +19,12 @@ internal static class InterpolationExtensions
         T firstItem = list[0];
         Instant firstDate = getDate(firstItem);
         if (date <= firstDate) // not enough data
-            return firstDate - date <= PastLimit ? getValue(firstItem) : double.NaN;
+            return firstDate - date <= _pastLimit ? getValue(firstItem) : double.NaN;
 
         T lastItem = list[^1];
         Instant lastDate = getDate(lastItem);
         if (date >= lastDate)
-            return date - lastDate <= FutureLimit ? getValue(lastItem) : double.NaN;
+            return date - lastDate <= _futureLimit ? getValue(lastItem) : double.NaN;
 
         int p = list.BinarySearch(date, x => getDate(x));
 

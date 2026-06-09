@@ -25,7 +25,7 @@ internal static class JsonExtensions
             ThrowError();
 
         Type? underlyingType = Nullable.GetUnderlyingType(type);
-        if (underlyingType != null)
+        if (underlyingType is not null)
         {
             if (je.ValueKind == JsonValueKind.Null)
             {
@@ -41,7 +41,7 @@ internal static class JsonExtensions
             return false;
         }
 
-        if (type == typeof(String))
+        if (type == typeof(string))
         {
             if (je.ValueKind == JsonValueKind.String)
             {
@@ -50,7 +50,7 @@ internal static class JsonExtensions
             }
             ThrowError();
         }
-        if (type == typeof(Boolean))
+        if (type == typeof(bool))
         {
             if (je.ValueKind == JsonValueKind.True || je.ValueKind == JsonValueKind.False)
             {
@@ -64,11 +64,11 @@ internal static class JsonExtensions
 
         value = type switch
         {
-            Type t when t == typeof(Int32) => je.GetInt32(),
-            Type t when t == typeof(Int64) => je.GetInt64(),
-            Type t when t == typeof(Single) => je.GetSingle(),
-            Type t when t == typeof(Double) => je.GetDouble(),
-            Type t when t == typeof(Decimal) => je.GetDecimal(),
+            Type t when t == typeof(int) => je.GetInt32(),
+            Type t when t == typeof(long) => je.GetInt64(),
+            Type t when t == typeof(float) => je.GetSingle(),
+            Type t when t == typeof(double) => je.GetDouble(),
+            Type t when t == typeof(decimal) => je.GetDecimal(),
             Type t when t == typeof(Instant) => je.GetInt64().ToInstantFromSeconds(),
             _ => throw new NotImplementedException($"Unhandled type: {type}.")
         };

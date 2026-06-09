@@ -51,13 +51,13 @@ public sealed class YahooHistory
 
     private async Task<Dictionary<Symbol, Result<History>>> GetHistoryAsync(HashSet<Symbol> symbols, Symbol baseSymbol, CancellationToken ct)
     {
-        HashSet<Symbol> stockSymbols = [.. symbols.Where(s => s.IsStock)];
-        if (baseSymbol != default && baseSymbol.IsStock)
+        HashSet<Symbol> stockSymbols = [.. symbols.Where(s => s.IsSecurity)];
+        if (baseSymbol != default && baseSymbol.IsSecurity)
             stockSymbols.Add(baseSymbol);
 
         Dictionary<Symbol, Result<History>> results = [];
         await AddToResultsAsync(stockSymbols, results, ct).ConfigureAwait(false);   
-        await AddCurrenciesToResults(symbols, baseSymbol, results, ct).ConfigureAwait(false);
+        await AddCurrenciesToResultsAsync(symbols, baseSymbol, results, ct).ConfigureAwait(false);
         /*
         if (baseSymbol.IsValid && baseSymbol.Name != "USD=X") // check the base history
         {
@@ -74,7 +74,7 @@ public sealed class YahooHistory
         return HistoryBasePricesCreator.Create(symbols, baseSymbol, results);
     }
 
-    private async Task AddCurrenciesToResults(IEnumerable<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
+    private async Task AddCurrenciesToResultsAsync(IEnumerable<Symbol> symbols, Symbol baseSymbol, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
     {
         // currencies + historyBase currency + history currencies
         List<Symbol> currencySymbols = [];
@@ -94,7 +94,7 @@ public sealed class YahooHistory
 
         HashSet<Symbol> rateSymbols = [.. currencySymbols
             .Where(c => c.Name != "USD=X")
-            .Select(c => $"USD{c}".ToSymbol())];
+            .Select(c =>Symbol.Create($"USD{c}"))];
 
         await AddToResultsAsync(rateSymbols, results, ct).ConfigureAwait(false);
     }
@@ -109,7 +109,7 @@ public sealed class YahooHistory
 
         await Parallel.ForEachAsync(symbols, parallelOptions, async (symbol, ct) =>
         {
-            Result<History> result = await Cache.Get(symbol, () => Produce(symbol, ct)).ConfigureAwait(false);
+            Result<History> result = await Cache.Get(symbol, () => ProduceAsync(symbol, ct)).ConfigureAwait(false);
             lock (results)
             {
                 results.Add(symbol, result);
@@ -117,9 +117,9 @@ public sealed class YahooHistory
         }).ConfigureAwait(false);
     }
 
-    private async Task<Result<History>> Produce(Symbol symbol, CancellationToken ct)
+    private async Task<Result<History>> ProduceAsync(Symbol symbol, CancellationToken ct)
     {
-        var (cookies, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+        var (cookies, crumb) = await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
         Uri uri = GetUri(symbol, crumb);
         Logger.LogInformation("{Uri}", uri.ToString());
 

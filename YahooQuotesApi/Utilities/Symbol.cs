@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-namespace YahooQuotesApi;
+﻿namespace YahooQuotesApi;
 
 public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
 {
@@ -7,16 +6,15 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
     // The default value of a struct is the value produced when all of its fields equal their default values.
     // This struct has only the string field 'name'.
     // String is a reference type with default value of null.
-    private readonly string? name;
-    private Symbol(string name) => this.name = name;
+    private readonly string? _name;
+    private Symbol(string name) => _name = name;
 
     public string Name
     {
         get
         {
-            if (IsValid)
-                return name!;
-            throw new InvalidOperationException("Undefined symbol.");
+            ArgumentNullException.ThrowIfNull(_name, nameof(_name));
+            return _name;
         }
     }
 
@@ -24,33 +22,29 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
     {
         get
         {
-            int pos = Name.IndexOf('.', StringComparison.Ordinal);
-            if (pos == -1 || Name.EndsWith('.'))
+            if (_name is null) 
                 return "";
-            return Name[(pos + 1)..];
+            int pos = _name.IndexOf('.', StringComparison.Ordinal);
+            if (pos == -1 || pos == _name.Length - 1)
+                return "";
+            return _name[(pos + 1)..];
         }
     }
 
-    public bool IsValid => name is not null && name.Length != 0;
-    public bool IsCurrency => Name.Length == 5 && Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
-    public bool IsCurrencyRate => Name.Length == 8 && Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
-    public bool IsStock => Name.Length > 0 && !Name.EndsWith("=X", StringComparison.OrdinalIgnoreCase);
-    public string Currency
-    {
-        get
-        {
-            if (IsCurrency)
-                return Name[..3];
-            if (IsCurrencyRate)
-                return Name[3..6];
-            throw new InvalidOperationException("Symbol is neither currency nor currency rate.");
-        }
-    }
-    public override string ToString() => Name;
-    public override int GetHashCode() => name is null ? 0 : EqualityComparer<string>.Default.GetHashCode(name);
-    public bool Equals(Symbol other) => string.Equals(name, other.name, StringComparison.Ordinal);
+    public bool IsValid => _name is not null;
+    public bool IsCurrency => _name is not null && _name.Length == 5 && _name.EndsWith("=X", StringComparison.Ordinal);
+    public bool IsCurrencyRate => _name is not null && _name.Length == 8 && _name.EndsWith("=X", StringComparison.Ordinal);
+    public bool IsSecurity => _name is not null && !_name.EndsWith("=X", StringComparison.Ordinal);
+
+    public string Currency => IsCurrency ? Name[..3] : throw new InvalidOperationException("Symbol is not a currency.");
+    public string BaseCurrency => IsCurrencyRate ? Name[..3] : throw new InvalidOperationException("Symbol is not a currency rate.");
+    public string QuoteCurrency => IsCurrencyRate ? Name[3..6] : throw new InvalidOperationException("Symbol is not a currency rate.");
+
+    public override string ToString() => _name ?? "<invalid symbol>";
+    public override int GetHashCode() => _name is null ? 0 : StringComparer.Ordinal.GetHashCode(_name);
+    public bool Equals(Symbol other) => string.Equals(_name, other._name, StringComparison.Ordinal);
     public override bool Equals(object? obj) => obj is Symbol symbol && Equals(symbol);
-    public int CompareTo(Symbol other) => string.CompareOrdinal(name, other.name);
+    public int CompareTo(Symbol other) => string.CompareOrdinal(_name, other._name);
     public static bool operator ==(Symbol left, Symbol right) => left.Equals(right);
     public static bool operator !=(Symbol left, Symbol right) => !(left == right);
     public static bool operator <(Symbol left, Symbol right) => left.CompareTo(right) < 0;
@@ -58,36 +52,49 @@ public readonly struct Symbol : IEquatable<Symbol>, IComparable<Symbol>
     public static bool operator >(Symbol left, Symbol right) => left.CompareTo(right) > 0;
     public static bool operator >=(Symbol left, Symbol right) => left.CompareTo(right) >= 0;
 
+    public static Symbol Create(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (TryCreate(name, out Symbol symbol))
+            return symbol;
+        throw new ArgumentException($"Could not convert '{name}' to Symbol.");
+    }
+
     public static bool TryCreate(string name, out Symbol symbol)
     {
         ArgumentNullException.ThrowIfNull(name);
         symbol = default;
-        if (name.Length == 0 || name.Any(char.IsWhiteSpace))
+        if (name.Length == 0)
             return false;
-        if (name.Count(c => c == '.') > 1 || name.Count(c => c == '=') > 1)
-            return false;
-        name = name.ToUpper(CultureInfo.InvariantCulture);
-        if (name.Contains("=X", StringComparison.OrdinalIgnoreCase))
+
+        bool hasDot = false, hasEq = false;
+        foreach (char c in name)
         {
-            if (!name.EndsWith("=X", StringComparison.OrdinalIgnoreCase)
+            if (char.IsWhiteSpace(c))
+                return false;
+            if (c == '.')
+            {
+                if (hasDot)
+                    return false;
+                hasDot = true;
+            }
+            if (c == '=')
+            {
+                if (hasEq)
+                    return false;
+                hasEq = true;
+            }
+        }
+
+        name = name.ToUpperInvariant();
+        if (name.Contains("=X", StringComparison.Ordinal))
+        {
+            if (!name.EndsWith("=X", StringComparison.Ordinal)
                 || (name.Length != 5 && name.Length != 8)
-                || (name.Length == 8 && name[0..3] == name[3..6]))
+                || (name.Length == 8 && string.Equals(name[0..3], name[3..6], StringComparison.Ordinal)))
                 return false;
         }
         symbol = new Symbol(name);
         return true;
-    }
-}
-
-public static class SymbolExtensions
-{
-    public static Symbol ToSymbol(this string name, bool throwOnFailure = true)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        if (Symbol.TryCreate(name, out Symbol symbol))
-            return symbol;
-        if (throwOnFailure)
-            throw new ArgumentException($"Could not convert '{name}' to Symbol.");
-        return default;
     }
 }

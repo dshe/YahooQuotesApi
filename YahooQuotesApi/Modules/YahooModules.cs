@@ -12,7 +12,8 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
 
     internal async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, string[] modules, CancellationToken ct)
     {
-        if (!Symbol.TryCreate(symbol, out Symbol sym) || sym.IsCurrency)
+        Symbol sym = Symbol.Create(symbol);
+        if (sym.IsCurrency)
             throw new ArgumentException($"Invalid symbol: {sym}.");
         if (modules.Length == 0)
             throw new ArgumentException("No modules indicated.");
@@ -22,13 +23,13 @@ public sealed class YahooModules(ILogger logger, CookieAndCrumb crumbService, IH
         if (dups.Length != 0)
             return Result<JsonProperty[]>.Fail($"Duplicate module(s): \'{string.Join(", ", dups)}\'.");
 
-        Result<JsonProperty[]> result = await Produce(symbol, modules, ct).ConfigureAwait(false);
+        Result<JsonProperty[]> result = await ProduceAsync(symbol, modules, ct).ConfigureAwait(false);
         return result;
     }
 
-    private async Task<Result<JsonProperty[]>> Produce(string symbol, string[] modulesRequested, CancellationToken ct)
+    private async Task<Result<JsonProperty[]>> ProduceAsync(string symbol, string[] modulesRequested, CancellationToken ct)
     {
-        var (cookie, crumb) = await CookieAndCrumb.Get(ct).ConfigureAwait(false);
+        var (cookie, crumb) = await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
         HttpClient httpClient = HttpClientFactory.CreateClient("");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         httpClient.DefaultRequestHeaders.Add("Cookie", cookie);

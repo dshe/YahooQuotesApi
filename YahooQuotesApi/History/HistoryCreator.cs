@@ -58,7 +58,7 @@ public sealed class HistoryCreator(IClock clock, ILogger logger)
             if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && symbol.Length == 5)
                 symbol = "USD" + symbol;
             Logger.LogTrace("Setting history property: Symbol = {Symbol}", symbol);
-            history.Symbol = symbol.ToSymbol();
+            history.Symbol = Symbol.Create(symbol);
             return history.Symbol;
         }
         if (jp.Name == "currency")
@@ -69,7 +69,7 @@ public sealed class HistoryCreator(IClock clock, ILogger logger)
                 if (currency.Length != 3)
                     throw new InvalidOperationException($"Invalid currency: '{currency}'.");
                 Logger.LogTrace("Setting history property: Currency = {Currency}", currency);
-                history.Currency = $"{currency}=X".ToSymbol();
+                history.Currency = Symbol.Create($"{currency}=X");
             }
             return history.Currency;
         }
@@ -230,7 +230,7 @@ static file class HistoryExtensions
         if (ja.ValueKind != JsonValueKind.Array)
             throw new InvalidDataException($"Not array ValueKind: '{ja.ValueKind}'.");
         JsonElement je = ja[index];
-        if (je.GetPrimitive(typeof(T), out object? val) && val != null)
+        if (je.GetPrimitive(typeof(T), out object? val) && val is not null)
             return (T)val;
         return defaultValue;
     }

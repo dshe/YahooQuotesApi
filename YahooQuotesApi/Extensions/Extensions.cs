@@ -33,11 +33,10 @@ internal static partial class Extensions
     }
 
     internal static T[] AsArray<T>(this ImmutableArray<T> a) =>
-    ImmutableCollectionsMarshal.AsArray(a) ?? throw new ArgumentNullException(nameof(a));
+        ImmutableCollectionsMarshal.AsArray(a) ?? throw new ArgumentNullException(nameof(a));
     internal static ImmutableArray<T> AsImmutableArray<T>(this T[] a) =>
         ImmutableCollectionsMarshal.AsImmutableArray(a);
 
     internal static Span<T> AsSpan<T>(this List<T> list) => CollectionsMarshal.AsSpan(list);
     internal static void SetCount<T>(this List<T> list, int x) => CollectionsMarshal.SetCount(list, x);
 }
-

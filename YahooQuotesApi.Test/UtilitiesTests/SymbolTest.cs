@@ -6,60 +6,68 @@ public class SymbolTest(ITestOutputHelper output) : XunitTestBase(output)
     public void TestArgs()
     {
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        Assert.Throws<ArgumentNullException>(() => ((string?)null).ToSymbol());
+        Assert.Throws<ArgumentNullException>(() => Symbol.Create(((string?)null)));
 #pragma warning restore CS8625
 
-        Assert.Throws<ArgumentException>(() => "with space".ToSymbol());
+        Assert.Throws<ArgumentException>(() => Symbol.Create("with space"));
 
-        Assert.Throws<ArgumentException>(() => "".ToSymbol());
+        Assert.Throws<ArgumentException>(() => Symbol.Create(""));
 
-        Symbol stock = "ABC".ToSymbol();
-        Assert.True(stock.IsValid && stock.IsStock && !stock.IsCurrency && !stock.IsCurrencyRate);
+        Symbol stock = Symbol.Create("ABC");
+        Assert.True(stock.IsValid && stock.IsSecurity && !stock.IsCurrency && !stock.IsCurrencyRate);
 
-        Symbol currency = "ABC=X".ToSymbol();
-        Assert.True(currency.IsValid && !currency.IsStock && currency.IsCurrency && !currency.IsCurrencyRate);
+        Symbol currency = Symbol.Create("ABC=X");
+        Assert.True(currency.IsValid && !currency.IsSecurity && currency.IsCurrency && !currency.IsCurrencyRate);
         Assert.Equal("ABC", currency.Currency);
 
-        Symbol rate = "ABCDEF=X".ToSymbol();
-        Assert.True(rate.IsValid && !rate.IsStock && !rate.IsCurrency && rate.IsCurrencyRate);
-        Assert.Equal("DEF", rate.Currency);
+        Symbol rate = Symbol.Create("ABCDEF=X");
+        Assert.True(rate.IsValid && !rate.IsSecurity && !rate.IsCurrency && rate.IsCurrencyRate);
+        Assert.Equal("DEF", rate.QuoteCurrency);
 
-        var _ = "GC=F".ToSymbol(); // furues
+        var _ = Symbol.Create("GC=F"); // furues
 
-        Assert.Throws<ArgumentException>(() => "ABCABC=X".ToSymbol());
-        Assert.Throws<ArgumentException>(() => "ABCBC=X".ToSymbol());
-        Assert.Throws<ArgumentException>(() => "=XABC".ToSymbol());
+        Assert.Throws<ArgumentException>(() => Symbol.Create("ABCABC=X"));
+        Assert.Throws<ArgumentException>(() => Symbol.Create("ABCBC=X"));
+        Assert.Throws<ArgumentException>(() => Symbol.Create("=XABC"));
     }
 
     [Fact]
     public void TestOperators()
     {
-        Assert.True("abc".ToSymbol() == "abc".ToSymbol());
-        Assert.Equal("abc".ToSymbol(), "abc".ToSymbol());
-        Assert.NotEqual("abc".ToSymbol(), "def".ToSymbol());
+        Assert.True(Symbol.Create("abc") == Symbol.Create("abc"));
+        Assert.Equal(Symbol.Create("abc"), Symbol.Create("abc"));
+        Assert.NotEqual(Symbol.Create("abc"), Symbol.Create("def"));
 
         var list = new List<Symbol>
             {
-                "c5".ToSymbol(),
-                "c2".ToSymbol(),
-                "c1".ToSymbol(),
-                "c4".ToSymbol()
+                Symbol.Create("c5"),
+                Symbol.Create("c2"),
+                Symbol.Create("c1"),
+                Symbol.Create("c4")
             };
 
         list.Sort();
-        Assert.Equal("c1".ToSymbol(), list.First());
+        Assert.Equal(Symbol.Create("c1"), list.First());
 
         var dict = list.ToDictionary(x => x, x => x.Name);
-        var result = dict["c2".ToSymbol()];
+        var result = dict[Symbol.Create("c2")];
         Assert.Equal("C2", result);
     }
 
     [Fact]
     public void TestDefaultEquality()
     {
-        var defaultSymbol = "".ToSymbol(false);
+        Symbol defaultSymbol;
+#pragma warning disable CS8887 // Use of unassigned local variable
+        Assert.False(defaultSymbol.IsValid); // IsValid does not throw
+#pragma warning restore CS8887 // Use of unassigned local variable
+
+        Assert.True(defaultSymbol == default);
         Assert.False(defaultSymbol.IsValid);
-        Assert.Equal(default, defaultSymbol);
+
+        Symbol.TryCreate("", out Symbol sss);
+        Assert.False(sss.IsValid);
+        Assert.Equal(default, sss);
     }
 
     [Theory]
@@ -71,7 +79,7 @@ public class SymbolTest(ITestOutputHelper output) : XunitTestBase(output)
     [InlineData("ABC.DEF", "DEF")]
     public void TestSuffix(string symbolName, string suffix)
     {
-        var symbol = symbolName.ToSymbol();
+        var symbol = Symbol.Create(symbolName);
         Assert.Equal(suffix, symbol.Suffix);
     }
 }
