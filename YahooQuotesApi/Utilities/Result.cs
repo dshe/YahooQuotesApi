@@ -185,19 +185,23 @@ public readonly struct Result<T> : IEquatable<Result<T>> where T : notnull
 
 public static class ResultExtensions
 {
-    public static Result<T> ToResult<T>(this T value) where T : notnull => Result<T>.Ok(value);
-
-    // Projects a successful result through a mapping function.
-    // Error and undefined states pass through unchanged.
-    public static Result<TOut> Select<TIn, TOut>(
-        this Result<TIn> result, Func<TIn, TOut> projection)
-        where TIn : notnull where TOut : notnull
+    extension<T>(T value) where T : notnull
     {
-        ArgumentNullException.ThrowIfNull(projection);
-        if (result.HasValue) 
-            return Result<TOut>.Ok(projection(result.Value));
-        if (result.HasError) 
-            return Result<TOut>.Fail(result.Error);
-        return default; // undefined → undefined
+        public Result<T> ToResult() => Result<T>.Ok(value);
+    }
+
+    extension<TIn, TOut>(Result<TIn> result) where TIn : notnull where TOut : notnull
+    {
+        // Projects a successful result through a mapping function.
+        // Error and undefined states pass through unchanged.
+        public Result<TOut> Select(Func<TIn, TOut> projection)
+        {
+            ArgumentNullException.ThrowIfNull(projection);
+            if (result.HasValue)
+                return Result<TOut>.Ok(projection(result.Value));
+            if (result.HasError)
+                return Result<TOut>.Fail(result.Error);
+            return default; // undefined → undefined
+        }
     }
 }

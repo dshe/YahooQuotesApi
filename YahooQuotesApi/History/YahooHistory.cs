@@ -101,6 +101,8 @@ public sealed class YahooHistory
 
     private async Task AddToResultsAsync(IEnumerable<Symbol> symbols, Dictionary<Symbol, Result<History>> results, CancellationToken ct)
     {
+        Lock resultsLock = new();
+
         ParallelOptions parallelOptions = new()
         {
             MaxDegreeOfParallelism = 4,
@@ -109,8 +111,8 @@ public sealed class YahooHistory
 
         await Parallel.ForEachAsync(symbols, parallelOptions, async (symbol, ct) =>
         {
-            Result<History> result = await Cache.Get(symbol, () => ProduceAsync(symbol, ct)).ConfigureAwait(false);
-            lock (results)
+            Result<History> result = await Cache.GetAsync(symbol, () => ProduceAsync(symbol, ct)).ConfigureAwait(false);
+            lock (resultsLock)
             {
                 results.Add(symbol, result);
             }
@@ -119,7 +121,7 @@ public sealed class YahooHistory
 
     private async Task<Result<History>> ProduceAsync(Symbol symbol, CancellationToken ct)
     {
-        var (cookies, crumb) = await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
+        (string[]? cookies, string? crumb) = await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
         Uri uri = GetUri(symbol, crumb);
         Logger.LogInformation("{Uri}", uri.ToString());
 

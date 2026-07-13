@@ -15,3 +15,4 @@ using System.Runtime.CompilerServices;
 [assembly: SuppressMessage("Usage", "IDE0130: Namespace does not match folder structure")]
 [assembly: SuppressMessage("Usage", "CA1000: Do not declare static members on generic types")]
 [assembly: SuppressMessage("Usage", "CA1873: Evaluation of this argument may be expensive")]
+[assembly: SuppressMessage("Design", "CA1034: Nested types should not be visible")]

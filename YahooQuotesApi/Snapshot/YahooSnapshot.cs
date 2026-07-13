@@ -56,11 +56,12 @@ public sealed class YahooSnapshot : IDisposable
 
         // Unknown symbols are ignored
         Dictionary<Symbol, Snapshot?> snapshots = symbols.ToDictionary(s => s, s => (Snapshot?)null);
+        Lock snapshotsLock = new();
 
         await Parallel.ForEachAsync(uris, parallelOptions, async (uri, ct) =>
         {
             List<Snapshot> someSnapshots = await MakeRequestAsync(uri, cookies, ct).ConfigureAwait(false);
-            lock (snapshots)
+            lock (snapshotsLock)
             {
                 foreach (Snapshot snapshot in someSnapshots)
                     snapshots[snapshot.Symbol] = snapshot;

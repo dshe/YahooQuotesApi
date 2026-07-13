@@ -8,6 +8,7 @@ internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
 {
     private readonly IClock _clock;
     private readonly Dictionary<TKey, (Task<TResult>, Instant)> _taskCache = [];
+    private readonly Lock _taskCacheLock = new();
     private readonly Duration _duration;
 
     internal ParallelProducerCache(IClock clock, Duration cacheDuration)
@@ -16,10 +17,10 @@ internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
         _clock = clock;
     }
 
-    internal async Task<TResult> Get(TKey key, Func<Task<TResult>> producer)
+    internal async Task<TResult> GetAsync(TKey key, Func<Task<TResult>> producer)
     {
         (Task<TResult> task, Instant time) item;
-        lock (_taskCache)
+        lock (_taskCacheLock)
         {
             Instant now = _clock.GetCurrentInstant();
             if (!_taskCache.TryGetValue(key, out item) || now - item.time > _duration)
@@ -34,7 +35,7 @@ internal sealed class ParallelProducerCache<TKey, TResult> where TKey : notnull
 
     internal void Clear()
     {
-        lock (_taskCache)
+        lock (_taskCacheLock)
         {
             _taskCache.Clear();
         }

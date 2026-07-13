@@ -17,7 +17,7 @@ public class ParalellProducerCacheTest(ITestOutputHelper output) : XunitTestBase
     private async Task<string> Get(string key)
     {
         Write($"getting key {key}");
-        return await Cache.Get(key, () => Producer(key));
+        return await Cache.GetAsync(key, () => Producer(key));
     }
 
     [Fact]

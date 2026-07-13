@@ -168,70 +168,76 @@ public sealed class HistoryCreator(IClock clock, ILogger logger)
 
 static file class HistoryExtensions
 {
-    internal static bool TryGetChartProperty(this JsonDocument jdoc, string name, out JsonElement jeOut)
+    extension(JsonDocument jdoc)
     {
-        string[] path = name switch
+        internal bool TryGetChartProperty(string name, out JsonElement jeOut)
         {
-            "error" => ["chart", "error"],
-            "timestamp" => ["chart", "result", "timestamp"],
-            "open" => ["chart", "result", "indicators", "quote", "open"],
-            "high" => ["chart", "result", "indicators", "quote", "high"],
-            "low" => ["chart", "result", "indicators", "quote", "low"],
-            "close" => ["chart", "result", "indicators", "quote", "close"],
-            "volume" => ["chart", "result", "indicators", "quote", "volume"],
-            "adjclose" => ["chart", "result", "indicators", "adjclose", "adjclose"],
-            "dividends" => ["chart", "result", "events", "dividends"],
-            "splits" => ["chart", "result", "events", "splits"],
-            "meta" => ["chart", "result", "meta"],
-            _ => throw new ArgumentException($"Invalid property name: '{name}'.")
-        };
-        jeOut = default; // ValueKind.Undefined;
-        JsonElement je = jdoc.RootElement;
-        foreach (string p in path)
-        {
-            if (je.ValueKind == JsonValueKind.Object)
+            string[] path = name switch
             {
-                if (!je.TryGetProperty(p, out je))
-                    return false;
-                continue;
-            }
-            if (je.ValueKind == JsonValueKind.Array)
+                "error" => ["chart", "error"],
+                "timestamp" => ["chart", "result", "timestamp"],
+                "open" => ["chart", "result", "indicators", "quote", "open"],
+                "high" => ["chart", "result", "indicators", "quote", "high"],
+                "low" => ["chart", "result", "indicators", "quote", "low"],
+                "close" => ["chart", "result", "indicators", "quote", "close"],
+                "volume" => ["chart", "result", "indicators", "quote", "volume"],
+                "adjclose" => ["chart", "result", "indicators", "adjclose", "adjclose"],
+                "dividends" => ["chart", "result", "events", "dividends"],
+                "splits" => ["chart", "result", "events", "splits"],
+                "meta" => ["chart", "result", "meta"],
+                _ => throw new ArgumentException($"Invalid property name: '{name}'.")
+            };
+            jeOut = default; // ValueKind.Undefined;
+            JsonElement je = jdoc.RootElement;
+            foreach (string p in path)
             {
-                JsonElement jex = default;
-                foreach (JsonElement x in je.EnumerateArray())
+                if (je.ValueKind == JsonValueKind.Object)
                 {
-                    if (x.TryGetProperty(p, out jex))
-                        break;
+                    if (!je.TryGetProperty(p, out je))
+                        return false;
+                    continue;
                 }
-                if (jex.ValueKind == JsonValueKind.Undefined)
-                    return false;
-                je = jex;
-                continue;
+                if (je.ValueKind == JsonValueKind.Array)
+                {
+                    JsonElement jex = default;
+                    foreach (JsonElement x in je.EnumerateArray())
+                    {
+                        if (x.TryGetProperty(p, out jex))
+                            break;
+                    }
+                    if (jex.ValueKind == JsonValueKind.Undefined)
+                        return false;
+                    je = jex;
+                    continue;
+                }
             }
+            jeOut = je;
+            return true;
         }
-        jeOut = je;
-        return true;
-    }
 
-    internal static JsonElement GetJsonArray(this JsonDocument jdoc, string name, int length)
-    {
-        if (jdoc.TryGetChartProperty(name, out JsonElement ja))
+        internal JsonElement GetJsonArray(string name, int length)
         {
-            if (ja.GetArrayLength() != length)
-                throw new InvalidDataException($"Mismatched array size: {name}.");
+            if (jdoc.TryGetChartProperty(name, out JsonElement ja))
+            {
+                if (ja.GetArrayLength() != length)
+                    throw new InvalidDataException($"Mismatched array size: {name}.");
+            }
+            return ja; // undefined if not found
         }
-        return ja; // undefined if not found
     }
 
-    internal static T GetArrayElementAtIndex<T>(this JsonElement ja, int index, T defaultValue = default) where T : struct
+    extension(JsonElement ja)
     {
-        if (ja.ValueKind == JsonValueKind.Undefined) // empty array
+        internal T GetArrayElementAtIndex<T>(int index, T defaultValue = default) where T : struct
+        {
+            if (ja.ValueKind == JsonValueKind.Undefined) // empty array
+                return defaultValue;
+            if (ja.ValueKind != JsonValueKind.Array)
+                throw new InvalidDataException($"Not array ValueKind: '{ja.ValueKind}'.");
+            JsonElement je = ja[index];
+            if (je.GetPrimitive(typeof(T), out object? val) && val is not null)
+                return (T)val;
             return defaultValue;
-        if (ja.ValueKind != JsonValueKind.Array)
-            throw new InvalidDataException($"Not array ValueKind: '{ja.ValueKind}'.");
-        JsonElement je = ja[index];
-        if (je.GetPrimitive(typeof(T), out object? val) && val is not null)
-            return (T)val;
-        return defaultValue;
+        }
     }
 }

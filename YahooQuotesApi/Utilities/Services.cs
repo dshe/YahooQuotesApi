@@ -41,32 +41,35 @@ internal static class Services
             .GetRequiredService<YahooQuotes>();
     }
 
-    private static IServiceCollection AddNamedHttpClient(this IServiceCollection serviceCollection, string name)
+    extension(IServiceCollection serviceCollection)
     {
-        return serviceCollection
+        private IServiceCollection AddNamedHttpClient(string name)
+        {
+            return serviceCollection
 
-            .AddHttpClient(name, client =>
-            {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
-                //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
-                //client.DefaultRequestVersion = HttpVersion.Version20;
-                client.DefaultRequestVersion = HttpVersion.Version11;
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-            })
+                .AddHttpClient(name, client =>
+                {
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentGenerator.GetRandom());
+                    //client.Timeout = TimeSpan.FromSeconds(10); // default: 100 seconds
+                    //client.DefaultRequestVersion = HttpVersion.Version20;
+                    client.DefaultRequestVersion = HttpVersion.Version11;
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                })
 
-            .AddHttpMessageHandler<HttpRateLimitingHandler>()  // rate limiter goes first
+                .AddHttpMessageHandler<HttpRateLimitingHandler>()  // rate limiter goes first
 
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                AllowAutoRedirect = false,
-                //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
-                //CookieContainer = new CookieContainer(),
-                UseCookies = false, // Important since these handlers may be reused.
-            })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+                {
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    AllowAutoRedirect = false,
+                    //MaxConnectionsPerServer: default is int.MaxValue; with HTTP/2, every request tends to reuse the same connection
+                    //CookieContainer = new CookieContainer(),
+                    UseCookies = false, // Important since these handlers may be reused.
+                })
 
-            .AddStandardResilienceHandler()
+                .AddStandardResilienceHandler()
 
-            .Services;
+                .Services;
+        }
     }
 }

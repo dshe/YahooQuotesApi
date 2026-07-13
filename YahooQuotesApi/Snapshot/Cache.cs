@@ -5,6 +5,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
     private readonly IClock _clock;
     private readonly Duration _cacheDuration;
     private readonly Dictionary<TKey, (TResult result, Instant time)> _items = [];
+    private readonly Lock _itemsLock = new();
 
     internal Cache(IClock clock, Duration cacheDuration)
     {
@@ -14,7 +15,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
 
     internal void Add(Dictionary<TKey, TResult> dict)
     {
-        lock (_items)
+        lock (_itemsLock)
         {
             Instant now = _clock.GetCurrentInstant();
             foreach (var kvp in dict)
@@ -26,7 +27,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
     {
 
         results = new Dictionary<TKey, TResult>(keys.Count); // each request returns a new dictionary
-        lock (_items)
+        lock (_itemsLock)
         {
             Instant now = _clock.GetCurrentInstant();
             foreach (TKey key in keys)
@@ -45,7 +46,7 @@ internal sealed class Cache<TKey, TResult> where TKey : notnull
 
     internal Dictionary<TKey, TResult> GetAll(HashSet<TKey> keys)
     {
-        lock (_items)
+        lock (_itemsLock)
         {
             return keys.ToDictionary(k => k, k => _items[k].result);
         }

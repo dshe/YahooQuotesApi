@@ -206,17 +206,20 @@ public sealed class HistoryBasePricesCreator
 
 file static class HistoryBaseComposerExtensions
 {
-    internal static double MultiplyByValue(this double value, Instant date, BaseTick[]? ticks)
+    extension(double value)
     {
-        if (ticks is not null && ticks.Length > 1)
-            value *= ticks.InterpolatePrice(date);
-        return value;
-    }
+        internal double MultiplyByValue(Instant date, BaseTick[]? ticks)
+        {
+            if (ticks is not null && ticks.Length > 1)
+                value *= ticks.InterpolatePrice(date);
+            return value;
+        }
 
-    internal static double DivideByValue(this double value, Instant date, BaseTick[]? ticks)
-    {
-        if (ticks is not null && ticks.Length > 1)
-            value /= ticks.InterpolatePrice(date);
-        return value;
+        internal double DivideByValue(Instant date, BaseTick[]? ticks)
+        {
+            if (ticks is not null && ticks.Length > 1)
+                value /= ticks.InterpolatePrice(date);
+            return value;
+        }
     }
 }
