@@ -6,7 +6,7 @@
 [![Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
 
 **Retrieves from Yahoo Finance: quote snapshots, history, dividends, splits, and modules**
-- **.NET 8.0** library
+- **.NET 10.0** library
 - intellisense support for most properties
 - simple and intuitive API
 - fault-tolerant
