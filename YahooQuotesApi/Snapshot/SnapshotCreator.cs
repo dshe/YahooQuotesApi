@@ -58,7 +58,7 @@ public sealed class SnapshotCreator(ILogger logger)
                 throw new InvalidOperationException("Empty symbol.");
             if (symbol.EndsWith("=X", StringComparison.OrdinalIgnoreCase) && symbol.Length == 5)
                 symbol = "USD" + symbol;
-            Logger.LogTrace("Setting history property: Symbol = {Symbol}", symbol);
+            Logger.LogTrace("Setting property: Symbol = {Symbol}", symbol);
             snapshot.Symbol = Symbol.Create(symbol);
             return snapshot.Symbol;
         }
@@ -69,14 +69,14 @@ public sealed class SnapshotCreator(ILogger logger)
             {
                 if (currency.Length != 3)
                     throw new InvalidOperationException($"Invalid currency: '{currency}'.");
-                Logger.LogTrace("Setting history property: Currency = {Currency}", currency);
+                Logger.LogTrace("Setting property: Currency = {Currency}", currency);
                 snapshot.Currency = Symbol.Create($"{currency}=X");
             }
             return snapshot.Currency;
         }
         if (jp.Name == "firstTradeDateMilliseconds")
         {
-            Logger.LogTrace("Setting history property: FirstTradeDate = {FirstTradeDate}", snapshot.FirstTradeDate);
+            Logger.LogTrace("Setting property: FirstTradeDate = {FirstTradeDate}", snapshot.FirstTradeDate);
             snapshot.FirstTradeDate = jp.Value.GetInt64().ToInstantFromMilliseconds();
             return snapshot.FirstTradeDate;
         }
@@ -84,14 +84,17 @@ public sealed class SnapshotCreator(ILogger logger)
         PropertyInfo? pi = typeof(Snapshot).GetProperty(jp.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
         if (pi is not null)
         {
-            Logger.LogTrace("Setting history property: {Name} = {Value}", pi.Name, jp.Value.GetRawText());
             if (!pi.CanWrite)
                 throw new InvalidOperationException($"Cannot write to property: {pi.Name}.");
             if (jp.Value.GetPrimitive(pi.PropertyType, out object? value))
+            {
+                Logger.LogTrace("Setting property: {Name} = {Value}", pi.Name, jp.Value.GetRawText());
                 pi.SetValue(snapshot, value);
-            return value;
+                return value;
+            }
+            Logger.LogTrace("Could not set primitiv: {Name} = {Value}", pi.Name, jp.Value.GetRawText());
         }
-        Logger.LogTrace("New history property: {Name} = {Value}", jp.Name, jp.Value.GetRawText());
+        Logger.LogTrace("New property: {Name} = {Value}", jp.Name, jp.Value.GetRawText());
         return jp.Value.GetPrimitive();
     }
 }

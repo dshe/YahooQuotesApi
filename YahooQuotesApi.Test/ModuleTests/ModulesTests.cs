@@ -12,15 +12,6 @@ public class ModulesTests : XunitTestBase
     }
 
     [Theory]
-    [InlineData("IBM", "Price")]
-    [InlineData("F", "AssetProfile")]
-    public async Task ValidSingleModule(string symbol, string moduleName)
-    {
-        Result<JsonProperty> result = await YahooQuotes.GetModuleAsync(symbol, moduleName, TestContext.Current.CancellationToken);
-        Assert.Equal(moduleName, result.Value.Name, true);
-    }
-
-    [Theory]
     [InlineData("F", "Price")]
     [InlineData("TSLA", "assetProfile", "defaultKeyStatistics")]
     [InlineData("MSFT", "Price", "calendarEvents", "balanceSheetHistoryQuarterly")]
@@ -34,7 +25,7 @@ public class ModulesTests : XunitTestBase
     [Fact]
     public async Task InvalidSymbolName()
     {
-        Result<JsonProperty> result = await YahooQuotes.GetModuleAsync("InvalidSymbol", "Price", TestContext.Current.CancellationToken);
+        Result<JsonElement> result = await YahooQuotes.GetModuleAsync("InvalidSymbol", "Price", TestContext.Current.CancellationToken);
         Assert.Equal("Quote not found for symbol: INVALIDSYMBOL", result.Error.Message);
 
         Result<JsonProperty[]> results = await YahooQuotes.GetModulesAsync("InvalidSymbol", ["Price", "balanceSheetHistoryQuarterly"], TestContext.Current.CancellationToken);
@@ -48,7 +39,7 @@ public class ModulesTests : XunitTestBase
     public async Task AllInvalidModuleName()
     {
         // no valid module names indicated
-        Result<JsonProperty> result = await YahooQuotes.GetModuleAsync("IBM", "InvalidModuleName", TestContext.Current.CancellationToken);
+        Result<JsonElement> result = await YahooQuotes.GetModuleAsync("IBM", "InvalidModuleName", TestContext.Current.CancellationToken);
         Assert.Equal("No fundamentals data found for symbol: IBM", result.Error.Message);
 
         // no valid mdoule names indicated
@@ -87,5 +78,23 @@ public class ModulesTests : XunitTestBase
         Assert.True(result.HasValue);
         JsonProperty[] properties = result.Value;
         Assert.NotEmpty(properties);
+
+        var XX = await GetFloatShares("tsla", TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task TestGetFloatShares()
+    {
+        long shares = await GetFloatShares("TSLA", TestContext.Current.CancellationToken);
+        Assert.True(shares > 0);
+    }
+
+    public async Task<long> GetFloatShares(string symbol, CancellationToken ct)
+    {
+        Result<JsonElement> result = await YahooQuotes.GetModuleAsync(symbol, "defaultKeyStatistics", ct);
+        if (result.HasError)
+            throw new InvalidOperationException(result.Error.Message);
+        JsonElement value = result.Value.GetProperty("floatShares").GetProperty("raw");
+        return value.GetInt64();
     }
 }

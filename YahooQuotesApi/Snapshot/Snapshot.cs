@@ -34,6 +34,7 @@ public sealed class Snapshot
     public string MarketState { get; internal set; } = "";
     public double MarketCap { get; internal set; }
     public long SharesOutstanding { get; internal set; }
+    public long ImpliedSharesOutstanding { get; internal set; }
     public long OpenInterest { get; internal set; }
 
     public decimal Bid { get; internal set; }

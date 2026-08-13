@@ -44,10 +44,10 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
 
 
 
-    public async Task<Result<JsonProperty>> GetModuleAsync(string symbol, string module, CancellationToken ct = default)
+    public async Task<Result<JsonElement>> GetModuleAsync(string symbol, string module, CancellationToken ct = default)
     {
         Result<JsonProperty[]> result = await GetModulesAsync(symbol, [module], ct).ConfigureAwait(false);
-        return result.Select(x => x.Single());
+        return result.Select(x => x.Single().Value);
     }
 
     public async Task<Result<JsonProperty[]>> GetModulesAsync(string symbol, IEnumerable<string> modules, CancellationToken ct = default)
@@ -66,7 +66,6 @@ public sealed class YahooQuotes(ILogger logger, CookieAndCrumb cookieAndCrumb, Y
         }
     }
 
-    public async Task<(string[], string)> GetCookieAndCrumbAsync(CancellationToken ct = default) =>
+    public async Task<(string[], string)> GetCookieAndCrumbAsync(CancellationToken ct) =>
           await CookieAndCrumb.GetAsync(ct).ConfigureAwait(false);
-
 }
