@@ -99,7 +99,7 @@ Assert.Equal(820.49, firstBaseTick.Price, 2); // EUR -> USD
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
-Result<JsonElement> result = await YahooQuotes.GetModuleAsync(symbol, "defaultKeyStatistics");
+Result<JsonElement> result = await YahooQuotes.GetModuleAsync("SPCX", "defaultKeyStatistics");
 
 long shares = result.Value
     .GetProperty("floatShares")
