@@ -66,6 +66,7 @@ ImmutableArray<Tick> ticks = history.Ticks;
 Tick firstTick = ticks[0];
 ZonedDateTime zdt = firstTick.Date.InZone(tz);
 // Note that tick time is market open at 9:30 AM.
+
 Assert.Equal(new LocalDateTime(2024, 10, 1, 9, 30, 0), zdt.LocalDateTime);
 Assert.Equal(420.69, firstTick.Close, 2); // in USD
 ```
@@ -82,12 +83,28 @@ History history = result.Value;
 Assert.Equal("ASML Holding N.V.", history.LongName);
 Assert.Equal("EUR=X", history.Currency.Name);
 Assert.Equal("Europe/Amsterdam", history.ExchangeTimezoneName);
+
 DateTimeZone tz = DateTimeZoneProviders.Tzdb.GetZoneOrNull(history.ExchangeTimezoneName)
     ?? throw new ArgumentException("Unknown timezone.");
 
 BaseTick firstBaseTick = history.BaseTicks[0];
 Instant instant = firstBaseTick.Date;
 ZonedDateTime zdt = instant.InZone(tz);
+
 Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt);
 Assert.Equal(820.49, firstBaseTick.Price, 2); // EUR -> USD
+```
+
+#### modules
+```csharp
+YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
+
+Result<JsonElement> result = await YahooQuotes.GetModuleAsync(symbol, "defaultKeyStatistics");
+
+long shares = result.Value
+    .GetProperty("floatShares")
+    .GetProperty("raw")
+    .GetInt64();
+
+Assert.True(shares > 0);
 ```
