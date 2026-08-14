@@ -95,7 +95,7 @@ Assert.Equal(new LocalDateTime(2024, 10, 1, 17, 30, 0).InZoneLeniently(tz), zdt)
 Assert.Equal(820.49, firstBaseTick.Price, 2); // EUR -> USD
 ```
 
-#### modules
+#### quote summary modules
 ```csharp
 YahooQuotes yahooQuotes = new YahooQuotesBuilder().Build();
 
